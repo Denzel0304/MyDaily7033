@@ -290,7 +290,7 @@
   <div class="input-card">
     <div class="section-title">+ 먹은 음식 추가</div>
     <div class="input-row">
-      <select id="foodSelect" onchange="onFoodChange()">
+      <select id="foodSelect" onchange="onFoodChange(); updatePlaceholder()">
         <option value="">음식 선택</option>
         <option value="shake">💪 단백질 쉐이크</option>
         <option value="rice">🍚 잡곡밥</option>
@@ -364,13 +364,14 @@
     return text ? JSON.parse(text) : null;
   }
 
-  // ── 단백질 함량 (100g당) ────────────────────────
+  // ── 단백질 함량 ────────────────────────────────
   // shake: 입력값 = 단백질 g (직접 입력)
+  // egg:   입력값 = 개수, 1개 = 6g
   // 나머지: (내장값 / 100) × 입력 그램
   const PROTEIN_PER_100G = {
     shake: null,   // 직접 입력값 = 단백질량
     rice: 2.7,
-    egg: 12.4,
+    egg: null,     // 개수 입력, 1개 = 6g
     pork: 21.0,
     tofu: 8.0,
     fish: 20.0,
@@ -380,6 +381,7 @@
     tuna: 25.0,
     sashimi: 19.0
   };
+  const EGG_PROTEIN_EACH = 6; // 계란 1개당 단백질 g
   const FOOD_NAMES = {
     shake:'단백질 쉐이크', rice:'잡곡밥', egg:'계란',
     pork:'돼지고기', tofu:'두부', fish:'생선', milk:'우유',
@@ -391,10 +393,26 @@
     chicken:'🍗', beef:'🥩', tuna:'🐟', sashimi:'🍣'
   };
 
+  const EGG_PROTEIN_EACH = 6; // 계란 1개당 단백질 g
+
   // ── 단백질 계산 헬퍼 ───────────────────────────
-  function calcProtein(key, gram) {
-    if (key === 'shake') return gram; // 쉐이크: 입력값 = 단백질 g
-    return parseFloat((PROTEIN_PER_100G[key] * gram / 100).toFixed(1));
+  function calcProtein(key, val) {
+    if (key === 'shake') return val;
+    if (key === 'egg')   return val * EGG_PROTEIN_EACH;
+    return parseFloat((PROTEIN_PER_100G[key] * val / 100).toFixed(1));
+  }
+
+  // ── placeholder 동적 변경 ──────────────────────
+  function updatePlaceholder() {
+    const key = document.getElementById('foodSelect').value;
+    const input = document.getElementById('amountInput');
+    if (key === 'egg') {
+      input.placeholder = '개';
+      input.max = 30;
+    } else {
+      input.placeholder = 'g';
+      input.max = 2000;
+    }
   }
 
   // ── 상태 ───────────────────────────────────────
@@ -465,22 +483,23 @@
   // ── 음식 변경 프리뷰 ───────────────────────────
   function onFoodChange() {
     const key = document.getElementById('foodSelect').value;
-    const gram = parseFloat(document.getElementById('amountInput').value);
+    const val = parseFloat(document.getElementById('amountInput').value);
     const preview = document.getElementById('proteinPreview');
-    if (!key || !gram || gram <= 0) { preview.innerHTML = ''; return; }
-    const p = calcProtein(key, gram);
+    if (!key || !val || val <= 0) { preview.innerHTML = ''; return; }
+    const p = calcProtein(key, val);
     preview.innerHTML = `단백질 약 <span>${p.toFixed(1)}g</span> 추가됩니다`;
   }
 
   // ── 음식 추가 ──────────────────────────────────
   async function addFood() {
     const key = document.getElementById('foodSelect').value;
-    const gram = parseFloat(document.getElementById('amountInput').value);
+    const val = parseFloat(document.getElementById('amountInput').value);
     if (!key) { showToast('음식을 선택해주세요'); return; }
-    if (!gram || gram <= 0) { showToast('그램수를 입력해주세요'); return; }
+    if (!val || val <= 0) { showToast(key === 'egg' ? '개수를 입력해주세요' : '그램수를 입력해주세요'); return; }
 
-    const protein = calcProtein(key, gram);
-    todayFoods.push({ key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key], gram, protein });
+    const protein = calcProtein(key, val);
+    const gram = key === 'egg' ? val * 50 : val; // 계란은 개수 저장 (표시용 gram은 개수)
+    todayFoods.push({ key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key], gram: val, unit: key === 'egg' ? '개' : 'g', protein });
 
     renderFoodList();
     updateGauge();
@@ -493,9 +512,10 @@
     document.getElementById('proteinPreview').innerHTML = '';
 
     showToast(`+${protein}g 추가됐어요!`);
+    renderHistoryFromLocal(); // 즉시 로컬 기준으로 히스토리 업데이트
 
     await saveTodayData();
-    await loadHistory();
+    await loadHistory(); // DB에서 최신 다시 불러오기
   }
 
   // ── 음식 삭제 ──────────────────────────────────
@@ -503,6 +523,7 @@
     todayFoods.splice(idx, 1);
     renderFoodList();
     updateGauge();
+    renderHistoryFromLocal();
     saveTodayData();
     loadHistory();
   }
@@ -578,7 +599,7 @@
           <span class="food-icon">${f.icon}</span>
           <div>
             <div class="food-name">${f.name}</div>
-            <div class="food-gram">${f.gram}g</div>
+            <div class="food-gram">${f.gram}${f.unit || "g"}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;">
@@ -592,6 +613,36 @@
     list.querySelectorAll('.food-delete').forEach(btn => {
       btn.addEventListener('click', () => deleteFood(parseInt(btn.dataset.idx)));
     });
+  }
+
+  // ── 히스토리 즉시 로컬 반영 ───────────────────
+  // DB 응답 전에 todayFoods 기준으로 히스토리 바를 먼저 그려서 사라지는 현상 방지
+  function renderHistoryFromLocal() {
+    const list = document.getElementById('historyList');
+    const rows = list.querySelectorAll('.history-row');
+    if (rows.length === 0) return; // 아직 히스토리 없으면 패스
+
+    const todayTotal = todayFoods.reduce((s, f) => s + f.protein, 0);
+    const todayDateStr = (() => {
+      const d = new Date();
+      return `${d.getMonth()+1}/${d.getDate()}`;
+    })();
+
+    // 첫 번째 행이 오늘이면 수치만 업데이트
+    const firstDateEl = list.querySelector('.hist-date');
+    if (firstDateEl && firstDateEl.textContent === todayDateStr) {
+      const firstVal = list.querySelector('.hist-val');
+      if (firstVal) firstVal.textContent = todayTotal.toFixed(0) + 'g';
+      const firstBar = list.querySelector('.hist-bar');
+      const wrapWidth = list.querySelector('.hist-bar-wrap');
+      if (firstBar && wrapWidth) {
+        // maxVal은 현재 goal 이상으로만 설정
+        const maxVal = Math.max(todayTotal, goal);
+        const barPct = Math.min(todayTotal / maxVal * 100, 100);
+        firstBar.style.width = barPct + '%';
+        firstBar.className = 'hist-bar ' + (todayTotal >= goal ? 'over' : 'normal');
+      }
+    }
   }
 
   // ── 히스토리 렌더 ──────────────────────────────
