@@ -1165,8 +1165,6 @@ function renderWeek() {
     }
 
     const target = goalWeeklyTarget(h);
-    const pctRaw = Math.min(100, doneCount / target * 100);
-    const pct = pctRaw; // CSS width용 (소수 OK)
 
     const checks = dates.map(d => {
       const ds = dateStr(d);
