@@ -144,6 +144,40 @@
     }
     .add-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(79,174,224,0.2); }
 
+    /* 끼니 탭 */
+    .meal-tab-row { display: flex; gap: 6px; margin-bottom: 12px; }
+    .meal-tab {
+      flex: 1; padding: 8px 4px; border-radius: 12px; border: 1.5px solid rgba(79,174,224,0.2);
+      background: rgba(255,255,255,0.5); font-size: 12px; font-weight: 700;
+      color: var(--text-light); cursor: pointer; transition: all 0.18s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .meal-tab.active {
+      background: linear-gradient(135deg, var(--sky4), var(--accent));
+      border-color: var(--accent); color: white;
+      box-shadow: 0 3px 10px rgba(79,174,224,0.3);
+    }
+
+    /* 끼니 그룹 헤더 */
+    .meal-group { margin-top: 4px; }
+    .meal-group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 4px 6px;
+    }
+    .meal-group-title {
+      font-size: 13px; font-weight: 700; color: var(--text-mid);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .meal-group-total {
+      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
+      color: var(--accent); background: rgba(79,174,224,0.10);
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .meal-divider {
+      height: 1px; background: linear-gradient(90deg, transparent, rgba(79,174,224,0.2), transparent);
+      margin: 10px 0 14px;
+    }
+
     .protein-preview {
       text-align: center; font-size: 12px; color: var(--text-light); margin-top: 8px; min-height: 18px;
     }
@@ -294,6 +328,11 @@
   <!-- 음식 입력 -->
   <div class="input-card">
     <div class="section-title">+ 먹은 음식 추가</div>
+    <div class="meal-tab-row">
+      <button class="meal-tab active" data-meal="breakfast" onclick="selectMeal('breakfast')">🌅 아침</button>
+      <button class="meal-tab" data-meal="lunch" onclick="selectMeal('lunch')">☀️ 점심</button>
+      <button class="meal-tab" data-meal="dinner" onclick="selectMeal('dinner')">🌙 저녁</button>
+    </div>
     <div class="input-row">
       <select id="foodSelect" onchange="onFoodChange(); updatePlaceholder()">
         <option value="">음식 선택</option>
@@ -425,6 +464,15 @@
   let todayFoods = [];
   let todayDbId = null;
   let isSaving = false; // race condition 방지
+  let selectedMeal = 'breakfast'; // 선택된 끼니
+
+  // ── 끼니 탭 선택 ──────────────────────────────
+  function selectMeal(meal) {
+    selectedMeal = meal;
+    document.querySelectorAll('.meal-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.meal === meal);
+    });
+  }
 
   const todayStr = () => {
     const d = new Date();
@@ -499,7 +547,7 @@
 
     const protein = calcProtein(key, val);
     const gram = key === 'egg' ? val * 50 : val; // 계란은 개수 저장 (표시용 gram은 개수)
-    todayFoods.push({ key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key], gram: val, unit: key === 'egg' ? '개' : 'g', protein });
+    todayFoods.push({ key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key], gram: val, unit: key === 'egg' ? '개' : 'g', protein, meal: selectedMeal });
 
     renderFoodList();
     updateGauge();
@@ -588,30 +636,72 @@
     }
   }
 
-  // ── 음식 목록 렌더 ─────────────────────────────
+  // ── 음식 목록 렌더 (끼니별 그룹) ───────────────
+  const MEAL_INFO = {
+    breakfast: { label: '아침', icon: '🌅' },
+    lunch:     { label: '점심', icon: '☀️' },
+    dinner:    { label: '저녁', icon: '🌙' }
+  };
+  const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
+
   function renderFoodList() {
     const list = document.getElementById('foodList');
     if (todayFoods.length === 0) {
       list.innerHTML = '<div class="empty-msg">아직 기록이 없어요 🥢</div>';
       return;
     }
-    list.innerHTML = todayFoods.map((f, i) => `
-      <div class="food-item">
-        <div class="food-left">
-          <span class="food-icon">${f.icon}</span>
-          <div>
-            <div class="food-name">${f.name}</div>
-            <div class="food-gram">${f.gram}${f.unit || "g"}</div>
+
+    // 끼니별로 그룹핑 (기존 데이터 meal 없으면 breakfast로)
+    const groups = { breakfast: [], lunch: [], dinner: [] };
+    todayFoods.forEach((f, i) => {
+      const m = f.meal || 'breakfast';
+      groups[m].push({ ...f, _idx: i });
+    });
+
+    // 데이터 있는 끼니만 렌더
+    const activeMeals = MEAL_ORDER.filter(m => groups[m].length > 0);
+
+    let html = '';
+    activeMeals.forEach((meal, groupIdx) => {
+      const items = groups[meal];
+      const mealTotal = items.reduce((s, f) => s + f.protein, 0);
+      const info = MEAL_INFO[meal];
+
+      // 끼니 그룹 구분선 (첫 번째 제외)
+      if (groupIdx > 0) {
+        html += '<div class="meal-divider"></div>';
+      }
+
+      html += `
+        <div class="meal-group">
+          <div class="meal-group-header">
+            <span class="meal-group-title">${info.icon} ${info.label}</span>
+            <span class="meal-group-total">${mealTotal.toFixed(1)}g</span>
+          </div>
+          <div class="food-list-inner">
+            ${items.map(f => `
+              <div class="food-item">
+                <div class="food-left">
+                  <span class="food-icon">${f.icon}</span>
+                  <div>
+                    <div class="food-name">${f.name}</div>
+                    <div class="food-gram">${f.gram}${f.unit || "g"}</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;">
+                  <span class="food-protein">+${f.protein}g</span>
+                  <button class="food-delete" data-idx="${f._idx}">×</button>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
-        <div style="display:flex;align-items:center;">
-          <span class="food-protein">+${f.protein}g</span>
-          <button class="food-delete" data-idx="${i}">×</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    });
 
-    // 이벤트 위임으로 삭제 처리 (onclick 인라인 대신)
+    list.innerHTML = html;
+
+    // 이벤트 위임으로 삭제 처리
     list.querySelectorAll('.food-delete').forEach(btn => {
       btn.addEventListener('click', () => deleteFood(parseInt(btn.dataset.idx)));
     });
