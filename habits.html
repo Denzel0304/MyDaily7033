@@ -194,9 +194,13 @@
     .check-dot.done {
       background: var(--purple-mid); border-color: var(--purple-mid);
       box-shadow: 0 2px 8px rgba(147,112,219,0.4);
+      color: white; font-size: 13px; font-weight: 700;
     }
-    .check-dot.done::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
-    .check-dot.future { opacity: 0.35; cursor: default; }
+    .check-dot.partial {
+      border-color: var(--purple-mid);
+      background: rgba(147,112,219,0.08);
+    }
+    .check-dot.future { opacity: 0.25; cursor: default; background: #f0f4f8; border-color: #e0eaf2; }
     .check-dot:not(.future):not(.done):active { transform: scale(0.85); }
 
     /* 진행 바 */
@@ -434,15 +438,15 @@
     @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
     @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
 
-    /* 삭제 버튼 (스와이프 힌트 대신 롱프레스 메뉴) */
+    /* 삭제 버튼 */
     .habit-row-header .del-btn {
-      background: none; border: none; font-size: 16px;
-      color: #c8d8e4; cursor: pointer; padding: 2px 4px;
-      border-radius: 6px; transition: color 0.15s;
-      display: none;
+      background: none; border: none; font-size: 15px;
+      color: #c8d8e4; cursor: pointer; padding: 4px 5px;
+      border-radius: 8px; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; flex-shrink: 0;
     }
-    .habit-row:hover .del-btn,
-    .habit-row.show-del .del-btn { display: block; }
+    .habit-row-header .del-btn:hover { background: #fee2e2; color: #ef4444; }
 
     /* 섹션 구분 (월간) */
     .month-nav {
@@ -548,12 +552,13 @@
       </div>
 
       <div class="goal-num-row">
-        <input class="num-input" id="goal-num" type="number" min="1" max="99" value="5" />
+        <input class="num-input" id="goal-num" type="number" min="1" max="7" placeholder="?" oninput="validateGoalNum()" />
         <span class="num-unit" id="goal-unit-label">회 / 주</span>
         <input class="num-unit-input" id="goal-unit-custom" type="text"
           placeholder="단위 (예: L, 분, 페이지)"
           style="display:none;" maxlength="10" />
       </div>
+      <div id="goal-num-error" style="display:none; color:#ef4444; font-size:12px; margin-top:6px; font-weight:600;">주 N회는 1~7 사이 숫자만 입력 가능해요.</div>
     </div>
 
     <button class="save-btn" onclick="saveHabit()">저장하기</button>
@@ -562,8 +567,8 @@
 
 <script>
 // ─── Supabase 설정 ───────────────────────────────────────
-const SUPABASE_URL = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const TABLE = 'zdaily_logs';
 
 async function sbFetch(method, body, params = '') {
@@ -585,22 +590,30 @@ async function sbFetch(method, body, params = '') {
 
 // ─── 아이콘 목록 ─────────────────────────────────────────
 const ICONS = [
-  // 건강/운동
+  // 운동/스포츠
   '🏃','🏋️','🧘','🚴','🏊','🤸','💪','🧗',
+  '⛹️','🤾','🏌️','🏇','🥊','🤼','🏂','🎿',
   // 음식/음료
   '💧','🥤','🍎','🥗','🥩','🥦','☕','🍵',
+  '🧃','🥛','🍳','🥑','🍇','🫖','🍱','🥕',
   // 공부/업무
   '📖','📝','💻','🎯','🧠','📚','✏️','🔬',
+  '🖊️','📐','🗒️','🔭','💼','🗂️','📊','⌨️',
   // 수면/회복
   '😴','🛌','🌙','⏰','🧸','🛁','🪥','💊',
+  '🩺','🩹','🧴','🪞','🌡️','🧹','🛏️','🫧',
   // 마음/명상
-  '🧘','🌿','🌸','🌻','🫁','❤️','🙏','✨',
-  // 취미/생활
-  '🎵','🎨','📷','🌱','🐾','🚶','🚗','✈️',
-  // 소통/관계
-  '📞','💌','🤝','👨‍👩‍👧','🎁','😊','🗣️','👂',
-  // 기타
-  '⭐','🔥','💡','🏆','🎉','🪄','🌈','💎'
+  '🌿','🌸','🌻','❤️','🙏','✨','🕯️','🪷',
+  '🫶','🌬️','🧩','🎋','🪴','🌊','☁️','🫐',
+  // 취미/창작
+  '🎵','🎨','📷','🌱','🐾','🎸','🎭','🖌️',
+  '📸','🎬','🎹','✂️','🧶','🪆','🎲','🎻',
+  // 이동/일상
+  '🚶','🚗','✈️','🚲','🛴','🐶','🐱','🌍',
+  '🏠','🛒','🌅','🚌','⛵','🎒','🧳','🚿',
+  // 동기/성취
+  '⭐','🔥','💡','🏆','🎉','🪄','🌈','💎',
+  '🚀','🎖️','🥇','🎗️','📌','🔑','🪙','⚡'
 ];
 
 let selectedIcon = ICONS[0];
@@ -626,18 +639,52 @@ function selectGoalType(el, type) {
   document.querySelectorAll('.goal-type-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   selectedGoalType = type;
+  const numInput = document.getElementById('goal-num');
   const unitLabel = document.getElementById('goal-unit-label');
   const unitCustom = document.getElementById('goal-unit-custom');
-  if (type === 'weekly') { unitLabel.textContent = '회 / 주'; unitLabel.style.display=''; unitCustom.style.display='none'; }
-  else if (type === 'daily_count') { unitLabel.textContent = '회 / 일'; unitLabel.style.display=''; unitCustom.style.display='none'; }
-  else { unitLabel.style.display='none'; unitCustom.style.display=''; }
+  const errMsg = document.getElementById('goal-num-error');
+  numInput.value = '';
+  errMsg.style.display = 'none';
+  if (type === 'weekly') {
+    unitLabel.textContent = '회 / 주'; unitLabel.style.display=''; unitCustom.style.display='none';
+    numInput.min = 1; numInput.max = 7;
+    errMsg.textContent = '주 N회는 1~7 사이 숫자만 입력 가능해요.';
+  } else if (type === 'daily_count') {
+    unitLabel.textContent = '회 / 일'; unitLabel.style.display=''; unitCustom.style.display='none';
+    numInput.min = 1; numInput.max = 99;
+  } else {
+    unitLabel.style.display='none'; unitCustom.style.display='';
+    numInput.min = 1; numInput.max = 9999;
+  }
+}
+
+function validateGoalNum() {
+  const type = selectedGoalType;
+  if (type !== 'weekly') return;
+  const val = parseInt(document.getElementById('goal-num').value);
+  const err = document.getElementById('goal-num-error');
+  if (isNaN(val) || val < 1 || val > 7) {
+    err.style.display = 'block';
+  } else {
+    err.style.display = 'none';
+  }
 }
 
 // ─── 모달 ─────────────────────────────────────────────────
 function openModal() {
   buildIconPicker();
+  selectedIcon = ICONS[0];
+  selectedGoalType = 'weekly';
+  document.querySelectorAll('.goal-type-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('[data-type="weekly"]').classList.add('selected');
   document.getElementById('habit-name-input').value = '';
-  document.getElementById('goal-num').value = 5;
+  document.getElementById('goal-num').value = '';
+  document.getElementById('goal-num').min = 1;
+  document.getElementById('goal-num').max = 7;
+  document.getElementById('goal-unit-label').textContent = '회 / 주';
+  document.getElementById('goal-unit-label').style.display = '';
+  document.getElementById('goal-unit-custom').style.display = 'none';
+  document.getElementById('goal-num-error').style.display = 'none';
   document.getElementById('modal').classList.add('open');
   setTimeout(() => document.getElementById('habit-name-input').focus(), 300);
 }
@@ -648,7 +695,11 @@ function handleOverlayClick(e) { if (e.target.id === 'modal') closeModal(); }
 async function saveHabit() {
   const name = document.getElementById('habit-name-input').value.trim();
   if (!name) { alert('습관 이름을 입력해주세요.'); return; }
-  const num = parseInt(document.getElementById('goal-num').value) || 1;
+  const num = parseInt(document.getElementById('goal-num').value);
+  if (isNaN(num) || num < 1) { alert('목표 수치를 입력해주세요.'); return; }
+  if (selectedGoalType === 'weekly' && (num < 1 || num > 7)) {
+    alert('주 N회는 1~7 사이 숫자만 입력 가능해요.'); return;
+  }
   const customUnit = document.getElementById('goal-unit-custom').value.trim() || '';
 
   const habitId = 'h_' + Date.now();
@@ -725,22 +776,42 @@ async function loadAll() {
 }
 
 // ─── 로그 토글 ────────────────────────────────────────────
-async function toggleLog(habitId, dateS, countTarget) {
-  // 해당 날짜의 기존 로그 확인
-  const existing = habitLogs.find(l =>
-    l.data.habit_id === habitId && l.log_date === dateS
-  );
+async function toggleLog(habitId, dateS) {
+  const def = habitDefs.find(d => d.data.habit_id === habitId);
+  if (!def) return;
+  const h = def.data;
+  const existing = habitLogs.find(l => l.data.habit_id === habitId && l.log_date === dateS);
+  const currentVal = existing ? (existing.data.value || 1) : 0;
+
+  let nextVal;
+  if (h.goal_type === 'daily_count') {
+    // 0 → 1 → 2 → ... → goal_value → 0
+    nextVal = currentVal >= h.goal_value ? 0 : currentVal + 1;
+  } else if (h.goal_type === 'daily_amount') {
+    // 0 → 25 → 50 → 75 → 100 → 0 (퍼센트)
+    const steps = [0, 25, 50, 75, 100];
+    const idx = steps.indexOf(currentVal);
+    nextVal = steps[(idx + 1) % steps.length];
+  } else {
+    // weekly: 0 → 1 → 0
+    nextVal = currentVal >= 1 ? 0 : 1;
+  }
 
   if (existing) {
-    // 삭제 (달성 취소)
-    await sbFetch('DELETE', null, `?id=eq.${existing.id}`);
-    habitLogs = habitLogs.filter(l => l.id !== existing.id);
-  } else {
-    // 추가 (달성)
+    if (nextVal === 0) {
+      await sbFetch('DELETE', null, `?id=eq.${existing.id}`);
+      habitLogs = habitLogs.filter(l => l.id !== existing.id);
+    } else {
+      const updated = { ...existing, data: { ...existing.data, value: nextVal } };
+      await sbFetch('PATCH', { data: updated.data }, `?id=eq.${existing.id}`);
+      const idx = habitLogs.findIndex(l => l.id === existing.id);
+      if (idx >= 0) habitLogs[idx] = updated;
+    }
+  } else if (nextVal > 0) {
     const body = {
       type: 'habit_log',
       log_date: dateS,
-      data: { habit_id: habitId, done: true, ts: new Date().toISOString() }
+      data: { habit_id: habitId, done: true, value: nextVal, ts: new Date().toISOString() }
     };
     const saved = await sbFetch('POST', body);
     if (saved && saved[0]) habitLogs.push(saved[0]);
@@ -754,12 +825,10 @@ function renderWeek() {
   const dates = getWeekDates(weekOffset);
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // 레이블
   const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
   document.getElementById('week-label').textContent =
     `${fmt(dates[0])} – ${fmt(dates[6])}`;
 
-  // 요일 헤더
   const hdr = document.getElementById('week-days-header');
   hdr.innerHTML = dates.map(d => {
     const isToday = dateStr(d) === dateStr(today);
@@ -781,23 +850,73 @@ function renderWeek() {
 
   list.innerHTML = habitDefs.map(def => {
     const h = def.data;
-    const doneCount = dates.filter(d => {
-      const ds = dateStr(d);
-      return habitLogs.some(l => l.data.habit_id === h.habit_id && l.log_date === ds);
-    }).length;
+
+    // 총 달성 계산
+    let doneCount = 0;
+    if (h.goal_type === 'daily_count') {
+      dates.forEach(d => {
+        const log = habitLogs.find(l => l.data.habit_id === h.habit_id && l.log_date === dateStr(d));
+        if (log) doneCount += (log.data.value || 1);
+      });
+    } else if (h.goal_type === 'daily_amount') {
+      dates.forEach(d => {
+        const log = habitLogs.find(l => l.data.habit_id === h.habit_id && l.log_date === dateStr(d));
+        if (log && (log.data.value || 0) >= 100) doneCount++;
+      });
+    } else {
+      doneCount = dates.filter(d => {
+        return habitLogs.some(l => l.data.habit_id === h.habit_id && l.log_date === dateStr(d));
+      }).length;
+    }
 
     const target = goalWeeklyTarget(h);
     const pct = Math.min(100, Math.round(doneCount / target * 100));
 
     const checks = dates.map(d => {
       const ds = dateStr(d);
-      const isFuture = d > today;
-      const isDone = habitLogs.some(l => l.data.habit_id === h.habit_id && l.log_date === ds);
-      let cls = 'check-dot';
-      if (isFuture) cls += ' future';
-      else if (isDone) cls += ' done';
-      const click = isFuture ? '' : `onclick="toggleLog('${h.habit_id}','${ds}',1)"`;
-      return `<div class="check-cell"><div class="${cls}" ${click}></div></div>`;
+      // 미래: 오늘 이후, 과거: 오늘 이전
+      const isPast = d < today;   // 과거 (오늘 미포함) → 비활성
+      const isFuture = d > today; // 미래 → 비활성
+      const isDisabled = isPast || isFuture; // 오늘만 활성화 (현재 주 기준)
+      // 현재 주가 아니면 모두 활성 (과거 주는 편집 가능)
+      const isCurrentWeek = weekOffset === 0;
+      const canClick = !isFuture && (!isCurrentWeek || !isPast);
+      // 실제로는 과거도 클릭 가능, 미래만 불가
+      const clickable = !isFuture;
+
+      const log = habitLogs.find(l => l.data.habit_id === h.habit_id && l.log_date === ds);
+      const val = log ? (log.data.value || 1) : 0;
+
+      let dotContent = '';
+      let dotCls = 'check-dot';
+      if (isFuture) {
+        dotCls += ' future';
+      } else if (h.goal_type === 'daily_count') {
+        const cpd = clicksPerDay(h);
+        if (val === 0) { /* empty */ }
+        else if (val >= cpd) { dotCls += ' done'; dotContent = '✓'; }
+        else {
+          dotCls += ' partial';
+          dotContent = `<span style="font-size:9px;font-weight:800;color:var(--purple-mid)">${val}/${cpd}</span>`;
+        }
+      } else if (h.goal_type === 'daily_amount') {
+        if (val === 0) { /* empty */ }
+        else if (val >= 100) { dotCls += ' done'; dotContent = '✓'; }
+        else {
+          dotCls += ' partial';
+          dotContent = `<svg width="28" height="28" viewBox="0 0 28 28" style="position:absolute;top:0;left:0;pointer-events:none">
+            <circle cx="14" cy="14" r="11" fill="none" stroke="#e0d0f8" stroke-width="2.5"/>
+            <circle cx="14" cy="14" r="11" fill="none" stroke="var(--purple-mid)" stroke-width="2.5"
+              stroke-dasharray="${2*Math.PI*11}" stroke-dashoffset="${2*Math.PI*11*(1-val/100)}"
+              stroke-linecap="round" transform="rotate(-90 14 14)"/>
+          </svg><span style="font-size:9px;font-weight:800;color:var(--purple-mid);position:relative">${val}%</span>`;
+        }
+      } else {
+        if (val >= 1) { dotCls += ' done'; dotContent = '✓'; }
+      }
+
+      const click = clickable ? `onclick="toggleLog('${h.habit_id}','${ds}')"` : '';
+      return `<div class="check-cell"><div class="${dotCls}" ${click} style="position:relative;display:flex;align-items:center;justify-content:center">${dotContent}</div></div>`;
     }).join('');
 
     return `<div class="habit-row" id="row-${h.habit_id}">
@@ -808,7 +927,7 @@ function renderWeek() {
           <div class="habit-goal-label">${goalLabel(h)}</div>
         </div>
         <div class="habit-progress-text">${doneCount}/${target}</div>
-        <button class="del-btn" onclick="deleteHabit('${h.habit_id}')">🗑</button>
+        <button class="del-btn" onclick="deleteHabit('${h.habit_id}')" title="삭제">🗑️</button>
       </div>
       <div class="habit-week-checks">${checks}</div>
       <div class="habit-prog-bar-wrap">
@@ -821,9 +940,16 @@ function renderWeek() {
 }
 
 function goalWeeklyTarget(h) {
-  if (h.goal_type === 'weekly') return h.goal_value;
-  if (h.goal_type === 'daily_count') return 7; // 매일이 목표
+  if (h.goal_type === 'weekly') return h.goal_value;       // 주 N회 → N
+  if (h.goal_type === 'daily_count') return 7 * h.goal_value; // 하루 N회 → 7*N
+  if (h.goal_type === 'daily_amount') return 7;            // 하루 N량 → 7칸
   return 7;
+}
+
+// 하루 기준 몇 번 탭해야 1칸이 채워지는지 (daily_count용)
+function clicksPerDay(h) {
+  if (h.goal_type === 'daily_count') return h.goal_value;
+  return 1;
 }
 
 function goalLabel(h) {
@@ -880,7 +1006,8 @@ function renderMonth() {
       else cls += ' miss';
       if (isToday) cls += ' today-dot';
 
-      const click = isFuture ? '' : `onclick="toggleLog('${h.habit_id}','${ds}',1)"`;
+      const click = isFuture ? '' : `onclick="toggleLog('${h.habit_id}','${ds}')"`;
+
       return `<div class="${cls}" ${click}>${day}</div>`;
     }).join('');
 
