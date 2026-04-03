@@ -631,10 +631,26 @@
         const rows = await sbFetch('zdaily_logs', { method: 'POST', body: JSON.stringify(payload) });
         if (rows && rows.length > 0) todayDbId = rows[0].id;
       }
+      // 14일 초과 기록 삭제
+      await pruneOldLogs();
     } catch(e) {
       console.warn('저장 실패, 로컬에만 저장됨', e);
     } finally {
       isSaving = false;
+    }
+  }
+
+  // 14일치만 유지, 초과분 삭제
+  async function pruneOldLogs() {
+    try {
+      const all = await sbFetch('zdaily_logs?type=eq.protein&order=log_date.desc&select=id,log_date');
+      if (!all || all.length <= 14) return;
+      const toDelete = all.slice(14); // 15번째 이후 (오래된 것)
+      for (const row of toDelete) {
+        await sbFetch(`zdaily_logs?id=eq.${row.id}`, { method: 'DELETE' });
+      }
+    } catch(e) {
+      console.warn('오래된 기록 삭제 실패', e);
     }
   }
 
