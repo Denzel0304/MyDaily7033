@@ -1033,39 +1033,107 @@ function getWeekDates(offset = 0) {
   return Array.from({length:7}, (_,i) => addDays(monday, i));
 }
 
-function shiftWeek(dir) {
+async function shiftWeek(dir) {
   if (dir > 0 && weekOffset >= 0) return; // 이번 주 이후로는 이동 불가
   weekOffset += dir;
+  await loadWeekLogs();
   renderWeek();
 }
-function shiftMonth(dir) { monthOffset += dir; renderMonth(); }
+async function shiftMonth(dir) {
+  monthOffset += dir;
+  monthLogsKey = null; // 캐시 초기화 → 새 달 강제 로드
+  await loadMonthLogs();
+  renderMonth();
+}
 
 // ─── 전체 데이터 로드 ─────────────────────────────────────
 let habitDefs = [];
-let habitLogs = [];  // type=habit_log
+let habitLogs = [];       // 주간용 로그 (현재 주 기준으로 필요한 범위)
+let monthLogs = [];       // 월간용 로그 (현재 보고 있는 달 캐시)
+let monthLogsKey = null;  // 캐시된 달 키 'YYYY-MM'
 
 async function loadAll() {
   try {
+    // habit_def만 불러옴 (habit_log는 주간/월간 각각 따로 로드)
     const rows = await sbFetch('GET', null,
-      `?type=in.("habit_def","habit_log")&order=created_at.asc&select=*`
+      `?type=eq.habit_def&order=created_at.asc&select=*`
     );
-    habitDefs = (rows || []).filter(r => r.type === 'habit_def')
-      .reduce((acc, r) => {
-        // deduplicate by habit_id, keep latest definition
-        const id = r.data.habit_id;
-        if (!acc[id] || r.id > acc[id].id) acc[id] = r;
-        return acc;
-      }, {});
+    habitDefs = (rows || []).reduce((acc, r) => {
+      const id = r.data.habit_id;
+      if (!acc[id] || r.id > acc[id].id) acc[id] = r;
+      return acc;
+    }, {});
     habitDefs = Object.values(habitDefs).filter(r => !r.data.deleted)
       .sort((a, b) => (a.data.sort_order ?? 999) - (b.data.sort_order ?? 999));
 
-    habitLogs = (rows || []).filter(r => r.type === 'habit_log');
+    await loadWeekLogs();
     renderWeek();
-    renderMonth();
+    // 월간 탭은 탭 전환 시 로드하므로 초기에는 렌더만 (데이터 없어도 구조 표시)
   } catch(e) {
     console.error(e);
     document.getElementById('week-habits-list').innerHTML =
       `<div class="empty-state"><div class="empty-icon">⚠️</div><p>연결 오류: Supabase URL/KEY를 확인해주세요.</p></div>`;
+  }
+}
+
+// 주간 로그 로드 (현재 weekOffset 기준 ±1주 범위)
+async function loadWeekLogs() {
+  const dates = getWeekDates(weekOffset);
+  const from = dateStr(dates[0]);
+  const to = dateStr(dates[6]);
+  const rows = await sbFetch('GET', null,
+    `?type=eq.habit_log&log_date=gte.${from}&log_date=lte.${to}&select=*`
+  );
+  habitLogs = rows || [];
+}
+
+// 월간 로그 로드 (monthOffset 기준, 캐시 활용)
+async function loadMonthLogs() {
+  const today = new Date();
+  const base = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const y = base.getFullYear(), m = base.getMonth();
+  const key = `${y}-${pad(m+1)}`;
+  if (monthLogsKey === key) return; // 이미 캐시됨
+
+  const from = `${y}-${pad(m+1)}-01`;
+  const lastDay = new Date(y, m+1, 0).getDate();
+  const to = `${y}-${pad(m+1)}-${pad(lastDay)}`;
+
+  const rows = await sbFetch('GET', null,
+    `?type=eq.habit_log&log_date=gte.${from}&log_date=lte.${to}&select=*`
+  );
+  monthLogs = rows || [];
+  monthLogsKey = key;
+
+  // 12달 초과 시 가장 오래된 달 로그 삭제
+  await pruneOldMonths();
+}
+
+// 13번째 달이 추가되면 가장 오래된 달 로그 삭제
+async function pruneOldMonths() {
+  try {
+    // 전체 habit_log의 distinct log_date 중 가장 오래된 달 확인
+    const rows = await sbFetch('GET', null,
+      `?type=eq.habit_log&select=log_date&order=log_date.asc`
+    );
+    if (!rows || rows.length === 0) return;
+
+    // 달(YYYY-MM) 집합 추출
+    const months = [...new Set(rows.map(r => r.log_date.slice(0,7)))].sort();
+    if (months.length <= 12) return;
+
+    // 13달 이상이면 가장 오래된 달 삭제
+    const oldest = months[0];
+    const from = `${oldest}-01`;
+    const [oy, om] = oldest.split('-').map(Number);
+    const lastDay = new Date(oy, om, 0).getDate();
+    const to = `${oldest}-${pad(lastDay)}`;
+    await sbFetch('DELETE', null,
+      `?type=eq.habit_log&log_date=gte.${from}&log_date=lte.${to}`
+    );
+    console.log(`[prune] 오래된 달 삭제: ${oldest}`);
+  } catch(e) {
+    console.warn('[prune] 삭제 실패:', e);
   }
 }
 
@@ -1111,7 +1179,8 @@ async function toggleLog(habitId, dateS) {
     if (saved && saved[0]) habitLogs.push(saved[0]);
   }
   renderWeek();
-  renderMonth();
+  // 이번달 캐시 무효화 (주간에서 수정한 날짜가 현재 달일 수 있으므로)
+  monthLogsKey = null;
 }
 
 // ─── 주간 렌더 ────────────────────────────────────────────
@@ -1257,15 +1326,16 @@ function clicksPerDay(h) {
 
 function goalLabel(h) {
   const dpw = h.days_per_week || 7;
-  if (h.goal_type === 'weekly') return `주 ${h.goal_value}회 목표`;
-  if (h.goal_type === 'daily_count') return `하루 ${h.goal_value}회 · 주 ${dpw}일 목표`;
-  return `하루 ${h.goal_value}${h.goal_unit || ''} · 주 ${dpw}일 목표`;
+  if (h.goal_type === 'weekly') return `주 ${h.goal_value}회`;
+  if (h.goal_type === 'daily_count') return `하루 ${h.goal_value}회 · 주 ${dpw}일`;
+  return `하루 ${h.goal_value}${h.goal_unit || ''} · 주 ${dpw}일`;
 }
 
 
 // ─── 하루 달성도(0~100%) 계산 헬퍼 ──────────────────────
-function dayAchievePct(h, ds) {
-  const log = habitLogs.find(l => l.data.habit_id === h.habit_id && l.log_date === ds);
+function dayAchievePct(h, ds, logs) {
+  const src = logs || habitLogs;
+  const log = src.find(l => l.data.habit_id === h.habit_id && l.log_date === ds);
   const val = log ? (log.data.value || 0) : 0;
   if (h.goal_type === 'weekly') return val >= 1 ? 100 : 0;
   if (h.goal_type === 'daily_count') return val === 0 ? 0 : Math.min(100, Math.round(val / h.goal_value * 100));
@@ -1309,7 +1379,7 @@ function renderMonth() {
 
       if (!isFuture) {
         totalDays++;
-        const pct = dayAchievePct(h, ds);
+        const pct = dayAchievePct(h, ds, monthLogs);
         totalPctSum += pct;
       }
 
@@ -1317,7 +1387,7 @@ function renderMonth() {
         return `<div class="month-dot future" style="cursor:default"><div class="month-dot-label" style="color:var(--text-light)">${day}</div></div>`;
       }
 
-      const rawPct = dayAchievePct(h, ds);
+      const rawPct = dayAchievePct(h, ds, monthLogs);
       const stepPct = toStep10(rawPct);
       // 클릭 없음 — 달력은 읽기 전용
 
@@ -1366,11 +1436,15 @@ async function deleteHabit(habitId) {
 }
 
 // ─── 탭 전환 ─────────────────────────────────────────────
-function switchTab(tab) {
+async function switchTab(tab) {
   document.getElementById('tab-week').classList.toggle('active', tab === 'week');
   document.getElementById('tab-month').classList.toggle('active', tab === 'month');
   document.getElementById('view-week').style.display = tab === 'week' ? '' : 'none';
   document.getElementById('view-month').style.display = tab === 'month' ? '' : 'none';
+  if (tab === 'month') {
+    await loadMonthLogs();
+    renderMonth();
+  }
 }
 
 // ─── 초기 로드 ────────────────────────────────────────────
