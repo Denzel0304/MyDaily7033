@@ -215,15 +215,22 @@
     /* 진행 바 */
     .habit-prog-bar-wrap {
       padding: 0 14px 13px; margin-top: -4px;
+      display: flex; align-items: center; gap: 8px;
     }
     .prog-bar-bg {
-      width: 100%; height: 5px; border-radius: 99px;
+      flex: 1; height: 5px; border-radius: 99px;
       background: #e8f0f7; overflow: hidden;
     }
     .prog-bar-fill {
       height: 100%; border-radius: 99px;
       background: linear-gradient(90deg, #c4b5fd, #9370db);
       transition: width 0.4s ease;
+    }
+    .prog-bar-pct {
+      font-family: 'Nunito', sans-serif;
+      font-size: 10px; font-weight: 800;
+      color: var(--purple-mid);
+      width: 38px; text-align: right; flex-shrink: 0;
     }
 
     /* 월간 뷰 */
@@ -437,7 +444,7 @@
     /* 삭제/수정/순서 버튼 */
     .habit-row-header .del-btn,
     .habit-row-header .edit-btn,
-    .habit-row-header .sort-btn {
+    .habit-row-header .drag-handle {
       background: none; border: none; font-size: 15px;
       cursor: pointer; padding: 4px 5px;
       border-radius: 8px; transition: all 0.15s;
@@ -448,9 +455,22 @@
     .habit-row-header .del-btn:hover { background: #fee2e2; color: #ef4444; }
     .habit-row-header .edit-btn { color: #b0c8d8; font-size: 13px; }
     .habit-row-header .edit-btn:hover { background: var(--soft-purple); color: var(--purple-mid); }
-    .habit-row-header .sort-btn { color: #c8d8e4; font-size: 11px; display: flex; flex-direction: column; gap: 1px; align-items: center; justify-content: center; width: 22px; }
-    .habit-row-header .sort-btn span { line-height: 1; font-size: 10px; color: #b0c4d4; }
-    .habit-row-header .sort-btn:hover span { color: var(--purple-mid); }
+    .habit-row-header .drag-handle {
+      cursor: grab; color: #c8d8e4; flex-direction: column; gap: 3px;
+    }
+    .habit-row-header .drag-handle:active { cursor: grabbing; color: var(--purple-mid); }
+    .drag-handle-lines { display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
+    .drag-handle-lines span { display: block; width: 16px; height: 2px; border-radius: 2px; background: currentColor; }
+
+    /* 드래그 중인 카드 */
+    .habit-row.dragging {
+      opacity: 0.4; transform: scale(0.98);
+      box-shadow: none; transition: none;
+    }
+    .habit-row.drag-over {
+      border-color: var(--purple-mid);
+      box-shadow: 0 0 0 2px rgba(147,112,219,0.3);
+    }
 
     /* 배터리 셀 (월간) */
     .month-dot {
@@ -458,7 +478,7 @@
       border-radius: 6px;
       position: relative; overflow: hidden;
       display: flex; align-items: flex-end; justify-content: center;
-      cursor: pointer;
+      cursor: default;
       transition: all 0.15s;
     }
     .month-dot-label {
@@ -838,13 +858,145 @@ async function saveHabit() {
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
-// ─── 순서 이동 ────────────────────────────────────────────
+// ─── 순서 이동 (드래그) ──────────────────────────────────
 async function moveHabit(habitId, dir) {
   const idx = habitDefs.findIndex(d => d.data.habit_id === habitId);
   const swapIdx = idx + dir;
   if (swapIdx < 0 || swapIdx >= habitDefs.length) return;
   const a = habitDefs[idx], b = habitDefs[swapIdx];
   const aOrder = a.data.sort_order ?? idx, bOrder = b.data.sort_order ?? swapIdx;
+  try {
+    await sbFetch('PATCH', { data: { ...a.data, sort_order: bOrder } }, `?id=eq.${a.id}`);
+    await sbFetch('PATCH', { data: { ...b.data, sort_order: aOrder } }, `?id=eq.${b.id}`);
+    await loadAll();
+  } catch(e) { console.error(e); }
+}
+
+// ─── 드래그 앤 드롭 순서 변경 ────────────────────────────
+let dragState = null; // { habitId, startY, clone, origEl }
+
+function initDragHandles() {
+  document.getElementById('week-habits-list').addEventListener('touchstart', onDragTouchStart, { passive: false });
+  document.getElementById('week-habits-list').addEventListener('mousedown', onDragMouseDown);
+}
+
+function getHabitRow(el) {
+  return el.closest('.habit-row');
+}
+
+function getHandle(el) {
+  return el.closest('.drag-handle');
+}
+
+// ── 터치 ──
+function onDragTouchStart(e) {
+  const handle = getHandle(e.target);
+  if (!handle) return;
+  e.preventDefault();
+  const row = handle.closest('.habit-row');
+  if (!row) return;
+  startDrag(row, e.touches[0].clientY);
+
+  document.addEventListener('touchmove', onDragTouchMove, { passive: false });
+  document.addEventListener('touchend', onDragTouchEnd, { once: true });
+}
+
+function onDragTouchMove(e) {
+  if (!dragState) return;
+  e.preventDefault();
+  moveDrag(e.touches[0].clientY);
+}
+
+function onDragTouchEnd() {
+  document.removeEventListener('touchmove', onDragTouchMove);
+  endDrag();
+}
+
+// ── 마우스 ──
+function onDragMouseDown(e) {
+  const handle = getHandle(e.target);
+  if (!handle) return;
+  const row = handle.closest('.habit-row');
+  if (!row) return;
+  startDrag(row, e.clientY);
+
+  document.addEventListener('mousemove', onDragMouseMove);
+  document.addEventListener('mouseup', onDragMouseUp, { once: true });
+}
+
+function onDragMouseMove(e) {
+  if (!dragState) return;
+  moveDrag(e.clientY);
+}
+
+function onDragMouseUp() {
+  document.removeEventListener('mousemove', onDragMouseMove);
+  endDrag();
+}
+
+// ── 공통 드래그 로직 ──
+function startDrag(row, clientY) {
+  const habitId = row.dataset.habitId;
+  row.classList.add('dragging');
+
+  // 유령 클론 생성
+  const rect = row.getBoundingClientRect();
+  const clone = row.cloneNode(true);
+  clone.style.cssText = `
+    position: fixed; z-index: 999; pointer-events: none;
+    width: ${rect.width}px; left: ${rect.left}px; top: ${rect.top}px;
+    opacity: 0.85; box-shadow: 0 12px 32px rgba(147,112,219,0.35);
+    transform: scale(1.02); border-radius: 14px;
+    background: rgba(255,255,255,0.95);
+    transition: none;
+  `;
+  document.body.appendChild(clone);
+
+  dragState = { habitId, startY: clientY, cloneTop: rect.top, clone, origEl: row };
+}
+
+function moveDrag(clientY) {
+  if (!dragState) return;
+  const dy = clientY - dragState.startY;
+  dragState.clone.style.top = (dragState.cloneTop + dy) + 'px';
+
+  // 어느 row 위에 있는지 감지
+  const list = document.getElementById('week-habits-list');
+  const rows = [...list.querySelectorAll('.habit-row:not(.dragging)')];
+  let overRow = null;
+  for (const r of rows) {
+    const rect = r.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    if (clientY >= rect.top && clientY <= rect.bottom) { overRow = r; break; }
+  }
+  rows.forEach(r => r.classList.remove('drag-over'));
+  if (overRow) overRow.classList.add('drag-over');
+}
+
+async function endDrag() {
+  if (!dragState) return;
+  const { habitId, clone, origEl } = dragState;
+  clone.remove();
+  origEl.classList.remove('dragging');
+
+  const list = document.getElementById('week-habits-list');
+  const overRow = list.querySelector('.habit-row.drag-over');
+  if (overRow) {
+    overRow.classList.remove('drag-over');
+    const targetId = overRow.dataset.habitId;
+    if (targetId && targetId !== habitId) {
+      await swapHabits(habitId, targetId);
+    }
+  }
+  dragState = null;
+}
+
+async function swapHabits(idA, idB) {
+  const a = habitDefs.find(d => d.data.habit_id === idA);
+  const b = habitDefs.find(d => d.data.habit_id === idB);
+  if (!a || !b) return;
+  const aOrder = a.data.sort_order ?? 0;
+  const bOrder = b.data.sort_order ?? 0;
   try {
     await sbFetch('PATCH', { data: { ...a.data, sort_order: bOrder } }, `?id=eq.${a.id}`);
     await sbFetch('PATCH', { data: { ...b.data, sort_order: aOrder } }, `?id=eq.${b.id}`);
@@ -874,7 +1026,11 @@ function getWeekDates(offset = 0) {
   return Array.from({length:7}, (_,i) => addDays(monday, i));
 }
 
-function shiftWeek(dir) { weekOffset += dir; renderWeek(); }
+function shiftWeek(dir) {
+  if (dir > 0 && weekOffset >= 0) return; // 이번 주 이후로는 이동 불가
+  weekOffset += dir;
+  renderWeek();
+}
 function shiftMonth(dir) { monthOffset += dir; renderMonth(); }
 
 // ─── 전체 데이터 로드 ─────────────────────────────────────
@@ -960,6 +1116,13 @@ function renderWeek() {
   document.getElementById('week-label').textContent =
     `${fmt(dates[0])} – ${fmt(dates[6])}`;
 
+  // 미래 이동 버튼 비활성화 스타일
+  const nextBtn = document.querySelector('.week-nav-btn:last-child');
+  if (nextBtn) {
+    nextBtn.style.opacity = weekOffset >= 0 ? '0.25' : '1';
+    nextBtn.style.pointerEvents = weekOffset >= 0 ? 'none' : '';
+  }
+
   const hdr = document.getElementById('week-days-header');
   hdr.innerHTML = dates.map(d => {
     const isToday = dateStr(d) === dateStr(today);
@@ -990,9 +1153,10 @@ function renderWeek() {
         if (log) doneCount += (log.data.value || 1);
       });
     } else if (h.goal_type === 'daily_amount') {
+      // partial 포함: 100% 기준으로 비율 합산
       dates.forEach(d => {
         const log = habitLogs.find(l => l.data.habit_id === h.habit_id && l.log_date === dateStr(d));
-        if (log && (log.data.value || 0) >= 100) doneCount++;
+        if (log) doneCount += Math.min(100, log.data.value || 0) / 100;
       });
     } else {
       doneCount = dates.filter(d => {
@@ -1001,7 +1165,8 @@ function renderWeek() {
     }
 
     const target = goalWeeklyTarget(h);
-    const pct = Math.min(100, Math.round(doneCount / target * 100));
+    const pctRaw = Math.min(100, doneCount / target * 100);
+    const pct = pctRaw; // CSS width용 (소수 OK)
 
     const checks = dates.map(d => {
       const ds = dateStr(d);
@@ -1043,24 +1208,30 @@ function renderWeek() {
       return `<div class="check-cell"><div class="${dotCls}" ${click} style="position:relative;display:flex;align-items:center;justify-content:center">${dotContent}</div></div>`;
     }).join('');
 
-    return `<div class="habit-row" id="row-${h.habit_id}">
+    const pctRaw = Math.min(100, doneCount / target * 100);
+    const pctStr = (pctRaw * 10) % 10 === 0
+      ? Math.round(pctRaw) + '%'
+      : pctRaw.toFixed(1) + '%';
+    return `<div class="habit-row" id="row-${h.habit_id}" data-habit-id="${h.habit_id}">
       <div class="habit-row-header">
+        <div class="drag-handle" data-habit-id="${h.habit_id}" title="꾹 누르고 드래그">
+          <div class="drag-handle-lines"><span></span><span></span><span></span></div>
+        </div>
         <div class="habit-icon-badge">${h.icon}</div>
         <div class="habit-info">
           <div class="habit-name">${h.name}</div>
           <div class="habit-goal-label">${goalLabel(h)}</div>
         </div>
         <div class="habit-progress-text">${doneCount}/${target}</div>
-        <button class="sort-btn" onclick="moveHabit('${h.habit_id}',-1)" title="위로" style="font-size:10px;color:#b0c4d4;">▲</button>
-        <button class="sort-btn" onclick="moveHabit('${h.habit_id}',1)" title="아래로" style="font-size:10px;color:#b0c4d4;">▼</button>
         <button class="edit-btn" onclick="openEditModal('${h.habit_id}')" title="수정">✏️</button>
         <button class="del-btn" onclick="deleteHabit('${h.habit_id}')" title="삭제">🗑️</button>
       </div>
       <div class="habit-week-checks">${checks}</div>
       <div class="habit-prog-bar-wrap">
         <div class="prog-bar-bg">
-          <div class="prog-bar-fill" style="width:${pct}%"></div>
+          <div class="prog-bar-fill" style="width:${pctRaw}%"></div>
         </div>
+        <div class="prog-bar-pct">${pctStr}</div>
       </div>
     </div>`;
   }).join('');
@@ -1138,12 +1309,12 @@ function renderMonth() {
       }
 
       if (isFuture) {
-        return `<div class="month-dot future"><div class="month-dot-label" style="color:var(--text-light)">${day}</div></div>`;
+        return `<div class="month-dot future" style="cursor:default"><div class="month-dot-label" style="color:var(--text-light)">${day}</div></div>`;
       }
 
       const rawPct = dayAchievePct(h, ds);
       const stepPct = toStep10(rawPct);
-      const click = `onclick="toggleLog('${h.habit_id}','${ds}')"`;
+      // 클릭 없음 — 달력은 읽기 전용
 
       // 배터리 fill 높이 = stepPct%
       const fillHeight = stepPct;
@@ -1151,14 +1322,17 @@ function renderMonth() {
       const labelColor = stepPct >= 60 ? 'white' : (stepPct > 0 ? 'var(--purple-dark)' : 'var(--text-light)');
       let cls = 'month-dot' + (rawPct === 0 ? ' miss' : '') + (isToday ? ' today-dot' : '');
 
-      return `<div class="${cls}" ${click}>
+      return `<div class="${cls}" style="cursor:default">
         <div class="month-dot-fill" style="height:${fillHeight}%"></div>
         <div class="month-dot-label" style="color:${labelColor}">${day}</div>
       </div>`;
     }).join('');
 
-    // 전체 달성률: 각 날 달성도 합 / (totalDays * 100) * 100
-    const overallPct = totalDays > 0 ? Math.round(totalPctSum / (totalDays * 100) * 100) : 0;
+    // 전체 달성률: 각 날 달성도 합 / (지나간 날수 * 100) — 소수점 1자리
+    const overallRaw = totalDays > 0 ? totalPctSum / (totalDays * 100) * 100 : 0;
+    const overallPct = overallRaw % 1 < 0.05 && overallRaw % 1 > -0.05
+      ? Math.round(overallRaw) + '%'
+      : overallRaw.toFixed(1) + '%';
 
     return `<div class="month-habit-card">
       <div class="month-habit-header">
@@ -1167,7 +1341,7 @@ function renderMonth() {
           <div class="month-habit-name">${h.name}</div>
           <div class="month-habit-rate">${goalLabel(h)}</div>
         </div>
-        <div class="month-rate-badge">${overallPct}%</div>
+        <div class="month-rate-badge">${overallPct}</div>
       </div>
       <div class="month-dot-grid">
         ${dayHeaders}${blanks}${dayCells}
@@ -1196,6 +1370,7 @@ function switchTab(tab) {
 
 // ─── 초기 로드 ────────────────────────────────────────────
 loadAll();
+initDragHandles();
 </script>
 </body>
 </html>
