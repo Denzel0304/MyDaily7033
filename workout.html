@@ -287,14 +287,17 @@
      TAB 3 — 설정
   ══════════════════════════════ */
   .day-tabs {
-    display: flex; gap: 6px; margin-bottom: 16px;
-    overflow-x: auto; padding-bottom: 4px;
+    display: flex; gap: 5px; margin-bottom: 16px;
+    overflow-x: visible; padding-bottom: 4px;
+    justify-content: space-between;
   }
   .day-tab {
-    padding: 7px 14px; border-radius: 20px;
+    flex: 1;
+    padding: 7px 4px; border-radius: 20px;
     border: 1.5px solid var(--gray-200); background: var(--white);
     font-size: 13px; font-weight: 700; color: var(--gray-400);
     cursor: pointer; white-space: nowrap; transition: all .2s;
+    text-align: center;
   }
   .day-tab.active {
     border-color: var(--pink-btn); background: var(--pink-btn); color: white;
@@ -346,7 +349,12 @@
     color: var(--gray-800); outline: none; background: white;
   }
   .form-select:focus { border-color: var(--pink-btn); }
-  .add-btn {
+  .form-input-sm {
+    width: 58px !important; padding: 10px 6px; text-align: center;
+  }
+  .form-select-sm {
+    width: 54px !important; padding: 10px 4px; text-align: center;
+  }
     width: 100%; padding: 12px; border-radius: var(--radius-sm);
     background: linear-gradient(135deg, var(--pink-btn), var(--pink-dark));
     color: white; font-size: 14px; font-weight: 800;
@@ -502,32 +510,28 @@
       <div class="form-row">
         <div class="form-group flex-1">
           <div class="form-label">운동 이름</div>
-          <input class="form-input" id="fName" placeholder="레그 익스텐션" />
-        </div>
-        <div class="form-group">
-          <div class="form-label">이모지</div>
-          <input class="form-input" id="fEmoji" placeholder="🦵" style="width:60px;text-align:center" />
+          <input class="form-input" id="fName" placeholder="" />
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group flex-1">
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="form-group">
           <div class="form-label">세트 수</div>
-          <input class="form-input" id="fSets" type="number" placeholder="3" min="1" max="10" inputmode="numeric" />
+          <input class="form-input form-input-sm" id="fSets" type="number" placeholder="" min="1" max="10" inputmode="numeric" />
         </div>
-        <div class="form-group flex-1">
+        <div class="form-group">
           <div class="form-label">기본 중량</div>
-          <input class="form-input" id="fWeight" type="number" placeholder="45" step="0.5" inputmode="decimal" />
+          <input class="form-input form-input-sm" id="fWeight" type="number" placeholder="" step="0.5" inputmode="decimal" />
         </div>
         <div class="form-group">
           <div class="form-label">단위</div>
-          <select class="form-select" id="fUnit">
+          <select class="form-select form-select-sm" id="fUnit">
             <option value="lb">lb</option>
             <option value="kg">kg</option>
           </select>
         </div>
-        <div class="form-group flex-1">
+        <div class="form-group">
           <div class="form-label">기본 횟수</div>
-          <input class="form-input" id="fReps" type="number" placeholder="15" min="1" inputmode="numeric" />
+          <input class="form-input form-input-sm" id="fReps" type="number" placeholder="" min="1" inputmode="numeric" />
         </div>
       </div>
       <button class="add-btn" onclick="addExercise()">추가하기</button>
@@ -963,9 +967,11 @@ function renderRecentLogs() {
 // ══════════════════════════════
 function buildSettingDayTabs() {
   const container = document.getElementById('dayTabs');
-  container.innerHTML = DAYS_EN.map((d,i) => `
-    <button class="day-tab ${d===activeSettingDay?'active':''}"
-      onclick="selectSettingDay('${d}',this)">${DAYS[i]}</button>
+  // 월~일 순서로 표시 (월=1, 화=2, ..., 일=0)
+  const MON_FIRST_IDX = [1,2,3,4,5,6,0]; // DAYS/DAYS_EN 인덱스 순서
+  container.innerHTML = MON_FIRST_IDX.map(i => `
+    <button class="day-tab ${DAYS_EN[i]===activeSettingDay?'active':''}"
+      onclick="selectSettingDay('${DAYS_EN[i]}',this)">${DAYS[i]}</button>
   `).join('');
 }
 
@@ -1008,7 +1014,7 @@ function renderSettingList() {
 
 function addExercise() {
   const name    = document.getElementById('fName').value.trim();
-  const emoji   = document.getElementById('fEmoji').value.trim() || '💪';
+  const emoji   = '💪';
   const sets    = parseInt(document.getElementById('fSets').value) || 3;
   const weight  = parseFloat(document.getElementById('fWeight').value) || 0;
   const unit    = document.getElementById('fUnit').value;
@@ -1022,8 +1028,10 @@ function addExercise() {
   saveSchedule(schedule);
 
   // 폼 초기화
-  ['fName','fEmoji','fSets','fWeight','fReps'].forEach(id => document.getElementById(id).value='');
+  ['fName','fSets','fWeight','fReps'].forEach(id => document.getElementById(id).value='');
   renderSettingList();
+  // 오늘 요일과 같은 요일에 추가된 경우 오늘 운동 탭도 갱신
+  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
   showToast(`✅ ${name} 추가됨`);
 }
 
@@ -1032,6 +1040,7 @@ function deleteExercise(idx) {
   schedule[activeSettingDay].splice(idx, 1);
   saveSchedule(schedule);
   renderSettingList();
+  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
 }
 
 // ── 탭 전환 ──────────────────────────────────
