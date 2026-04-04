@@ -568,7 +568,7 @@
 <script>
 // ── Supabase ──────────────────────────────────
 const SUPABASE_URL = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwMzExMTMsImV4cCI6MjA1NzYwNzExM30.kJKfBpqPMifGEIjb6kP5gT0_wYy17KFrtktuukQMqgA';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
 const TABLE = 'zdaily_logs';
 const KEEP_DAYS = 60; // 보존 일수
 
@@ -1059,7 +1059,11 @@ function addExercise() {
   [nameEl, setsEl, weightEl, repsEl].forEach(el => el.classList.remove('error'));
   renderSettingList();
   // 오늘 요일과 같은 요일에 추가된 경우 오늘 운동 탭도 갱신
-  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
+  // 로컬 스냅샷 초기화 → 설정값(defaultWeight/Unit/Reps)이 그대로 반영되도록
+  if (activeSettingDay === DAYS_EN[todayDow()]) {
+    localStorage.removeItem(`workout_today_${todayStr()}`);
+    buildTodayList();
+  }
   showToast(`✅ ${name} 추가됨`);
 }
 
@@ -1068,7 +1072,10 @@ function deleteExercise(idx) {
   schedule[activeSettingDay].splice(idx, 1);
   saveSchedule(schedule);
   renderSettingList();
-  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
+  if (activeSettingDay === DAYS_EN[todayDow()]) {
+    localStorage.removeItem(`workout_today_${todayStr()}`);
+    buildTodayList();
+  }
 }
 
 // ── 탭 전환 ──────────────────────────────────
