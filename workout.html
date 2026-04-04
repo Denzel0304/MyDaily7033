@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>운동 기록 — MyDaily7</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #c8e6f5;
+    --sky-dark: #a8d4e8;
+    --pink: #f4a0a0;
+    --pink-light: #fce4e4;
+    --pink-dark: #e07070;
+    --pink-btn: #f08080;
+    --white: #ffffff;
+    --gray-100: #f7f7f7;
+    --gray-200: #eeeeee;
+    --gray-400: #aaaaaa;
+    --gray-600: #666666;
+    --gray-800: #333333;
+    --text: #2d2d2d;
+    --radius: 18px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --shadow-card: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--sky);
+    min-height: 100vh;
+    color: var(--text);
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--white);
+    padding: 16px 20px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  }
+  .back-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--sky); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--gray-800);
+    transition: background .2s;
+  }
+  .back-btn:hover { background: var(--sky-dark); }
+  .header-title {
+    font-family: 'Nunito', sans-serif;
+    font-size: 22px; font-weight: 900; color: var(--gray-800);
+    flex: 1;
+  }
+  .header-date {
+    font-size: 13px; color: var(--gray-400); font-weight: 500;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 0;
+  }
+  .tab {
+    flex: 1; padding: 10px 0; text-align: center;
+    font-size: 14px; font-weight: 700; color: var(--gray-400);
+    border: none; background: transparent; cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+  }
+  .tab.active { color: var(--pink-dark); border-bottom-color: var(--pink-btn); }
+
+  /* ── Main ── */
+  .main { padding: 20px 16px 100px; max-width: 500px; margin: 0 auto; }
+
+  /* ══════════════════════════════
+     TAB 1 — 오늘 운동
+  ══════════════════════════════ */
+  .today-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .today-day-badge {
+    background: var(--pink); color: white;
+    font-size: 13px; font-weight: 800; padding: 4px 14px;
+    border-radius: 20px; font-family: 'Nunito', sans-serif;
+  }
+  .today-subtitle { font-size: 13px; color: var(--gray-400); }
+
+  /* 운동 카드 */
+  .exercise-card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow-card); margin-bottom: 14px;
+    overflow: hidden; transition: all .3s;
+  }
+  .exercise-card.completed { opacity: .45; }
+  .exercise-card-header {
+    display: flex; align-items: center; padding: 14px 16px;
+    gap: 12px; cursor: pointer;
+  }
+  .ex-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--pink-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .ex-name { font-weight: 700; font-size: 15px; color: var(--gray-800); }
+  .ex-meta { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+  .ex-expand {
+    margin-left: auto; font-size: 18px; color: var(--gray-400);
+    transition: transform .3s;
+  }
+  .exercise-card.open .ex-expand { transform: rotate(180deg); }
+
+  /* 세트 목록 */
+  .set-list { padding: 0 16px 14px; display: none; }
+  .exercise-card.open .set-list { display: block; }
+
+  .set-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-top: 1px solid var(--gray-200);
+  }
+  .set-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--pink-light); color: var(--pink-dark);
+    font-size: 12px; font-weight: 800; display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .set-info { flex: 1; }
+  .set-detail { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+  .set-prev { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+  .set-inputs {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .set-input-group { display: flex; flex-direction: column; align-items: center; }
+  .set-input-label { font-size: 10px; color: var(--gray-400); margin-bottom: 2px; }
+  .set-input {
+    width: 60px; padding: 6px 6px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: 13px; font-weight: 700; text-align: center;
+    color: var(--gray-800); outline: none;
+    transition: border-color .2s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .set-input:focus { border-color: var(--pink-btn); }
+  .unit-select {
+    padding: 6px 4px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: 11px; color: var(--gray-600);
+    outline: none; background: white;
+  }
+  .unit-select:focus { border-color: var(--pink-btn); }
+
+  .done-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid var(--gray-200); background: var(--white);
+    cursor: pointer; font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; flex-shrink: 0;
+  }
+  .done-btn:hover { border-color: var(--pink-btn); background: var(--pink-light); }
+  .done-btn.done { border-color: var(--pink-btn); background: var(--pink-btn); }
+
+  .set-row.set-done .set-detail { text-decoration: line-through; color: var(--gray-400); }
+
+  /* 전체 완료 버튼 */
+  .complete-all-btn {
+    width: 100%; padding: 14px; border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--pink-btn), var(--pink-dark));
+    color: white; font-size: 15px; font-weight: 800;
+    border: none; cursor: pointer; margin-top: 8px;
+    font-family: 'Nunito', sans-serif; letter-spacing: .3px;
+    box-shadow: 0 4px 16px rgba(240,128,128,.4);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .complete-all-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(240,128,128,.5); }
+  .complete-all-btn:active { transform: translateY(0); }
+
+  /* 빈 상태 */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--gray-400);
+  }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ══════════════════════════════
+     TAB 2 — 기록 보기
+  ══════════════════════════════ */
+  .history-filter {
+    display: flex; gap: 8px; margin-bottom: 16px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--gray-200); background: var(--white);
+    font-size: 13px; font-weight: 700; color: var(--gray-400);
+    cursor: pointer; white-space: nowrap; transition: all .2s;
+  }
+  .filter-chip.active {
+    border-color: var(--pink-btn); background: var(--pink-light);
+    color: var(--pink-dark);
+  }
+
+  /* 히트맵 */
+  .heatmap-section {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+  }
+  .section-title {
+    font-size: 14px; font-weight: 800; color: var(--gray-800);
+    margin-bottom: 14px; font-family: 'Nunito', sans-serif;
+  }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(14, 1fr);
+    gap: 4px; font-size: 11px;
+  }
+  .hm-label { color: var(--gray-400); font-weight: 700; padding: 4px 0; font-size: 10px; }
+  .hm-date { color: var(--gray-400); font-size: 9px; text-align: center; }
+  .hm-cell {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+    transition: transform .15s;
+  }
+  .hm-cell:hover { transform: scale(1.2); }
+  .hm-0 { background: var(--gray-200); }
+  .hm-1 { background: #f8d7d7; }
+  .hm-2 { background: #f4a0a0; }
+  .hm-3 { background: #e07070; }
+  .hm-4 { background: #c04040; }
+
+  /* 볼륨 차트 */
+  .volume-chart-wrap {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+  }
+  .chart-select {
+    width: 100%; padding: 8px 12px; border: 1.5px solid var(--gray-200);
+    border-radius: 10px; font-size: 13px; font-weight: 700;
+    color: var(--gray-800); outline: none; margin-bottom: 14px;
+    background: var(--gray-100);
+  }
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar {
+    width: 100%; border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--pink-btn), var(--pink-dark));
+    transition: height .5s cubic-bezier(.34,1.56,.64,1);
+    min-height: 4px;
+  }
+  .bar-date { font-size: 9px; color: var(--gray-400); white-space: nowrap; }
+  .bar-val { font-size: 9px; color: var(--gray-600); font-weight: 700; }
+
+  /* 최근 로그 */
+  .log-section {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px; box-shadow: var(--shadow-card);
+  }
+  .log-date-group { margin-bottom: 16px; }
+  .log-date-label {
+    font-size: 12px; font-weight: 800; color: var(--pink-dark);
+    margin-bottom: 8px; font-family: 'Nunito', sans-serif;
+  }
+  .log-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--gray-100);
+    font-size: 13px;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-ex { font-weight: 700; color: var(--gray-800); }
+  .log-set { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+  .log-vol {
+    font-size: 13px; font-weight: 800; color: var(--pink-dark);
+    font-family: 'Nunito', sans-serif;
+  }
+
+  /* ══════════════════════════════
+     TAB 3 — 설정
+  ══════════════════════════════ */
+  .day-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .day-tab {
+    padding: 7px 14px; border-radius: 20px;
+    border: 1.5px solid var(--gray-200); background: var(--white);
+    font-size: 13px; font-weight: 700; color: var(--gray-400);
+    cursor: pointer; white-space: nowrap; transition: all .2s;
+  }
+  .day-tab.active {
+    border-color: var(--pink-btn); background: var(--pink-btn); color: white;
+  }
+
+  .ex-list-setting {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow-card); margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .ex-setting-item {
+    padding: 14px 16px; border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .ex-setting-item:last-child { border-bottom: none; }
+  .ex-setting-info { flex: 1; }
+  .ex-setting-name { font-weight: 700; font-size: 14px; }
+  .ex-setting-detail { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+  .ex-del-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: var(--gray-100); color: var(--gray-400);
+    cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .ex-del-btn:hover { background: var(--pink-light); color: var(--pink-dark); }
+
+  /* 추가 폼 */
+  .add-ex-form {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px; box-shadow: var(--shadow-card);
+  }
+  .form-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: var(--gray-800); font-family: 'Nunito', sans-serif; }
+  .form-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.flex-1 { flex: 1; min-width: 120px; }
+  .form-label { font-size: 11px; font-weight: 700; color: var(--gray-400); }
+  .form-input {
+    padding: 10px 12px; border: 1.5px solid var(--gray-200);
+    border-radius: 10px; font-size: 14px; font-weight: 700;
+    color: var(--gray-800); outline: none;
+    transition: border-color .2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .form-input:focus { border-color: var(--pink-btn); }
+  .form-select {
+    padding: 10px 12px; border: 1.5px solid var(--gray-200);
+    border-radius: 10px; font-size: 13px; font-weight: 700;
+    color: var(--gray-800); outline: none; background: white;
+  }
+  .form-select:focus { border-color: var(--pink-btn); }
+  .add-btn {
+    width: 100%; padding: 12px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--pink-btn), var(--pink-dark));
+    color: white; font-size: 14px; font-weight: 800;
+    border: none; cursor: pointer; margin-top: 4px;
+    font-family: 'Nunito', sans-serif;
+    transition: opacity .2s;
+  }
+  .add-btn:hover { opacity: .9; }
+
+  /* 탭 전환 */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* 완료 배너 */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--pink-dark); color: white;
+    padding: 12px 24px; border-radius: 30px;
+    font-size: 14px; font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    opacity: 0; transition: all .3s; pointer-events: none; z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 진행 바 */
+  .progress-bar-wrap {
+    background: var(--gray-200); border-radius: 20px; height: 8px;
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; border-radius: 20px;
+    background: linear-gradient(90deg, var(--pink), var(--pink-dark));
+    transition: width .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .progress-text {
+    font-size: 12px; color: var(--gray-400); margin-bottom: 6px;
+    font-weight: 700; font-family: 'Nunito', sans-serif;
+  }
+
+  /* 로딩 */
+  .loading { text-align: center; padding: 40px; color: var(--gray-400); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <div>
+      <div class="header-title">💪 운동 기록</div>
+    </div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('today', this)">오늘 운동</button>
+    <button class="tab" onclick="switchTab('history', this)">기록 보기</button>
+    <button class="tab" onclick="switchTab('settings', this)">설정</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── TAB: 오늘 운동 ── -->
+  <div class="tab-content active" id="tab-today">
+    <div class="today-header">
+      <div class="today-day-badge" id="todayDayBadge">토요일</div>
+      <div class="today-subtitle" id="todaySubtitle">0 / 0 세트 완료</div>
+    </div>
+    <div class="progress-text" id="progressText">0%</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <div id="todayExerciseList"></div>
+    <button class="complete-all-btn" id="completeAllBtn" onclick="completeAll()" style="display:none">
+      ✅ 오늘 운동 완료 저장
+    </button>
+  </div>
+
+  <!-- ── TAB: 기록 보기 ── -->
+  <div class="tab-content" id="tab-history">
+    <div class="heatmap-section">
+      <div class="section-title">📅 최근 2주 운동 히트맵</div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+    </div>
+    <div class="volume-chart-wrap">
+      <div class="section-title">📊 운동별 세션 볼륨 추이</div>
+      <select class="chart-select" id="chartExSelect" onchange="renderVolumeChart()">
+        <option value="">운동 선택...</option>
+      </select>
+      <div class="bar-chart" id="volumeChart">
+        <div style="flex:1;text-align:center;color:var(--gray-400);font-size:13px;padding-top:40px">운동을 선택하세요</div>
+      </div>
+    </div>
+    <div class="log-section">
+      <div class="section-title">🗓 최근 기록</div>
+      <div id="recentLogs"><div class="loading">불러오는 중...</div></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: 설정 ── -->
+  <div class="tab-content" id="tab-settings">
+    <div class="day-tabs" id="dayTabs"></div>
+    <div id="settingExList"></div>
+    <div class="add-ex-form">
+      <div class="form-title">➕ 운동 추가</div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <div class="form-label">운동 이름</div>
+          <input class="form-input" id="fName" placeholder="레그 익스텐션" />
+        </div>
+        <div class="form-group">
+          <div class="form-label">이모지</div>
+          <input class="form-input" id="fEmoji" placeholder="🦵" style="width:60px;text-align:center" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <div class="form-label">세트 수</div>
+          <input class="form-input" id="fSets" type="number" placeholder="3" min="1" max="10" />
+        </div>
+        <div class="form-group flex-1">
+          <div class="form-label">기본 중량</div>
+          <input class="form-input" id="fWeight" type="number" placeholder="45" step="0.5" />
+        </div>
+        <div class="form-group">
+          <div class="form-label">단위</div>
+          <select class="form-select" id="fUnit">
+            <option value="lb">lb</option>
+            <option value="kg">kg</option>
+          </select>
+        </div>
+        <div class="form-group flex-1">
+          <div class="form-label">기본 횟수</div>
+          <input class="form-input" id="fReps" type="number" placeholder="15" min="1" />
+        </div>
+      </div>
+      <button class="add-btn" onclick="addExercise()">추가하기</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase ──────────────────────────────────
+const SUPABASE_URL = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwMzExMTMsImV4cCI6MjA1NzYwNzExM30.kJKfBpqPMifGEIjb6kP5gT0_wYy17KFrtktuukQMqgA';
+const TABLE = 'zdaily_logs';
+const KEEP_DAYS = 60; // 보존 일수
+
+async function sbFetch(method, query='', body=null) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}${query}`, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// ── 날짜 유틸 ──────────────────────────────────
+const DAYS = ['일','월','화','수','목','금','토'];
+const DAYS_FULL = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+const DAYS_EN = ['sun','mon','tue','wed','thu','fri','sat'];
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todayDow() { return new Date().getDay(); } // 0=일
+
+// ── localStorage 설정 ──────────────────────────
+function getSchedule() {
+  const raw = localStorage.getItem('workout_schedule');
+  if (raw) return JSON.parse(raw);
+  // 기본값
+  return { sun:[], mon:[], tue:[], wed:[], thu:[], fri:[], sat:[] };
+}
+function saveSchedule(s) { localStorage.setItem('workout_schedule', JSON.stringify(s)); }
+
+// ── 상태 ──────────────────────────────────────
+let todayExercises = []; // [{id, name, emoji, sets:[{weight,unit,reps,done}]}]
+let historyLogs = [];
+let activeSettingDay = DAYS_EN[todayDow()];
+
+// ── 초기화 ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  // 헤더 날짜
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    `${now.getMonth()+1}월 ${now.getDate()}일 (${DAYS[now.getDay()]})`;
+  document.getElementById('todayDayBadge').textContent = DAYS_FULL[now.getDay()];
+
+  buildTodayList();
+  buildSettingDayTabs();
+  renderSettingList();
+  await loadHistory();
+  renderHeatmap();
+  renderRecentLogs();
+  populateChartSelect();
+});
+
+// ══════════════════════════════
+// TAB: 오늘 운동
+// ══════════════════════════════
+function buildTodayList() {
+  const dow = DAYS_EN[todayDow()];
+  const schedule = getSchedule();
+  const exercises = schedule[dow] || [];
+
+  // 이미 오늘 완료된 세트 체크 (로컬 스냅샷)
+  const savedKey = `workout_today_${todayStr()}`;
+  const saved = JSON.parse(localStorage.getItem(savedKey) || '{}');
+
+  todayExercises = exercises.map((ex, ei) => ({
+    ...ex,
+    id: `ex_${ei}`,
+    sets: Array.from({length: ex.sets}, (_, si) => ({
+      weight: saved[`${ei}_${si}`]?.weight ?? ex.defaultWeight,
+      unit:   saved[`${ei}_${si}`]?.unit   ?? ex.defaultUnit,
+      reps:   saved[`${ei}_${si}`]?.reps   ?? ex.defaultReps,
+      done:   saved[`${ei}_${si}`]?.done   ?? false,
+    }))
+  }));
+
+  renderTodayList();
+}
+
+function renderTodayList() {
+  const container = document.getElementById('todayExerciseList');
+  const btn = document.getElementById('completeAllBtn');
+
+  if (todayExercises.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🏋️</div>
+        <p>오늘(${DAYS_FULL[todayDow()]})에 설정된<br>운동이 없어요.<br><br>설정 탭에서 추가해보세요!</p>
+      </div>`;
+    btn.style.display = 'none';
+    updateProgress();
+    return;
+  }
+
+  container.innerHTML = todayExercises.map((ex, ei) => `
+    <div class="exercise-card" id="exCard_${ei}">
+      <div class="exercise-card-header" onclick="toggleExCard(${ei})">
+        <div class="ex-icon">${ex.emoji || '💪'}</div>
+        <div>
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-meta">${ex.sets.filter(s=>s.done).length}/${ex.sets.length} 세트 완료</div>
+        </div>
+        <div class="ex-expand">▾</div>
+      </div>
+      <div class="set-list">
+        ${ex.sets.map((set, si) => `
+          <div class="set-row ${set.done?'set-done':''}" id="setRow_${ei}_${si}">
+            <div class="set-num">${si+1}</div>
+            <div class="set-info">
+              <div class="set-detail">${set.weight}${set.unit} × ${set.reps}회</div>
+              <div class="set-prev">볼륨: ${(set.weight * set.reps).toFixed(0)}</div>
+            </div>
+            <div class="set-inputs">
+              <div class="set-input-group">
+                <div class="set-input-label">중량</div>
+                <input class="set-input" type="number" value="${set.weight}" step="0.5"
+                  onchange="updateSet(${ei},${si},'weight',this.value)" style="width:52px" />
+              </div>
+              <div class="set-input-group">
+                <div class="set-input-label">단위</div>
+                <select class="unit-select" onchange="updateSet(${ei},${si},'unit',this.value)">
+                  <option value="lb" ${set.unit==='lb'?'selected':''}>lb</option>
+                  <option value="kg" ${set.unit==='kg'?'selected':''}>kg</option>
+                </select>
+              </div>
+              <div class="set-input-group">
+                <div class="set-input-label">횟수</div>
+                <input class="set-input" type="number" value="${set.reps}" min="1"
+                  onchange="updateSet(${ei},${si},'reps',this.value)" style="width:48px" />
+              </div>
+            </div>
+            <button class="done-btn ${set.done?'done':''}" onclick="toggleSetDone(${ei},${si})">
+              ${set.done ? '✓' : '○'}
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // 첫 카드 열기
+  if (todayExercises.length > 0) toggleExCard(0);
+
+  updateProgress();
+  btn.style.display = 'block';
+}
+
+function toggleExCard(ei) {
+  document.querySelectorAll('.exercise-card').forEach((c, i) => {
+    if (i === ei) c.classList.toggle('open');
+  });
+}
+
+function updateSet(ei, si, key, val) {
+  if (key === 'weight' || key === 'reps') val = parseFloat(val) || 0;
+  todayExercises[ei].sets[si][key] = val;
+  // 볼륨 갱신
+  const set = todayExercises[ei].sets[si];
+  const row = document.getElementById(`setRow_${ei}_${si}`);
+  if (row) {
+    row.querySelector('.set-detail').textContent = `${set.weight}${set.unit} × ${set.reps}회`;
+    row.querySelector('.set-prev').textContent = `볼륨: ${(set.weight * set.reps).toFixed(0)}`;
+  }
+  saveTodayLocal();
+}
+
+function toggleSetDone(ei, si) {
+  todayExercises[ei].sets[si].done = !todayExercises[ei].sets[si].done;
+  const set = todayExercises[ei].sets[si];
+  const row = document.getElementById(`setRow_${ei}_${si}`);
+  if (row) {
+    row.classList.toggle('set-done', set.done);
+    row.querySelector('.done-btn').textContent = set.done ? '✓' : '○';
+    row.querySelector('.done-btn').classList.toggle('done', set.done);
+  }
+  // 메타 업데이트
+  const card = document.getElementById(`exCard_${ei}`);
+  if (card) {
+    const doneCnt = todayExercises[ei].sets.filter(s=>s.done).length;
+    card.querySelector('.ex-meta').textContent = `${doneCnt}/${todayExercises[ei].sets.length} 세트 완료`;
+    card.classList.toggle('completed', doneCnt === todayExercises[ei].sets.length);
+  }
+  updateProgress();
+  saveTodayLocal();
+}
+
+function updateProgress() {
+  const total = todayExercises.reduce((a,ex) => a + ex.sets.length, 0);
+  const done  = todayExercises.reduce((a,ex) => a + ex.sets.filter(s=>s.done).length, 0);
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${pct}% (${done}/${total} 세트)`;
+  document.getElementById('todaySubtitle').textContent = `${done} / ${total} 세트 완료`;
+}
+
+function saveTodayLocal() {
+  const key = `workout_today_${todayStr()}`;
+  const snap = {};
+  todayExercises.forEach((ex, ei) => {
+    ex.sets.forEach((set, si) => { snap[`${ei}_${si}`] = set; });
+  });
+  localStorage.setItem(key, JSON.stringify(snap));
+}
+
+async function completeAll() {
+  const today = todayStr();
+  const doneSets = [];
+  todayExercises.forEach(ex => {
+    ex.sets.forEach((set, si) => {
+      if (set.done) {
+        doneSets.push({
+          name: ex.name, emoji: ex.emoji,
+          setNum: si+1, weight: set.weight, unit: set.unit, reps: set.reps,
+          volume: parseFloat((set.weight * set.reps).toFixed(1))
+        });
+      }
+    });
+  });
+
+  if (doneSets.length === 0) { showToast('완료된 세트가 없어요!'); return; }
+
+  try {
+    // 기존 오늘 workout_log 삭제 후 재저장
+    await sbFetch('DELETE', `?log_date=eq.${today}&type=eq.workout_log`);
+
+    await sbFetch('POST', '', {
+      log_date: today,
+      type: 'workout_log',
+      data: { sets: doneSets, savedAt: new Date().toISOString() }
+    });
+
+    // 60일 초과 삭제
+    await pruneOldLogs();
+
+    showToast(`💪 ${doneSets.length}세트 저장 완료!`);
+    await loadHistory();
+    renderHeatmap();
+    renderRecentLogs();
+    populateChartSelect();
+  } catch(e) {
+    showToast('저장 오류: ' + e.message);
+  }
+}
+
+async function pruneOldLogs() {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - KEEP_DAYS);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  await sbFetch('DELETE', `?type=eq.workout_log&log_date=lt.${cutoffStr}`);
+}
+
+// ══════════════════════════════
+// TAB: 기록 보기
+// ══════════════════════════════
+async function loadHistory() {
+  try {
+    historyLogs = await sbFetch('GET', `?type=eq.workout_log&order=log_date.desc&limit=200`) || [];
+  } catch(e) { historyLogs = []; }
+}
+
+function renderHeatmap() {
+  const grid = document.getElementById('heatmapGrid');
+  // 최근 14일
+  const dates = [];
+  for (let i=13; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+
+  // 날짜별 볼륨 합계
+  const volByDate = {};
+  historyLogs.forEach(log => {
+    const sets = log.data?.sets || [];
+    const vol = sets.reduce((a,s) => a + (s.volume||0), 0);
+    volByDate[log.log_date] = (volByDate[log.log_date]||0) + vol;
+  });
+
+  const maxVol = Math.max(...Object.values(volByDate), 1);
+
+  // 날짜 헤더
+  const dateRow = ['<div class="hm-label"></div>', ...dates.map(d => {
+    const dd = new Date(d); dd.setDate(dd.getDate()+1); // UTC 보정
+    return `<div class="hm-date">${(dd.getMonth()+1)}/${dd.getDate()}</div>`;
+  })].join('');
+
+  // 각 운동별 행
+  const allNames = [...new Set(historyLogs.flatMap(l => (l.data?.sets||[]).map(s=>s.name)))];
+
+  const rows = allNames.slice(0,8).map(name => {
+    const cells = dates.map(d => {
+      const log = historyLogs.find(l => l.log_date === d);
+      const sets = (log?.data?.sets||[]).filter(s=>s.name===name);
+      const vol = sets.reduce((a,s)=>a+(s.volume||0),0);
+      const level = vol===0?0:vol<maxVol*.25?1:vol<maxVol*.5?2:vol<maxVol*.75?3:4;
+      return `<div class="hm-cell hm-${level}" title="${name} ${d}: 볼륨 ${vol.toFixed(0)}"></div>`;
+    }).join('');
+    const shortName = name.length>6?name.slice(0,6)+'…':name;
+    return `<div class="hm-label" style="font-size:10px;line-height:1.2">${shortName}</div>${cells}`;
+  }).join('');
+
+  grid.innerHTML = dateRow + rows;
+  if (allNames.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--gray-400);font-size:13px;padding:20px">아직 기록이 없어요</div>';
+  }
+}
+
+function populateChartSelect() {
+  const sel = document.getElementById('chartExSelect');
+  const allNames = [...new Set(historyLogs.flatMap(l => (l.data?.sets||[]).map(s=>s.name)))];
+  const current = sel.value;
+  sel.innerHTML = '<option value="">운동 선택...</option>' +
+    allNames.map(n => `<option value="${n}" ${n===current?'selected':''}>${n}</option>`).join('');
+  if (current && allNames.includes(current)) renderVolumeChart();
+}
+
+function renderVolumeChart() {
+  const name = document.getElementById('chartExSelect').value;
+  const chart = document.getElementById('volumeChart');
+  if (!name) {
+    chart.innerHTML = '<div style="flex:1;text-align:center;color:var(--gray-400);font-size:13px;padding-top:40px">운동을 선택하세요</div>';
+    return;
+  }
+
+  // 최근 14일
+  const dates = [];
+  for (let i=13; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+
+  const data = dates.map(date => {
+    const log = historyLogs.find(l => l.log_date === date);
+    const sets = (log?.data?.sets||[]).filter(s=>s.name===name);
+    const vol = sets.reduce((a,s)=>a+(s.volume||0),0);
+    const d2 = new Date(date); d2.setDate(d2.getDate()+1);
+    return { date: `${d2.getMonth()+1}/${d2.getDate()}`, vol, sets: sets.length };
+  });
+
+  const maxVol = Math.max(...data.map(d=>d.vol), 1);
+
+  chart.innerHTML = data.map(d => {
+    const h = Math.max((d.vol/maxVol)*100, d.vol>0?4:0);
+    return `
+      <div class="bar-col">
+        <div class="bar-val">${d.vol>0?d.vol.toFixed(0):''}</div>
+        <div class="bar" style="height:${h}px"></div>
+        <div class="bar-date">${d.date}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderRecentLogs() {
+  const container = document.getElementById('recentLogs');
+  if (historyLogs.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--gray-400);font-size:13px;padding:20px">아직 기록이 없어요</div>';
+    return;
+  }
+
+  // 날짜별 그룹
+  const grouped = {};
+  historyLogs.slice(0,10).forEach(log => {
+    if (!grouped[log.log_date]) grouped[log.log_date] = [];
+    const sets = log.data?.sets || [];
+    // 운동별 집계
+    const byEx = {};
+    sets.forEach(s => {
+      if (!byEx[s.name]) byEx[s.name] = { name:s.name, emoji:s.emoji, sets:0, vol:0 };
+      byEx[s.name].sets++;
+      byEx[s.name].vol += s.volume||0;
+    });
+    grouped[log.log_date].push(...Object.values(byEx));
+  });
+
+  container.innerHTML = Object.entries(grouped).map(([date, exes]) => {
+    const d = new Date(date); d.setDate(d.getDate()+1);
+    const label = `${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS[d.getDay()]})`;
+    return `
+      <div class="log-date-group">
+        <div class="log-date-label">${label}</div>
+        ${exes.map(ex => `
+          <div class="log-item">
+            <div>
+              <div class="log-ex">${ex.emoji||'💪'} ${ex.name}</div>
+              <div class="log-set">${ex.sets}세트</div>
+            </div>
+            <div class="log-vol">${ex.vol.toFixed(0)}<span style="font-size:10px;font-weight:400"> vol</span></div>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════
+// TAB: 설정
+// ══════════════════════════════
+function buildSettingDayTabs() {
+  const container = document.getElementById('dayTabs');
+  container.innerHTML = DAYS_EN.map((d,i) => `
+    <button class="day-tab ${d===activeSettingDay?'active':''}"
+      onclick="selectSettingDay('${d}',this)">${DAYS[i]}</button>
+  `).join('');
+}
+
+function selectSettingDay(day, el) {
+  activeSettingDay = day;
+  document.querySelectorAll('.day-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderSettingList();
+}
+
+function renderSettingList() {
+  const schedule = getSchedule();
+  const list = schedule[activeSettingDay] || [];
+  const container = document.getElementById('settingExList');
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="ex-list-setting">
+        <div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">
+          아직 운동이 없어요. 아래에서 추가해보세요!
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="ex-list-setting">
+      ${list.map((ex, i) => `
+        <div class="ex-setting-item">
+          <div style="font-size:22px">${ex.emoji||'💪'}</div>
+          <div class="ex-setting-info">
+            <div class="ex-setting-name">${ex.name}</div>
+            <div class="ex-setting-detail">${ex.sets}세트 · ${ex.defaultWeight}${ex.defaultUnit} · ${ex.defaultReps}회</div>
+          </div>
+          <button class="ex-del-btn" onclick="deleteExercise(${i})">✕</button>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function addExercise() {
+  const name    = document.getElementById('fName').value.trim();
+  const emoji   = document.getElementById('fEmoji').value.trim() || '💪';
+  const sets    = parseInt(document.getElementById('fSets').value) || 3;
+  const weight  = parseFloat(document.getElementById('fWeight').value) || 0;
+  const unit    = document.getElementById('fUnit').value;
+  const reps    = parseInt(document.getElementById('fReps').value) || 10;
+
+  if (!name) { showToast('운동 이름을 입력하세요'); return; }
+
+  const schedule = getSchedule();
+  if (!schedule[activeSettingDay]) schedule[activeSettingDay] = [];
+  schedule[activeSettingDay].push({ name, emoji, sets, defaultWeight: weight, defaultUnit: unit, defaultReps: reps });
+  saveSchedule(schedule);
+
+  // 폼 초기화
+  ['fName','fEmoji','fSets','fWeight','fReps'].forEach(id => document.getElementById(id).value='');
+  renderSettingList();
+  showToast(`✅ ${name} 추가됨`);
+}
+
+function deleteExercise(idx) {
+  const schedule = getSchedule();
+  schedule[activeSettingDay].splice(idx, 1);
+  saveSchedule(schedule);
+  renderSettingList();
+}
+
+// ── 탭 전환 ──────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+
+  if (name === 'history') {
+    renderHeatmap();
+    renderRecentLogs();
+    populateChartSelect();
+  }
+}
+
+// ── Toast ─────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
