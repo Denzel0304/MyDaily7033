@@ -213,14 +213,11 @@
     }
     .history-title { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
     .history-list { display: flex; flex-direction: column; gap: 10px; }
-    .history-row {
-      display: flex; align-items: center; gap: 10px;
-    }
+    .history-row { display: flex; align-items: center; gap: 10px; }
     .hist-date-wrap { width: 68px; flex-shrink: 0; }
     .hist-date { font-size: 11.5px; color: var(--text-mid); font-weight: 600; display: block; }
     .hist-day  { font-size: 10px; color: var(--text-light); display: block; margin-top: 1px; }
 
-    /* 히스토리 바 래퍼: 목표 기준선 포함 */
     .hist-bar-wrap {
       flex: 1; height: 10px; background: rgba(79,174,224,0.12); border-radius: 99px;
       overflow: visible; position: relative;
@@ -229,7 +226,6 @@
     .hist-bar.normal { background: linear-gradient(90deg, var(--sky3), var(--sky4)); }
     .hist-bar.over   { background: linear-gradient(90deg, var(--green2), var(--green3)); }
 
-    /* 목표 기준선 */
     .hist-goal-line {
       position: absolute; top: -4px; bottom: -4px; width: 2px;
       background: rgba(224, 80, 96, 0.45); border-radius: 2px; z-index: 2;
@@ -397,30 +393,12 @@
 </div>
 
 <script>
-  // ── Supabase 설정 ──────────────────────────────
-  const SUPABASE_URL = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
-
-  async function sbFetch(path, options = {}) {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': options.prefer || 'return=representation',
-        ...options.headers
-      },
-      ...options
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const text = await res.text();
-    return text ? JSON.parse(text) : null;
-  }
+  // ── localStorage 키 상수 ───────────────────────
+  const LS_GOAL    = 'protein_goal';
+  const LS_TODAY   = (dateStr) => `protein_today_${dateStr}`;
+  const LS_HISTORY = 'protein_history'; // { "2025-04-01": { foods: [...] }, ... }
 
   // ── 단백질 함량 ────────────────────────────────
-  // shake: 입력값 = 단백질 g (직접 입력)
-  // egg:   입력값 = 개수, 1개 = 6g
-  // 나머지: (내장값 / 100) × 입력 그램
   const PROTEIN_PER_100G = {
     shake: null,   // 직접 입력값 = 단백질량
     rice: 2.7,
@@ -434,7 +412,6 @@
     tuna: 25.0,
     sashimi: 19.0
   };
-  
   const FOOD_NAMES = {
     shake:'단백질 쉐이크', rice:'잡곡밥', egg:'계란',
     pork:'돼지고기', tofu:'두부', fish:'생선', milk:'우유',
@@ -445,10 +422,9 @@
     pork:'🐷', tofu:'🫘', fish:'🐟', milk:'🥛',
     chicken:'🍗', beef:'🥩', tuna:'🐟', sashimi:'🍣'
   };
+  const EGG_PROTEIN_EACH = 6;
 
-  const EGG_PROTEIN_EACH = 6; // 계란 1개당 단백질 g
-
-  // ── 단백질 계산 헬퍼 ───────────────────────────
+  // ── 단백질 계산 ────────────────────────────────
   function calcProtein(key, val) {
     if (key === 'shake') return val;
     if (key === 'egg')   return val * EGG_PROTEIN_EACH;
@@ -468,21 +444,7 @@
     }
   }
 
-  // ── 상태 ───────────────────────────────────────
-  let goal = 150; // Supabase에서 로드됨
-  let todayFoods = [];
-  let todayDbId = null;
-  let isSaving = false; // race condition 방지
-  let selectedMeal = 'breakfast'; // 선택된 끼니
-
-  // ── 끼니 탭 선택 ──────────────────────────────
-  function selectMeal(meal) {
-    selectedMeal = meal;
-    document.querySelectorAll('.meal-tab').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.meal === meal);
-    });
-  }
-
+  // ── 날짜 헬퍼 ──────────────────────────────────
   const todayStr = () => {
     const d = new Date();
     const y = d.getFullYear();
@@ -491,7 +453,53 @@
     return `${y}-${m}-${day}`;
   };
 
-  // ── 날짜 표시 & 자정 갱신 ──────────────────────
+  // ── 상태 ───────────────────────────────────────
+  let goal = 150;
+  let todayFoods = [];
+  let selectedMeal = 'breakfast';
+
+  // ── localStorage 읽기/쓰기 헬퍼 ───────────────
+  function lsGet(key, fallback = null) {
+    try {
+      const v = localStorage.getItem(key);
+      return v !== null ? JSON.parse(v) : fallback;
+    } catch { return fallback; }
+  }
+  function lsSet(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('저장 실패', e); }
+  }
+
+  // ── 히스토리 관리 ──────────────────────────────
+  // history = { "2025-04-01": { foods: [...] }, ... }  최대 14일
+
+  function getHistory() {
+    return lsGet(LS_HISTORY, {});
+  }
+
+  function saveHistory(dateStr, foods) {
+    let hist = getHistory();
+    if (foods.length === 0) {
+      delete hist[dateStr]; // 빈 날은 제거
+    } else {
+      hist[dateStr] = { foods };
+    }
+    // 14일 초과분 제거 (오래된 날짜 순으로)
+    const keys = Object.keys(hist).sort().reverse(); // 최신순
+    if (keys.length > 14) {
+      keys.slice(14).forEach(k => delete hist[k]);
+    }
+    lsSet(LS_HISTORY, hist);
+  }
+
+  // ── 초기화 ─────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    updateDateLabel();
+    setDefaultMealByTime();
+    loadGoal();
+    loadTodayData();
+    renderHistory();
+  });
+
   function updateDateLabel() {
     const d = new Date();
     const days = ['일','월','화','수','목','금','토'];
@@ -499,72 +507,48 @@
       `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
   }
 
-  // 새로고침 시 날짜 체크 (setInterval 제거 - 리소스 절약)
-  // 페이지 로드할 때마다 날짜를 확인하여 처리하므로 실시간 타이머 불필요
-  let _lastDateStr = todayStr();
-
-  // ── 시간에 따른 기본 끼니 선택 ─────────────────
   function setDefaultMealByTime() {
-    const hour = new Date().getHours();
-    const min  = new Date().getMinutes();
-    const totalMin = hour * 60 + min;
-    let defaultMeal;
-    if (totalMin <= 10 * 60 + 59) {          // ~10:59 → 아침
-      defaultMeal = 'breakfast';
-    } else if (totalMin <= 15 * 60 + 60) {   // 11:00~16:00 → 점심
-      defaultMeal = 'lunch';
-    } else {                                  // 16:01~ → 저녁
-      defaultMeal = 'dinner';
-    }
-    selectMeal(defaultMeal);
+    const h = new Date().getHours();
+    const m = new Date().getMinutes();
+    const t = h * 60 + m;
+    let meal;
+    if (t <= 10 * 60 + 59)       meal = 'breakfast';
+    else if (t <= 15 * 60 + 60)  meal = 'lunch';
+    else                          meal = 'dinner';
+    selectMeal(meal);
   }
 
-  // ── 초기화 ─────────────────────────────────────
-  // ── 목표 로드 (Supabase) ───────────────────────
-  async function loadGoal() {
-    try {
-      const rows = await sbFetch('zdaily_logs?type=eq.protein_goal&log_date=eq.1900-01-01&limit=1');
-      if (rows && rows.length > 0) {
-        goal = rows[0].data.goal || 150;
-      }
-    } catch(e) {
-      goal = parseInt(localStorage.getItem('protein_goal') || '150'); // fallback
-    }
+  // ── 목표 로드/저장 ─────────────────────────────
+  function loadGoal() {
+    goal = lsGet(LS_GOAL, 150);
     updateGoalUI();
   }
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    updateDateLabel();
-    setDefaultMealByTime();
-    await loadGoal();
-    await loadTodayData();
-    await loadHistory();
-  });
+  function updateGoalUI() {
+    document.getElementById('goalDisplay').textContent = goal + 'g';
+    document.getElementById('statGoal').textContent = goal + 'g';
+  }
 
   // ── 오늘 데이터 로드 ───────────────────────────
-  async function loadTodayData() {
-    try {
-      const rows = await sbFetch(`zdaily_logs?log_date=eq.${todayStr()}&type=eq.protein&order=id.desc&limit=1`);
-      if (rows && rows.length > 0) {
-        todayDbId = rows[0].id;
-        todayFoods = rows[0].data.foods || [];
-      }
-    } catch(e) {
-      const local = localStorage.getItem('protein_today_' + todayStr());
-      if (local) todayFoods = JSON.parse(local);
-    }
+  function loadTodayData() {
+    const hist = getHistory();
+    const today = todayStr();
+    todayFoods = (hist[today] && hist[today].foods) ? hist[today].foods : [];
     renderFoodList();
     updateGauge();
   }
 
-  // ── 히스토리 로드 ──────────────────────────────
-  async function loadHistory() {
-    try {
-      const rows = await sbFetch(`zdaily_logs?type=eq.protein&order=log_date.desc&limit=14`);
-      renderHistory(rows || []);
-    } catch(e) {
-      renderHistory([]);
-    }
+  // ── 오늘 데이터 저장 ───────────────────────────
+  function saveTodayData() {
+    saveHistory(todayStr(), todayFoods);
+  }
+
+  // ── 끼니 탭 선택 ──────────────────────────────
+  function selectMeal(meal) {
+    selectedMeal = meal;
+    document.querySelectorAll('.meal-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.meal === meal);
+    });
   }
 
   // ── 음식 변경 프리뷰 ───────────────────────────
@@ -578,31 +562,30 @@
   }
 
   // ── 음식 추가 ──────────────────────────────────
-  async function addFood() {
+  function addFood() {
     const key = document.getElementById('foodSelect').value;
     const val = parseFloat(document.getElementById('amountInput').value);
     if (!key) { showToast('음식을 선택해주세요'); return; }
     if (!val || val <= 0) { showToast(key === 'egg' ? '개수를 입력해주세요' : '그램수를 입력해주세요'); return; }
 
     const protein = calcProtein(key, val);
-    const gram = key === 'egg' ? val * 50 : val; // 계란은 개수 저장 (표시용 gram은 개수)
-    todayFoods.push({ key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key], gram: val, unit: key === 'egg' ? '개' : 'g', protein, meal: selectedMeal });
+    todayFoods.push({
+      key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key],
+      gram: val, unit: key === 'egg' ? '개' : 'g',
+      protein, meal: selectedMeal
+    });
 
     renderFoodList();
     updateGauge();
+    saveTodayData();
+    renderHistory();
 
-    // 키보드 내리기
     document.activeElement && document.activeElement.blur();
-
     document.getElementById('foodSelect').value = '';
     document.getElementById('amountInput').value = '';
     document.getElementById('proteinPreview').innerHTML = '';
 
     showToast(`+${protein}g 추가됐어요!`);
-    renderHistoryFromLocal(); // 즉시 로컬 기준으로 히스토리 업데이트
-
-    await saveTodayData();
-    await loadHistory(); // DB에서 최신 다시 불러오기
   }
 
   // ── 음식 삭제 ──────────────────────────────────
@@ -610,48 +593,8 @@
     todayFoods.splice(idx, 1);
     renderFoodList();
     updateGauge();
-    renderHistoryFromLocal();
     saveTodayData();
-    loadHistory();
-  }
-
-  // ── 오늘 데이터 저장 ───────────────────────────
-  async function saveTodayData() {
-    if (isSaving) return; // 중복 저장 방지
-    isSaving = true;
-    localStorage.setItem('protein_today_' + todayStr(), JSON.stringify(todayFoods));
-    try {
-      if (todayDbId) {
-        await sbFetch(`zdaily_logs?id=eq.${todayDbId}`, {
-          method: 'PATCH', prefer: 'return=minimal',
-          body: JSON.stringify({ data: { foods: todayFoods } })
-        });
-      } else {
-        const payload = { log_date: todayStr(), type: 'protein', data: { foods: todayFoods } };
-        const rows = await sbFetch('zdaily_logs', { method: 'POST', body: JSON.stringify(payload) });
-        if (rows && rows.length > 0) todayDbId = rows[0].id;
-      }
-      // 14일 초과 기록 삭제
-      await pruneOldLogs();
-    } catch(e) {
-      console.warn('저장 실패, 로컬에만 저장됨', e);
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  // 14일치만 유지, 초과분 삭제
-  async function pruneOldLogs() {
-    try {
-      const all = await sbFetch('zdaily_logs?type=eq.protein&order=log_date.desc&select=id,log_date');
-      if (!all || all.length <= 14) return;
-      const toDelete = all.slice(14); // 15번째 이후 (오래된 것)
-      for (const row of toDelete) {
-        await sbFetch(`zdaily_logs?id=eq.${row.id}`, { method: 'DELETE' });
-      }
-    } catch(e) {
-      console.warn('오래된 기록 삭제 실패', e);
-    }
+    renderHistory();
   }
 
   // ── 게이지 업데이트 ────────────────────────────
@@ -666,7 +609,6 @@
     outer.classList.toggle('overflow', isOver);
     fill.style.height = fillPct + '%';
 
-    // 퍼센트: 100% 초과 시 실제값 표시
     const displayPct = Math.round(pct * 100);
     document.getElementById('wavePct').textContent = displayPct + '%';
     document.getElementById('waveSub').textContent = `${total.toFixed(1)} / ${goal}g`;
@@ -676,7 +618,7 @@
     document.getElementById('statGoal').textContent = goal + 'g';
 
     const remain = goal - total;
-    const remainEl = document.getElementById('statRemain');
+    const remainEl  = document.getElementById('statRemain');
     const remainLbl = document.getElementById('statRemainLbl');
     if (remain > 0) {
       remainEl.textContent = remain.toFixed(1) + 'g';
@@ -692,11 +634,7 @@
   }
 
   // ── 음식 목록 렌더 (끼니별 그룹) ───────────────
-  const MEAL_INFO = {
-    breakfast: { label: '아침', icon: '🌅' },
-    lunch:     { label: '점심', icon: '☀️' },
-    dinner:    { label: '저녁', icon: '🌙' }
-  };
+  const MEAL_INFO  = { breakfast:{label:'아침',icon:'🌅'}, lunch:{label:'점심',icon:'☀️'}, dinner:{label:'저녁',icon:'🌙'} };
   const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
   function renderFoodList() {
@@ -706,27 +644,20 @@
       return;
     }
 
-    // 끼니별로 그룹핑 (기존 데이터 meal 없으면 breakfast로)
     const groups = { breakfast: [], lunch: [], dinner: [] };
     todayFoods.forEach((f, i) => {
       const m = f.meal || 'breakfast';
       groups[m].push({ ...f, _idx: i });
     });
 
-    // 데이터 있는 끼니만 렌더
     const activeMeals = MEAL_ORDER.filter(m => groups[m].length > 0);
-
     let html = '';
-    activeMeals.forEach((meal, groupIdx) => {
+
+    activeMeals.forEach((meal, gi) => {
       const items = groups[meal];
       const mealTotal = items.reduce((s, f) => s + f.protein, 0);
       const info = MEAL_INFO[meal];
-
-      // 끼니 그룹 구분선 (첫 번째 제외)
-      if (groupIdx > 0) {
-        html += '<div class="meal-divider"></div>';
-      }
-
+      if (gi > 0) html += '<div class="meal-divider"></div>';
       html += `
         <div class="meal-group">
           <div class="meal-group-header">
@@ -740,7 +671,7 @@
                   <span class="food-icon">${f.icon}</span>
                   <div>
                     <div class="food-name">${f.name}</div>
-                    <div class="food-gram">${f.gram}${f.unit || "g"}</div>
+                    <div class="food-gram">${f.gram}${f.unit || 'g'}</div>
                   </div>
                 </div>
                 <div style="display:flex;align-items:center;">
@@ -755,73 +686,38 @@
     });
 
     list.innerHTML = html;
-
-    // 이벤트 위임으로 삭제 처리
     list.querySelectorAll('.food-delete').forEach(btn => {
       btn.addEventListener('click', () => deleteFood(parseInt(btn.dataset.idx)));
     });
   }
 
-  // ── 히스토리 즉시 로컬 반영 ───────────────────
-  // DB 응답 전에 todayFoods 기준으로 히스토리 바를 먼저 그려서 사라지는 현상 방지
-  function renderHistoryFromLocal() {
-    const list = document.getElementById('historyList');
-    const rows = list.querySelectorAll('.history-row');
-    if (rows.length === 0) return; // 아직 히스토리 없으면 패스
-
-    const todayTotal = todayFoods.reduce((s, f) => s + f.protein, 0);
-    const todayDateStr = (() => {
-      const d = new Date();
-      return `${d.getMonth()+1}/${d.getDate()}`;
-    })();
-
-    // 첫 번째 행이 오늘이면 수치만 업데이트
-    const firstDateEl = list.querySelector('.hist-date');
-    if (firstDateEl && firstDateEl.textContent === todayDateStr) {
-      const firstVal = list.querySelector('.hist-val');
-      if (firstVal) firstVal.textContent = todayTotal.toFixed(0) + 'g';
-      const firstBar = list.querySelector('.hist-bar');
-      const wrapWidth = list.querySelector('.hist-bar-wrap');
-      if (firstBar && wrapWidth) {
-        // maxVal은 현재 goal 이상으로만 설정
-        const maxVal = Math.max(todayTotal, goal);
-        const barPct = Math.min(todayTotal / maxVal * 100, 100);
-        firstBar.style.width = barPct + '%';
-        firstBar.className = 'hist-bar ' + (todayTotal >= goal ? 'over' : 'normal');
-      }
-    }
-  }
-
   // ── 히스토리 렌더 ──────────────────────────────
-  function renderHistory(rows) {
+  function renderHistory() {
     const list = document.getElementById('historyList');
-    if (!rows || rows.length === 0) {
+    const hist = getHistory();
+    const keys = Object.keys(hist).sort().reverse().slice(0, 14); // 최신 14일
+
+    if (keys.length === 0) {
       list.innerHTML = '<div class="history-empty">기록이 쌓이면 여기 보여요</div>';
       return;
     }
 
-    const maxVal = Math.max(...rows.map(r => (r.data.foods||[]).reduce((s,f)=>s+f.protein,0)), goal);
-    // 목표선 위치 (%)
+    const totals = keys.map(k => (hist[k].foods||[]).reduce((s,f)=>s+f.protein,0));
+    const maxVal = Math.max(...totals, goal);
     const goalLinePct = Math.min(goal / maxVal * 100, 100);
-
     const DAYS_KO = ['일','월','화','수','목','금','토'];
 
-    list.innerHTML = rows.map(r => {
-      const total = (r.data.foods||[]).reduce((s,f)=>s+f.protein,0);
+    list.innerHTML = keys.map((dateStr, i) => {
+      const total = totals[i];
       const barPct = Math.min(total / maxVal * 100, 100);
       const isOver = total >= goal;
-
-      // 날짜 파싱 → "4/2 (목)" 형식
-      const [y, m, d] = r.log_date.split('-').map(Number);
+      const [y, m, d] = dateStr.split('-').map(Number);
       const dateObj = new Date(y, m-1, d);
-      const dateStr = `${m}/${d}`;
-      const dayStr  = DAYS_KO[dateObj.getDay()];
-
       return `
         <div class="history-row">
           <div class="hist-date-wrap">
-            <span class="hist-date">${dateStr}</span>
-            <span class="hist-day">(${dayStr})</span>
+            <span class="hist-date">${m}/${d}</span>
+            <span class="hist-day">(${DAYS_KO[dateObj.getDay()]})</span>
           </div>
           <div class="hist-bar-wrap">
             <div class="hist-bar ${isOver?'over':'normal'}" style="width:${barPct}%"></div>
@@ -841,35 +737,16 @@
   function closeGoalModal() {
     document.getElementById('goalModal').classList.remove('show');
   }
-  async function saveGoal() {
+  function saveGoal() {
     const v = parseInt(document.getElementById('goalInput').value);
     if (!v || v < 50 || v > 500) { showToast('50~500g 사이로 입력해주세요'); return; }
     goal = v;
+    lsSet(LS_GOAL, goal);
     updateGoalUI();
     updateGauge();
+    renderHistory();
     closeGoalModal();
     showToast(`목표 ${v}g으로 설정됐어요!`);
-    // Supabase에 저장 (type=protein_goal, log_date=config 고정 row)
-    try {
-      const existing = await sbFetch('zdaily_logs?type=eq.protein_goal&log_date=eq.1900-01-01&limit=1');
-      if (existing && existing.length > 0) {
-        await sbFetch(`zdaily_logs?id=eq.${existing[0].id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ data: { goal: v } })
-        });
-      } else {
-        await sbFetch('zdaily_logs', {
-          method: 'POST',
-          body: JSON.stringify({ type: 'protein_goal', log_date: '1900-01-01', data: { goal: v } })
-        });
-      }
-    } catch(e) {
-      localStorage.setItem('protein_goal', v); // 네트워크 오류 시 fallback
-    }
-  }
-  function updateGoalUI() {
-    document.getElementById('goalDisplay').textContent = goal + 'g';
-    document.getElementById('statGoal').textContent = goal + 'g';
   }
 
   // ── 토스트 ─────────────────────────────────────
