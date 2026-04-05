@@ -37,26 +37,24 @@
     margin: 0 auto;
   }
 
-  /* ── Header ── */
   .header {
     background: var(--sky);
-    padding: 30px 20px 0;    
+    padding: 30px 20px 0;
   }
   .header-top {
     display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
     justify-content: space-between;
   }
-  /* 홈으로 버튼 — 흰색 배경 */
   .back-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 13px; font-weight: 600; color: #f08080;
-  text-decoration: none; flex-shrink: 0;
-  background: white; border-radius: 50px;
-  padding: 10px 16px; min-height: 42px;
-  box-shadow: 0 2px 10px rgba(240,128,128,0.15);
-  border: none; cursor: pointer;
-}
-  
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600; color: #f08080;
+    text-decoration: none; flex-shrink: 0;
+    background: white; border-radius: 50px;
+    padding: 10px 16px; min-height: 42px;
+    box-shadow: 0 2px 10px rgba(240,128,128,0.15);
+    border: none; cursor: pointer;
+  }
+
   .header-title {
     font-family: 'Nunito', sans-serif;
     font-size: 22px; font-weight: 900; color: var(--gray-800);
@@ -66,10 +64,8 @@
     font-size: 13px; color: var(--gray-600); font-weight: 500;
   }
 
-  /* ── Tabs (상단탭 숨김, 하단 네비만 사용) ── */
   .tabs { display: none; }
 
-  /* ── Main ── */
   .main {
     padding: 20px 16px;
     padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -77,13 +73,9 @@
     margin: 0 auto;
   }
 
-  /* 탭 전환 */
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* ══════════════════════════════
-     TAB 1 — 오늘 운동
-  ══════════════════════════════ */
   .today-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 16px;
@@ -101,7 +93,6 @@
   }
   .today-subtitle { font-size: 13px; color: var(--gray-400); }
 
-  /* 운동 카드 */
   .exercise-card {
     background: var(--white); border-radius: var(--radius);
     box-shadow: var(--shadow-card); margin-bottom: 14px;
@@ -132,7 +123,6 @@
   .done-btn.done { border-color: var(--pink-btn); background: var(--pink-btn); color: white; }
   .done-btn:active { transform: scale(.88); }
 
-  /* 빈 상태 */
   .empty-state {
     text-align: center; padding: 60px 20px;
     color: var(--gray-400);
@@ -140,7 +130,6 @@
   .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; line-height: 1.6; }
 
-  /* 진행 바 */
   .progress-bar-wrap {
     background: var(--gray-200); border-radius: 20px; height: 8px;
     margin-bottom: 20px; overflow: hidden;
@@ -155,9 +144,6 @@
     font-weight: 700; font-family: 'Nunito', sans-serif;
   }
 
-  /* ══════════════════════════════
-     TAB 2 — 인바디
-  ══════════════════════════════ */
   .section-title {
     font-size: 14px; font-weight: 800; color: var(--gray-800);
     margin-bottom: 14px; font-family: 'Nunito', sans-serif;
@@ -193,7 +179,6 @@
   .inbody-save-btn:hover { opacity: .9; }
   .inbody-save-btn:active { transform: scale(.98); }
 
-  /* 그래프 토글 버튼 */
   .graph-toggle-btn {
     width: 100%; padding: 12px;
     background: var(--white); border-radius: var(--radius);
@@ -206,7 +191,6 @@
   }
   .graph-toggle-btn:hover { background: var(--sky); }
 
-  /* 선 그래프 카드 */
   .inbody-chart-card {
     background: var(--white); border-radius: var(--radius);
     padding: 18px; box-shadow: var(--shadow-card); margin-bottom: 16px;
@@ -221,7 +205,6 @@
   .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .inbody-chart-svg-wrap { width: 100%; overflow: hidden; }
 
-  /* 인바디 기록 목록 */
   .inbody-list-card {
     background: var(--white); border-radius: var(--radius);
     padding: 18px; box-shadow: var(--shadow-card);
@@ -250,9 +233,6 @@
   }
   .inbody-del-btn:hover { background: var(--pink-light); color: var(--pink-dark); }
 
-  /* ══════════════════════════════
-     TAB 3 — 설정
-  ══════════════════════════════ */
   .day-tabs {
     display: flex; gap: 5px; margin-bottom: 16px;
     justify-content: space-between;
@@ -291,7 +271,6 @@
   }
   .ex-del-btn:hover { background: var(--pink-light); color: var(--pink-dark); }
 
-  /* 추가 폼 */
   .add-ex-form {
     background: var(--white); border-radius: var(--radius);
     padding: 18px; box-shadow: var(--shadow-card);
@@ -318,7 +297,6 @@
     height: 44px; box-sizing: border-box; width: 62px;
   }
   .form-select:focus { border-color: var(--pink-btn); }
-  /* 세트수·기본중량·단위 행 */
   .form-row-swu {
     display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-end;
   }
@@ -338,7 +316,6 @@
   .add-btn:hover { opacity: .92; }
   .add-btn:active { transform: scale(.98); }
 
-  /* 완료 토스트 */
   .toast {
     position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
     background: var(--pink-dark); color: white;
@@ -350,10 +327,8 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 로딩 */
   .loading { text-align: center; padding: 40px; color: var(--gray-400); font-size: 14px; }
 
-  /* 하단 네비게이션 */
   .bottom-nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px;
@@ -378,7 +353,6 @@
   .bottom-nav-btn.active { color: var(--pink-dark); }
   .bottom-nav-btn.active .bnav-icon { transform: scale(1.15); }
 
-  /* 터치 피드백 */
   * { -webkit-tap-highlight-color: transparent; }
   .done-btn:active { transform: scale(.88); }
   .complete-all-btn:active { transform: scale(.98) !important; }
@@ -417,7 +391,6 @@
   <!-- ── TAB: 인바디 ── -->
   <div class="tab-content" id="tab-history">
 
-    <!-- 입력 폼 -->
     <div class="inbody-input-card">
       <div class="section-title">📋 인바디 입력</div>
       <div class="inbody-form-row">
@@ -443,12 +416,10 @@
       <button class="inbody-save-btn" onclick="saveInbody()">저장하기</button>
     </div>
 
-    <!-- 그래프 토글 -->
     <button class="graph-toggle-btn" id="graphToggleBtn" onclick="toggleInbodyGraph()">
       <span>📈</span><span id="graphToggleLabel">추이 그래프 보기</span>
     </button>
 
-    <!-- 선 그래프 -->
     <div class="inbody-chart-card" id="inbodyChartCard">
       <div class="section-title">📊 체성분 추이 (최근 12개월)</div>
       <div class="chart-legend">
@@ -459,10 +430,9 @@
       <div class="inbody-chart-svg-wrap" id="inbodyChartWrap"></div>
     </div>
 
-    <!-- 최근 12개 기록 -->
     <div class="inbody-list-card">
       <div class="section-title">🗓 최근 기록</div>
-      <div id="inbodyList"><div class="loading">불러오는 중...</div></div>
+      <div id="inbodyList"></div>
     </div>
   </div>
 
@@ -503,7 +473,6 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- 하단 네비게이션 -->
 <nav class="bottom-nav">
   <button class="bottom-nav-btn active" id="bnav-today" onclick="switchTab('today')">
     <span class="bnav-icon">🏋️</span>오늘 운동
@@ -517,36 +486,39 @@
 </nav>
 
 <script>
-// ── Supabase ──────────────────────────────────
-const SUPABASE_URL = 'https://zkkhzsgaryoraytvsqbf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpra2h6c2dhcnlvcmF5dHZzcWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc5ODM5OTcsImV4cCI6MjA1MzU1OTk5N30.UJtqcka35dVssnZRuUk6zukfjF9UNX392Shd841GSQk';
-const TABLE = 'zdaily_logs';
-const KEEP_DAYS = 60;
-const INBODY_TYPE = 'inbody_log';
+// ── localStorage 키 ───────────────────────────
+const LS_SCHEDULE = 'workout_schedule';
+const LS_INBODY   = 'workout_inbody';   // [{date, weight, muscle, fat}] 최신순
 
-async function sbFetch(method, query='', body=null) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}${query}`, {
-    method,
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+// ── localStorage 헬퍼 ────────────────────────
+function loadSchedule() {
+  try {
+    const raw = localStorage.getItem(LS_SCHEDULE);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { sun:[], mon:[], tue:[], wed:[], thu:[], fri:[], sat:[] };
+}
+
+function saveScheduleLS(s) {
+  localStorage.setItem(LS_SCHEDULE, JSON.stringify(s));
+}
+
+function loadInbodyLS() {
+  try {
+    const raw = localStorage.getItem(LS_INBODY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function saveInbodyLS(arr) {
+  localStorage.setItem(LS_INBODY, JSON.stringify(arr));
 }
 
 // ── 날짜 유틸 ──────────────────────────────────
-const DAYS = ['일','월','화','수','목','금','토'];
+const DAYS      = ['일','월','화','수','목','금','토'];
 const DAYS_FULL = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-const DAYS_EN = ['sun','mon','tue','wed','thu','fri','sat'];
+const DAYS_EN   = ['sun','mon','tue','wed','thu','fri','sat'];
 
 function todayStr() {
   const d = new Date();
@@ -554,53 +526,24 @@ function todayStr() {
 }
 function todayDow() { return new Date().getDay(); }
 
-// ── Supabase 스케줄 동기화 ──────
-const SCHEDULE_TYPE = 'workout_schedule';
-
-async function getSchedule() {
-  try {
-    const rows = await sbFetch('GET', `?type=eq.${SCHEDULE_TYPE}&order=id.desc&limit=1`);
-    if (rows && rows.length > 0) {
-      return rows[0].data;
-    }
-  } catch(e) {}
-  return { sun:[], mon:[], tue:[], wed:[], thu:[], fri:[], sat:[] };
-}
-
-async function saveSchedule(s) {
-  try {
-    await sbFetch('DELETE', `?type=eq.${SCHEDULE_TYPE}`);
-    await sbFetch('POST', '', {
-      log_date: todayStr(),
-      type: SCHEDULE_TYPE,
-      data: s
-    });
-  } catch(e) {
-    showToast('저장 오류: ' + e.message);
-  }
-}
-
 // ── 상태 ──────────────────────────────────────
-let todayExercises = [];
+let todayExercises   = [];
 let activeSettingDay = DAYS_EN[todayDow()];
-let inbodyRecords = [];  // [{date, weight, muscle, fat}]
-let graphOpen = false;
+let inbodyRecords    = [];
+let graphOpen        = false;
 
 // ── 초기화 ────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const now = new Date();
-  const dateLabel = `${now.getMonth()+1}월 ${now.getDate()}일`;
-  document.getElementById('todayDateLabel').textContent = dateLabel;
-  document.getElementById('todayDayBadge').textContent = DAYS_FULL[now.getDay()];
-
-  // 인바디 날짜 기본값 = 오늘
+  document.getElementById('todayDateLabel').textContent = `${now.getMonth()+1}월 ${now.getDate()}일`;
+  document.getElementById('todayDayBadge').textContent  = DAYS_FULL[now.getDay()];
   document.getElementById('ibDate').value = todayStr();
 
-  await buildTodayList();
+  buildTodayList();
   scheduleMidnightReset();
-  await buildSettingDayTabs();
-  await renderSettingList();
-  await loadInbody();
+  buildSettingDayTabs();
+  renderSettingList();
+  loadInbodyData();
   renderInbodyList();
 });
 
@@ -613,25 +556,18 @@ function scheduleMidnightReset() {
   if (midnightTimer) clearTimeout(midnightTimer);
   const now = new Date();
   const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-  const ms = nextMidnight - now;
-  midnightTimer = setTimeout(async () => {
-    await buildTodayList();
+  midnightTimer = setTimeout(() => {
+    buildTodayList();
     scheduleMidnightReset();
-  }, ms);
+  }, nextMidnight - now);
 }
 
-async function buildTodayList() {
-  const dow = DAYS_EN[todayDow()];
-  const schedule = await getSchedule();
+function buildTodayList() {
+  const dow      = DAYS_EN[todayDow()];
+  const schedule = loadSchedule();
   const exercises = schedule[dow] || [];
 
-  // 체크 상태는 메모리에만 — 저장 안 함
-  todayExercises = exercises.map((ex, ei) => ({
-    ...ex,
-    id: `ex_${ei}`,
-    done: false,
-  }));
-
+  todayExercises = exercises.map((ex, ei) => ({ ...ex, id: `ex_${ei}`, done: false }));
   renderTodayList();
 }
 
@@ -669,7 +605,7 @@ function renderTodayList() {
 function toggleExDone(ei) {
   todayExercises[ei].done = !todayExercises[ei].done;
   const card = document.getElementById(`exCard_${ei}`);
-  const btn = card.querySelector('.done-btn');
+  const btn  = card.querySelector('.done-btn');
   const isDone = todayExercises[ei].done;
   card.classList.toggle('completed', isDone);
   btn.textContent = isDone ? '✓' : '○';
@@ -679,9 +615,9 @@ function toggleExDone(ei) {
 
 function updateProgress() {
   const total = todayExercises.length;
-  const done = todayExercises.filter(ex => ex.done).length;
-  const pct = total ? Math.round(done / total * 100) : 0;
-  document.getElementById('progressBar').style.width = pct + '%';
+  const done  = todayExercises.filter(ex => ex.done).length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('progressBar').style.width  = pct + '%';
   document.getElementById('progressText').textContent = `${pct}% (${done}/${total})`;
   document.getElementById('todaySubtitle').textContent = `${done} / ${total} 완료`;
 }
@@ -689,82 +625,59 @@ function updateProgress() {
 // ══════════════════════════════
 // TAB: 인바디
 // ══════════════════════════════
-async function loadInbody() {
-  try {
-    const rows = await sbFetch('GET', `?type=eq.${INBODY_TYPE}&order=log_date.desc&limit=12`) || [];
-    inbodyRecords = rows.map(r => ({
-      id: r.id,
-      date: r.log_date,
-      weight: r.data?.weight,
-      muscle: r.data?.muscle,
-      fat: r.data?.fat,
-    }));
-  } catch(e) {
-    inbodyRecords = [];
+function loadInbodyData() {
+  // 최신순 정렬 보장 후 최대 12개만 유지
+  let arr = loadInbodyLS();
+  arr.sort((a, b) => b.date.localeCompare(a.date));
+  if (arr.length > 12) {
+    arr = arr.slice(0, 12);
+    saveInbodyLS(arr);
   }
+  inbodyRecords = arr;
 }
 
-async function saveInbody() {
+function saveInbody() {
   const date   = document.getElementById('ibDate').value;
   const weight = parseFloat(document.getElementById('ibWeight').value);
   const muscle = parseFloat(document.getElementById('ibMuscle').value);
   const fat    = parseFloat(document.getElementById('ibFat').value);
 
-  if (!date) { showToast('날짜를 입력하세요'); return; }
-  if (isNaN(weight)) { showToast('체중을 입력하세요'); return; }
+  if (!date)       { showToast('날짜를 입력하세요');   return; }
+  if (isNaN(weight)) { showToast('체중을 입력하세요');   return; }
   if (isNaN(muscle)) { showToast('골격근을 입력하세요'); return; }
   if (isNaN(fat))    { showToast('체지방량을 입력하세요'); return; }
 
-  try {
-    // 같은 날짜 기존 기록 삭제 후 재저장
-    await sbFetch('DELETE', `?type=eq.${INBODY_TYPE}&log_date=eq.${date}`);
-    await sbFetch('POST', '', {
-      log_date: date,
-      type: INBODY_TYPE,
-      data: { weight, muscle, fat, savedAt: new Date().toISOString() }
-    });
+  let arr = loadInbodyLS();
 
-    // 저장 후 최신 목록 다시 불러와서 12개 초과 시 가장 오래된 것 삭제
-    await loadInbody();
-    const allRows = await sbFetch('GET', `?type=eq.${INBODY_TYPE}&order=log_date.asc`);
-    if (allRows && allRows.length > 12) {
-      const toDelete = allRows.slice(0, allRows.length - 12);
-      for (const row of toDelete) {
-        await sbFetch('DELETE', `?id=eq.${row.id}`);
-      }
-    }
+  // 같은 날짜 기존 기록 덮어쓰기
+  arr = arr.filter(r => r.date !== date);
+  arr.push({ date, weight, muscle, fat, savedAt: new Date().toISOString() });
 
-    showToast('✅ 인바디 기록 저장!');
-  } catch(e) {
-    showToast('저장 오류: ' + e.message);
-    return;
-  }
+  // 최신순 정렬 후 12개 초과 시 오래된 것 제거
+  arr.sort((a, b) => b.date.localeCompare(a.date));
+  if (arr.length > 12) arr = arr.slice(0, 12);
 
-  // 입력 초기화
+  saveInbodyLS(arr);
+  inbodyRecords = arr;
+
   document.getElementById('ibWeight').value = '';
   document.getElementById('ibMuscle').value = '';
-  document.getElementById('ibFat').value = '';
-  document.getElementById('ibDate').value = todayStr();
+  document.getElementById('ibFat').value    = '';
+  document.getElementById('ibDate').value   = todayStr();
 
-  await loadInbody();
   renderInbodyList();
   if (graphOpen) renderInbodyChart();
+  showToast('✅ 인바디 기록 저장!');
 }
 
-async function deleteInbody(idx) {
-  const rec = inbodyRecords[idx];
-  if (!rec) return;
-  try {
-    if (rec.id) {
-      await sbFetch('DELETE', `?id=eq.${rec.id}`);
-    } else {
-      await sbFetch('DELETE', `?type=eq.${INBODY_TYPE}&log_date=eq.${rec.date}`);
-    }
-  } catch(e) {
-    showToast('삭제 오류: ' + e.message);
-    return;
-  }
-  await loadInbody();
+function deleteInbody(idx) {
+  let arr = loadInbodyLS();
+  // inbodyRecords는 최신순이므로 인덱스 그대로 사용
+  const target = inbodyRecords[idx];
+  if (!target) return;
+  arr = arr.filter(r => r.date !== target.date);
+  saveInbodyLS(arr);
+  loadInbodyData();
   renderInbodyList();
   if (graphOpen) renderInbodyChart();
   showToast('삭제됨');
@@ -777,7 +690,7 @@ function renderInbodyList() {
     return;
   }
   container.innerHTML = inbodyRecords.map((rec, idx) => {
-    const d = new Date(rec.date + 'T00:00:00');
+    const d     = new Date(rec.date + 'T00:00:00');
     const label = `${d.getMonth()+1}/${d.getDate()}`;
     return `
       <div class="inbody-record">
@@ -804,7 +717,7 @@ function renderInbodyList() {
 
 function toggleInbodyGraph() {
   graphOpen = !graphOpen;
-  const card = document.getElementById('inbodyChartCard');
+  const card  = document.getElementById('inbodyChartCard');
   const label = document.getElementById('graphToggleLabel');
   card.classList.toggle('open', graphOpen);
   label.textContent = graphOpen ? '그래프 닫기' : '추이 그래프 보기';
@@ -819,7 +732,7 @@ function renderInbodyChart() {
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
 
-  // 시간순 정렬 (오래된 것 → 최신)
+  // 오래된 것 → 최신 순 (화면 왼→오른쪽)
   const data = [...inbodyRecords].reverse();
   if (data.length < 1) {
     wrap.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">기록이 없어요</div>';
@@ -836,11 +749,9 @@ function renderInbodyChart() {
   const xPos = (i) => PAD.left + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
   const yPos = (v) => PAD.top + chartH - ((v - minV) / (maxV - minV)) * chartH;
 
-  // 포인트 좌표 생성
   const makePoints = (key) =>
     data.map((r, i) => r[key] != null ? { x: xPos(i), y: yPos(r[key]), v: r[key] } : null);
 
-  // 선 path
   const makePath = (pts) => {
     const valid = pts.filter(Boolean);
     if (valid.length < 1) return '';
@@ -857,14 +768,12 @@ function renderInbodyChart() {
   const mPts = makePoints('muscle');
   const fPts = makePoints('fat');
 
-  // 날짜 레이블
   const dateLabels = data.map((r, i) => {
     const d = new Date(r.date + 'T00:00:00');
     const label = `${d.getMonth()+1}/${d.getDate()}`;
     return `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${label}</text>`;
   }).join('');
 
-  // Y축 레이블 (3개)
   const yLabels = [0, 0.5, 1].map(t => {
     const v = minV + t * (maxV - minV);
     const y = PAD.top + chartH - t * chartH;
@@ -872,7 +781,6 @@ function renderInbodyChart() {
             <line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
   }).join('');
 
-  // 원형 포인트 + 값 레이블 (끝점만)
   const makeDots = (pts, color) => pts.filter(Boolean).map((p, i, arr) => {
     const isLast = i === arr.length - 1;
     return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${color}" />
@@ -895,25 +803,25 @@ function renderInbodyChart() {
 // ══════════════════════════════
 // TAB: 설정
 // ══════════════════════════════
-async function buildSettingDayTabs() {
-  const container = document.getElementById('dayTabs');
-  const MON_FIRST_IDX = [1,2,3,4,5,6,0];
-  container.innerHTML = MON_FIRST_IDX.map(i => `
+function buildSettingDayTabs() {
+  const container      = document.getElementById('dayTabs');
+  const MON_FIRST_IDX  = [1,2,3,4,5,6,0];
+  container.innerHTML  = MON_FIRST_IDX.map(i => `
     <button class="day-tab ${DAYS_EN[i]===activeSettingDay?'active':''}"
       onclick="selectSettingDay('${DAYS_EN[i]}',this)">${DAYS[i]}</button>
   `).join('');
 }
 
-async function selectSettingDay(day, el) {
+function selectSettingDay(day, el) {
   activeSettingDay = day;
-  document.querySelectorAll('.day-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  await renderSettingList();
+  renderSettingList();
 }
 
-async function renderSettingList() {
-  const schedule = await getSchedule();
-  const list = schedule[activeSettingDay] || [];
+function renderSettingList() {
+  const schedule = loadSchedule();
+  const list      = schedule[activeSettingDay] || [];
   const container = document.getElementById('settingExList');
 
   if (list.length === 0) {
@@ -941,7 +849,7 @@ async function renderSettingList() {
     </div>`;
 }
 
-async function addExercise() {
+function addExercise() {
   const nameEl   = document.getElementById('fName');
   const setsEl   = document.getElementById('fSets');
   const weightEl = document.getElementById('fWeight');
@@ -961,31 +869,27 @@ async function addExercise() {
     return;
   }
 
-  const emoji = '💪';
-  const unit  = document.getElementById('fUnit').value;
-
-  const schedule = await getSchedule();
+  const emoji    = '💪';
+  const unit     = document.getElementById('fUnit').value;
+  const schedule = loadSchedule();
   if (!schedule[activeSettingDay]) schedule[activeSettingDay] = [];
   schedule[activeSettingDay].push({ name, emoji, sets, defaultWeight: weight, defaultUnit: unit });
-  await saveSchedule(schedule);
+  saveScheduleLS(schedule);
 
-  ['fName','fSets','fWeight'].forEach(id => document.getElementById(id).value='');
+  ['fName','fSets','fWeight'].forEach(id => document.getElementById(id).value = '');
   [nameEl, setsEl, weightEl].forEach(el => el.classList.remove('error'));
-  await renderSettingList();
-  if (activeSettingDay === DAYS_EN[todayDow()]) {
-    await buildTodayList();
-  }
+
+  renderSettingList();
+  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
   showToast(`✅ ${name} 추가됨`);
 }
 
-async function deleteExercise(idx) {
-  const schedule = await getSchedule();
+function deleteExercise(idx) {
+  const schedule = loadSchedule();
   schedule[activeSettingDay].splice(idx, 1);
-  await saveSchedule(schedule);
-  await renderSettingList();
-  if (activeSettingDay === DAYS_EN[todayDow()]) {
-    await buildTodayList();
-  }
+  saveScheduleLS(schedule);
+  renderSettingList();
+  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
 }
 
 // ── 탭 전환 ──────────────────────────────────
@@ -993,24 +897,24 @@ function switchTab(tabName) {
   document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-  const navBtn = document.getElementById(`bnav-${tabName}`);
+  const navBtn  = document.getElementById(`bnav-${tabName}`);
   if (navBtn) navBtn.classList.add('active');
 
   const content = document.getElementById(`tab-${tabName}`);
   if (content) content.classList.add('active');
 
   if (tabName === 'history') {
-    loadInbody().then(() => {
-      renderInbodyList();
-      if (graphOpen) renderInbodyChart();
-    });
+    loadInbodyData();
+    renderInbodyList();
+    if (graphOpen) renderInbodyChart();
   }
 }
 
 // ── Toast ─────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  t.textContent = msg;
+  t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 </script>
