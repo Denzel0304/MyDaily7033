@@ -281,20 +281,16 @@
 
     /* 종목 서브탭 */
     .metric-tabs {
-      display: flex;
-      gap: 6px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
       margin-bottom: 14px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      scrollbar-width: none;
     }
-    .metric-tabs::-webkit-scrollbar { display: none; }
     .metric-tab {
-      flex-shrink: 0;
       border: none;
       border-radius: 50px;
-      padding: 7px 14px;
-      font-size: 13px;
+      padding: 7px 4px;
+      font-size: 12px;
       font-weight: 700;
       font-family: 'Nunito', sans-serif;
       cursor: pointer;
@@ -303,6 +299,10 @@
       color: var(--text-mid);
       backdrop-filter: blur(6px);
       border: 1.5px solid rgba(255,255,255,0.7);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .metric-tab.active {
       background: var(--green4);
@@ -561,12 +561,31 @@
   // ── 오늘 탭 ──
   function renderToday() {
     const d = latestData;
+
+    // pct가 null인 경우 historyData에서 어제 값으로 직접 계산
+    function calcPct(key, todayVal) {
+      if (todayVal == null) return null;
+      if (!historyData || historyData.length === 0) return null;
+      // latestData.date 기준 직전 날 유효값 찾기
+      const sorted = [...historyData]
+        .filter(h => h.date < d.date && h[key]?.value != null)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      if (sorted.length === 0) return null;
+      const prevVal = sorted[0][key].value;
+      return prevVal !== 0 ? (todayVal - prevVal) / prevVal * 100 : null;
+    }
+
+    const vixPct    = d.vix?.pct    ?? calcPct('vix',    d.vix?.value);
+    const nasdaqPct = d.nasdaq?.pct ?? calcPct('nasdaq', d.nasdaq?.value);
+    const kospiPct  = d.kospi?.pct  ?? calcPct('kospi',  d.kospi?.value);
+    const usdkrwPct = d.usdkrw?.pct ?? calcPct('usdkrw', d.usdkrw?.value);
+
     const area = document.getElementById('cards-area');
     area.innerHTML = `
-      ${makeCard('📊','VIX 지수', d.vix?.value, '', d.vix?.pct, 'VIX')}
-      ${makeCard('📈','나스닥', d.nasdaq?.value, 'pt', d.nasdaq?.pct, 'NASDAQ')}
-      ${makeCard('🇰🇷','코스피', d.kospi?.value, 'pt', d.kospi?.pct, 'KOSPI')}
-      ${makeCard('💵','달러 환율', d.usdkrw?.value, '원', d.usdkrw?.pct, 'USD/KRW')}
+      ${makeCard('📊','VIX 지수', d.vix?.value, '', vixPct, 'VIX')}
+      ${makeCard('📈','나스닥', d.nasdaq?.value, 'pt', nasdaqPct, 'NASDAQ')}
+      ${makeCard('🇰🇷','코스피', d.kospi?.value, 'pt', kospiPct, 'KOSPI')}
+      ${makeCard('💵','달러 환율', d.usdkrw?.value, '원', usdkrwPct, 'USD/KRW')}
       ${makeCapCard(d.top_stock)}
     `;
   }
@@ -690,7 +709,7 @@
     const maxV = Math.max(...vals);
     const range = maxV - minV || 1;
 
-    const W = 340, H = 110, PAD_X = 8, PAD_Y = 10;
+    const W = 340, H = 130, PAD_X = 8, PAD_Y = 22;
     const plotW = W - PAD_X * 2;
     const plotH = H - PAD_Y * 2;
     const n = validSlice.length;
