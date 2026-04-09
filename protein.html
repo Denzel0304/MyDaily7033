@@ -282,8 +282,11 @@
       box-shadow: 0 0 0 8px rgba(61,190,122,0.1), 0 8px 32px rgba(61,190,122,0.22);
     }
     body.carb-mode .wave-fill { background: linear-gradient(180deg, #f5c842, #f5a623); }
-    body.carb-mode .stat-val { color: #e8841a; }
+    body.carb-mode .wave-outer.overflow .wave-fill { background: linear-gradient(180deg, var(--green2), var(--green3)); }
+    body.carb-mode .stat-val { color: var(--accent); }
     body.carb-mode .stat-val.intake { color: var(--green3); }
+    body.carb-mode .stat-val.remain { color: var(--rose); }
+    body.carb-mode .stat-val.green { color: var(--green3); }
     body.carb-mode .meal-group-total { color: #e8841a; background: rgba(245,166,35,0.10); }
     body.carb-mode .food-protein { color: #e8841a; }
     body.carb-mode .add-btn { background: linear-gradient(135deg, #f5a623, #e8841a); box-shadow: 0 4px 16px rgba(245,166,35,0.3); }
@@ -417,9 +420,10 @@
         <option value="sweetpotato">🍠 고구마</option>
         <option value="bread">🍞 식빵</option>
         <option value="misugaru">🌾 미숫가루</option>
-        <option value="jjajang">🍜 짜장면</option>
         <option value="ramen">🍜 라면</option>
+        <option value="jjajang">🍜 짜장면</option>
         <option value="somyeon">🍜 소면</option>
+        <option value="tteok">🍡 떡</option>
       </select>
       <input type="number" id="amountInput" placeholder="g" min="1" max="2000" oninput="onFoodChange()"/>
     </div>
@@ -550,7 +554,7 @@
   // null = 개수 기반 (1개당 고정값)
   // 숫자 = 100g당 탄수화물 g
   const CARB_PER_100G = {
-    grainrice:   38.1,   // 잡곡밥 100g당
+    grainrice:   34.0,   // 잡곡밥 100g당 → 250g 시 85g
     banana:      null,   // 1개(과육 70g) = 약 16g
     sweetpotato: 27.7,   // 고구마 100g당
     bread:       48.0,   // 식빵 100g당 48g → 1장(30g) = 14.4g
@@ -558,6 +562,7 @@
     jjajang:     null,   // 1개 = 80g
     ramen:       null,   // 1개 = 83g
     somyeon:     null,   // 1개 = 65g
+    tteok:       50.0,   // 떡 100g당
   };
   const CARB_UNIT_AMOUNT = {
     banana:   16,    // 1개당 탄수화물 g (과육 70g 기준)
@@ -576,16 +581,17 @@
     jjajang:     '개',
     ramen:       '개',
     somyeon:     '개',
+    tteok:       'g',
   };
   const CARB_FOOD_NAMES = {
     grainrice:'잡곡밥', banana:'바나나', sweetpotato:'고구마',
     bread:'식빵', misugaru:'미숫가루', jjajang:'짜장면',
-    ramen:'라면', somyeon:'소면'
+    ramen:'라면', somyeon:'소면', tteok:'떡'
   };
   const CARB_FOOD_ICONS = {
     grainrice:'🍚', banana:'🍌', sweetpotato:'🍠',
     bread:'🍞', misugaru:'🌾', jjajang:'🍜',
-    ramen:'🍜', somyeon:'🍜'
+    ramen:'🍜', somyeon:'🍜', tteok:'🍡'
   };
 
   // ── 단백질 계산 ────────────────────────────────
