@@ -177,7 +177,7 @@ window.switchTab=function(tab){
   if(tab==='month'){monthYear=new Date().getFullYear();monthMonth=new Date().getMonth();renderMonth();}
 };
 
-function getTodayEmotions(){return records.filter(r=>r.date===todayStr());}
+function getTodayEmotions(){const t=todayStr();return records.filter(r=>r.date===t&&r.deletedAt!==t);}
 
 window.addEmotion=function(){
   const input=document.getElementById('emotion-input');
@@ -272,11 +272,12 @@ function clickFruit(label,type){
 window.clickFruitDesktop=clickFruit;
 
 function deleteFruit(label,type){
-  const idx=records.findIndex(r=>r.date===todayStr()&&r.label===label&&r.type===type);
-  if(idx>=0){
-    records.splice(idx,1);
-    saveData();drawTree();
-  }
+  const today=todayStr();
+  const rec=records.find(r=>r.date===today&&r.label===label&&r.type===type);
+  if(!rec)return;
+  // 오늘 열매만 삭제 플래그. 과거 날짜 기록은 건드리지 않아 이번주/달 통계 보존
+  rec.deletedAt=today;
+  saveData();drawTree();
 }
 
 /* === TREE === */
@@ -382,7 +383,7 @@ window.changeMonth=function(d){
   renderMonth();
 };
 
-function getRange(s,e){const ss=dStr(s),ee=dStr(e);return records.filter(r=>r.date>=ss&&r.date<=ee);}
+function getRange(s,e){const ss=dStr(s),ee=dStr(e);return records.filter(r=>r.date>=ss&&r.date<=ee&&r.deletedAt!==r.date);}
 function buildEM(recs){
   const m={};recs.forEach(r=>{const k=r.label+'|'+r.type;if(!m[k])m[k]={label:r.label,type:r.type,count:0};m[k].count+=r.count||1;});
   return Object.values(m).sort((a,b)=>b.count-a.count);
