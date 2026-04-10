@@ -236,9 +236,8 @@ treeArea.addEventListener('touchend',function(e){
   const t=e.changedTouches[0];
   if(dragState.moved&&overDZ(t.clientY)){
     deleteFruit(dragState.label,dragState.type);
-  } else if(!dragState.moved){
-    clickFruit(dragState.label,dragState.type);
   }
+  // 단순 탭은 여기서 처리 안 함 — click 이벤트 위임이 처리
   dragState=null;showDZ(false);
   document.getElementById('delete-zone').classList.remove('over');
 },{passive:true});
@@ -246,6 +245,14 @@ treeArea.addEventListener('touchcancel',function(){
   cancelLP();
   if(dragState){document.getElementById('drag-ghost').style.display='none';showDZ(false);dragState=null;}
 },{passive:true});
+
+// 클릭 이벤트 위임 (터치/마우스 모두 처리, 단 드래그 중엔 무시)
+treeArea.addEventListener('click',function(e){
+  if(dragState)return;
+  const el=e.target.closest('[data-fruit]');
+  if(!el)return;
+  clickFruit(el.dataset.fruit,el.dataset.type);
+});
 
 function clickFruit(label,type){
   const rec=records.find(r=>r.date===todayStr()&&r.label===label&&r.type===type);
@@ -267,23 +274,23 @@ function deleteFruit(label,type){
 /* === TREE === */
 const PP=['#b5d99c','#aec6e8','#f5e4a0','#d4b8e8','#a8d8c8','#f5c2a8','#c8e0b8'];
 const NP=['#f5b8b8','#d4a8c8','#e8c4a8','#c8a8d8','#f5d0a8','#b8c8e8','#e8b8c8'];
-const R=36; // 고정 반지름
+const R=34; // 고정 반지름
 
-// 고정 슬롯 13개: 중심간 거리 최소 R*2+8=80 보장, 나무 30px 위로
+// 슬롯 13개: 중심간 최소 거리 R*2+14=82 이상, 나뭇잎 안에 균형 배치
 const FIXED_SLOTS=[
-  {x:195,y:108},   // 0: 꼭대기
-  {x:112,y:162},   // 1: 좌상
-  {x:278,y:156},   // 2: 우상
-  {x:195,y:200},   // 3: 중앙 상
-  {x:72, y:240},   // 4: 좌중
-  {x:318,y:234},   // 5: 우중
-  {x:148,y:258},   // 6: 좌중하
-  {x:242,y:254},   // 7: 우중하
-  {x:195,y:300},   // 8: 중앙 중하
-  {x:90, y:318},   // 9: 좌하
-  {x:300,y:313},   // 10: 우하
-  {x:148,y:358},   // 11: 좌 최하
-  {x:242,y:354},   // 12: 우 최하
+  {x:195,y:112},   // 0: 꼭대기 중앙
+  {x:118,y:168},   // 1: 좌상
+  {x:272,y:163},   // 2: 우상
+  {x:195,y:205},   // 3: 중앙 상
+  {x:76, y:248},   // 4: 좌중
+  {x:314,y:242},   // 5: 우중
+  {x:152,y:262},   // 6: 좌중하
+  {x:238,y:258},   // 7: 우중하
+  {x:195,y:308},   // 8: 중앙 중하
+  {x:94, y:326},   // 9: 좌하
+  {x:296,y:321},   // 10: 우하
+  {x:152,y:362},   // 11: 좌 최하
+  {x:238,y:358},   // 12: 우 최하
 ];
 
 function drawTree(){
@@ -291,7 +298,7 @@ function drawTree(){
   const fruits=getTodayEmotions();
   let o='';
 
-  // 그림자 (나무 위로 30px)
+  // 그림자
   o+=`<ellipse cx="195" cy="494" rx="82" ry="13" fill="#d4c4a8" opacity="0.3"/>`;
   // 줄기
   o+=`<path d="M174,496 C175,430 179,368 181,328" stroke="#c8a97a" stroke-width="26" fill="none" stroke-linecap="round"/>`;
@@ -305,7 +312,7 @@ function drawTree(){
   o+=`<path d="M192,165 C172,148 145,135 118,125" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
   o+=`<path d="M192,165 C214,148 240,135 264,125" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
 
-  // 잎사귀 (30px 위로)
+  // 잎사귀
   [
     {cx:195,cy:255,rx:155,ry:138,op:0.17,c:'#5fa85f'},
     {cx:148,cy:232,rx:135,ry:120,op:0.19,c:'#6ab86a'},
@@ -322,7 +329,7 @@ function drawTree(){
     {cx:195,cy:110,rx:65, ry:58, op:0.30,c:'#c6eec6'},
   ].forEach(f=>o+=`<ellipse cx="${f.cx}" cy="${f.cy}" rx="${f.rx}" ry="${f.ry}" fill="${f.c}" opacity="${f.op}"/>`);
 
-  // 열매: 슬롯 번호 기반으로 고정 위치에 그림
+  // 열매: onclick 없음 — 터치/클릭은 이벤트 위임으로만 처리
   fruits.forEach((fr)=>{
     const si=typeof fr.slot==='number'?fr.slot:0;
     if(si>=FIXED_SLOTS.length)return;
@@ -335,20 +342,20 @@ function drawTree(){
     const le=fr.label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&apos;');
     // 줄기
     o+=`<line x1="${p.x}" y1="${p.y-R}" x2="${p.x+5}" y2="${p.y-R-14}" stroke="#b8956a" stroke-width="2.5" stroke-linecap="round"/>`;
-    // 히트박스
-    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}" onclick="clickFruitDesktop('${le}','${fr.type}')"/>`;
-    // 열매
+    // 히트박스 — onclick 제거, data 속성만 (이벤트 위임으로 처리)
+    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}"/>`;
+    // 열매 본체
     o+=`<circle cx="${p.x}" cy="${p.y}" r="${R}" fill="${col}" stroke="rgba(0,0,0,0.06)" stroke-width="1" pointer-events="none"/>`;
-    // 텍스트 크기: 1글자=21, 2글자=18, 3글자=15
+    // 텍스트: 볼드, 글자수별 크기
     const ll=fr.label.length;
-    const fs=ll<=1?21:ll===2?18:15;
-    o+=`<text x="${p.x}" y="${p.y+fs*0.38}" text-anchor="middle" font-size="${fs}" fill="#3d2b1f" font-family="'Gamja Flower',cursive" pointer-events="none">${fr.label}</text>`;
+    const fs=ll<=1?22:ll===2?19:16;
+    o+=`<text x="${p.x}" y="${p.y+fs*0.38}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#3d2b1f" font-family="'Gamja Flower',cursive" pointer-events="none">${fr.label}</text>`;
     // +/- 뱃지
     o+=`<circle cx="${p.x-R+12}" cy="${p.y-R+12}" r="12" fill="${fr.type==='+'?'#c8e6c9':'#ffcdd2'}" pointer-events="none"/>`;
     o+=`<text x="${p.x-R+12}" y="${p.y-R+17}" text-anchor="middle" font-size="14" fill="${tcol}" font-weight="700" pointer-events="none">${tc}</text>`;
-    // 카운트 뱃지: 2 이상일 때만 표시
+    // 카운트 뱃지: 2 이상, 진한 녹색
     if(cnt>=2){
-      o+=`<circle cx="${p.x+R-11}" cy="${p.y-R+11}" r="13" fill="#e05050" pointer-events="none"/>`;
+      o+=`<circle cx="${p.x+R-11}" cy="${p.y-R+11}" r="13" fill="#2e7d32" pointer-events="none"/>`;
       o+=`<text x="${p.x+R-11}" y="${p.y-R+16}" text-anchor="middle" font-size="12" fill="white" font-weight="700" pointer-events="none">${cnt>99?'99+':cnt}</text>`;
     }
   });
