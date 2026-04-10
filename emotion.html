@@ -31,7 +31,7 @@ body{font-family:'Gamja Flower',cursive;background:#fdf6ee;overscroll-behavior:n
 .tab-panel.active{display:flex;}
 .input-area{padding:11px 12px;background:var(--warm1);border-bottom:1px solid var(--warm2);flex-shrink:0;}
 .input-row{display:flex;gap:7px;align-items:center;}
-.type-select{border:1.5px solid var(--warm2);border-radius:20px;padding:9px 10px;font-size:15px;font-family:var(--font-round);background:#fff;color:var(--brown3);outline:none;cursor:pointer;min-width:80px;flex-shrink:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23b89880'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;}
+.type-select{border:1.5px solid var(--warm2);border-radius:20px;padding:10px 10px 8px 10px;font-size:15px;font-family:var(--font-round);background:#fff;color:var(--brown3);outline:none;cursor:pointer;min-width:82px;flex-shrink:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23b89880'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;line-height:1.5;}
 .emotion-input{flex:1;min-width:0;border:1.5px solid var(--warm2);border-radius:20px;padding:9px 14px;font-size:16px;font-family:var(--font-round);background:#fff;color:var(--text1);outline:none;transition:border-color 0.2s;}
 .emotion-input:focus{border-color:var(--brown1);}
 .add-btn{width:42px;height:42px;border-radius:50%;background:var(--brown1);border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s,transform 0.1s;line-height:1;}
@@ -172,11 +172,20 @@ window.addEmotion=function(){
   const td=todayStr(),hour=new Date().getHours();
   const ex=records.find(r=>r.date===td&&r.label===label&&r.type===type);
   if(ex){
+    // 이미 있는 열매: 카운트만 증가 (클릭과 동일)
     ex.count=(ex.count||1)+1;
     ex.times=ex.times||[];ex.times.push(hour);
   } else {
-    if(getTodayEmotions().length>=100){alert('오늘은 더 이상 추가할 수 없어요');return;}
-    records.push({date:td,label,type,count:1,times:[hour],ts:Date.now()});
+    const todayList=getTodayEmotions();
+    if(todayList.length>=13){alert('오늘 열매는 최대 13개까지 달 수 있어요 🌳');return;}
+    // 빈 슬롯 번호 찾기
+    const usedSlots=new Set(todayList.map(r=>r.slot));
+    let freeSlot=-1;
+    for(let i=0;i<13;i++){if(!usedSlots.has(i)){freeSlot=i;break;}}
+    if(freeSlot<0)return;
+    const colorIdx=freeSlot%7;
+    // count:1 — 첫 등록은 1, 클릭해야 2가 됨
+    records.push({date:td,label,type,count:1,times:[hour],ts:Date.now(),slot:freeSlot,colorIdx});
   }
   saveData();input.value='';drawTree();
   const h=document.getElementById('drag-hint');
@@ -249,84 +258,101 @@ window.clickFruitDesktop=clickFruit;
 
 function deleteFruit(label,type){
   const idx=records.findIndex(r=>r.date===todayStr()&&r.label===label&&r.type===type);
-  if(idx>=0){records.splice(idx,1);saveData();drawTree();}
+  if(idx>=0){
+    records.splice(idx,1);
+    saveData();drawTree();
+  }
 }
 
 /* === TREE === */
 const PP=['#b5d99c','#aec6e8','#f5e4a0','#d4b8e8','#a8d8c8','#f5c2a8','#c8e0b8'];
 const NP=['#f5b8b8','#d4a8c8','#e8c4a8','#c8a8d8','#f5d0a8','#b8c8e8','#e8b8c8'];
-const SLOTS=[
-  {x:195,y:145},{x:112,y:185},{x:278,y:180},
-  {x:82,y:255},{x:308,y:248},{x:148,y:295},{x:244,y:290},
-  {x:135,y:220},{x:258,y:215},{x:195,y:262},
-  {x:108,y:318},{x:284,y:312},{x:195,y:335}
+const R=36; // 고정 반지름
+
+// 고정 슬롯 13개: 중심간 거리 최소 R*2+8=80 보장, 나무 30px 위로
+const FIXED_SLOTS=[
+  {x:195,y:108},   // 0: 꼭대기
+  {x:112,y:162},   // 1: 좌상
+  {x:278,y:156},   // 2: 우상
+  {x:195,y:200},   // 3: 중앙 상
+  {x:72, y:240},   // 4: 좌중
+  {x:318,y:234},   // 5: 우중
+  {x:148,y:258},   // 6: 좌중하
+  {x:242,y:254},   // 7: 우중하
+  {x:195,y:300},   // 8: 중앙 중하
+  {x:90, y:318},   // 9: 좌하
+  {x:300,y:313},   // 10: 우하
+  {x:148,y:358},   // 11: 좌 최하
+  {x:242,y:354},   // 12: 우 최하
 ];
-function getR(n){if(n<=7)return 33;if(n<=10)return 27;if(n<=13)return 22;return 17;}
 
 function drawTree(){
   const svg=document.getElementById('tree-svg');
   const fruits=getTodayEmotions();
-  const n=fruits.length,r=getR(n);
   let o='';
 
-  o+=`<ellipse cx="195" cy="524" rx="82" ry="13" fill="#d4c4a8" opacity="0.3"/>`;
-  // trunk
-  o+=`<path d="M174,526 C175,460 179,398 181,358" stroke="#c8a97a" stroke-width="26" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M216,526 C215,460 211,398 209,358" stroke="#b8956a" stroke-width="19" fill="none" stroke-linecap="round"/>`;
-  // branches
-  o+=`<path d="M181,358 C158,316 122,272 84,228" stroke="#c8a97a" stroke-width="12" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M196,332 C220,290 258,256 296,224" stroke="#c8a97a" stroke-width="11" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M183,374 C150,358 115,336 82,298" stroke="#b8956a" stroke-width="10" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M207,370 C242,354 278,334 308,298" stroke="#b8956a" stroke-width="10" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M190,305 C192,264 191,222 192,182" stroke="#c8a97a" stroke-width="9" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M192,195 C172,178 145,165 118,155" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
-  o+=`<path d="M192,195 C214,178 240,165 264,155" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  // 그림자 (나무 위로 30px)
+  o+=`<ellipse cx="195" cy="494" rx="82" ry="13" fill="#d4c4a8" opacity="0.3"/>`;
+  // 줄기
+  o+=`<path d="M174,496 C175,430 179,368 181,328" stroke="#c8a97a" stroke-width="26" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M216,496 C215,430 211,368 209,328" stroke="#b8956a" stroke-width="19" fill="none" stroke-linecap="round"/>`;
+  // 가지
+  o+=`<path d="M181,328 C158,286 122,242 84,198" stroke="#c8a97a" stroke-width="12" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M196,302 C220,260 258,226 296,194" stroke="#c8a97a" stroke-width="11" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M183,344 C150,328 115,306 82,268" stroke="#b8956a" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M207,340 C242,324 278,304 308,268" stroke="#b8956a" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M190,275 C192,234 191,192 192,152" stroke="#c8a97a" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M192,165 C172,148 145,135 118,125" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  o+=`<path d="M192,165 C214,148 240,135 264,125" stroke="#c8a97a" stroke-width="6" fill="none" stroke-linecap="round"/>`;
 
-  // foliage — lush & large
+  // 잎사귀 (30px 위로)
   [
-    {cx:195,cy:285,rx:155,ry:138,op:0.17,c:'#5fa85f'},
-    {cx:148,cy:262,rx:135,ry:120,op:0.19,c:'#6ab86a'},
-    {cx:244,cy:258,rx:132,ry:118,op:0.19,c:'#6ab86a'},
-    {cx:195,cy:248,rx:145,ry:128,op:0.23,c:'#78c878'},
-    {cx:162,cy:230,rx:118,ry:106,op:0.27,c:'#88d288'},
-    {cx:230,cy:226,rx:115,ry:103,op:0.27,c:'#88d288'},
-    {cx:195,cy:208,rx:128,ry:114,op:0.30,c:'#96dc96'},
-    {cx:172,cy:194,rx:100,ry:90,op:0.28,c:'#a4e0a4'},
-    {cx:220,cy:191,rx:97,ry:87,op:0.28,c:'#a4e0a4'},
-    {cx:195,cy:172,rx:102,ry:92,op:0.32,c:'#b0e6b0'},
-    {cx:176,cy:158,rx:78,ry:70,op:0.28,c:'#bceabc'},
-    {cx:215,cy:155,rx:75,ry:67,op:0.28,c:'#bceabc'},
-    {cx:195,cy:140,rx:65,ry:58,op:0.30,c:'#c6eec6'},
+    {cx:195,cy:255,rx:155,ry:138,op:0.17,c:'#5fa85f'},
+    {cx:148,cy:232,rx:135,ry:120,op:0.19,c:'#6ab86a'},
+    {cx:244,cy:228,rx:132,ry:118,op:0.19,c:'#6ab86a'},
+    {cx:195,cy:218,rx:145,ry:128,op:0.23,c:'#78c878'},
+    {cx:162,cy:200,rx:118,ry:106,op:0.27,c:'#88d288'},
+    {cx:230,cy:196,rx:115,ry:103,op:0.27,c:'#88d288'},
+    {cx:195,cy:178,rx:128,ry:114,op:0.30,c:'#96dc96'},
+    {cx:172,cy:164,rx:100,ry:90, op:0.28,c:'#a4e0a4'},
+    {cx:220,cy:161,rx:97, ry:87, op:0.28,c:'#a4e0a4'},
+    {cx:195,cy:142,rx:102,ry:92, op:0.32,c:'#b0e6b0'},
+    {cx:176,cy:128,rx:78, ry:70, op:0.28,c:'#bceabc'},
+    {cx:215,cy:125,rx:75, ry:67, op:0.28,c:'#bceabc'},
+    {cx:195,cy:110,rx:65, ry:58, op:0.30,c:'#c6eec6'},
   ].forEach(f=>o+=`<ellipse cx="${f.cx}" cy="${f.cy}" rx="${f.rx}" ry="${f.ry}" fill="${f.c}" opacity="${f.op}"/>`);
 
-  fruits.forEach((fr,i)=>{
-    if(i>=SLOTS.length)return;
-    const p=SLOTS[i];
-    const col=fr.type==='+'?PP[i%PP.length]:NP[i%NP.length];
+  // 열매: 슬롯 번호 기반으로 고정 위치에 그림
+  fruits.forEach((fr)=>{
+    const si=typeof fr.slot==='number'?fr.slot:0;
+    if(si>=FIXED_SLOTS.length)return;
+    const p=FIXED_SLOTS[si];
+    const ci=typeof fr.colorIdx==='number'?fr.colorIdx:(si%7);
+    const col=fr.type==='+'?PP[ci]:NP[ci];
     const tcol=fr.type==='+'?'#2e7d32':'#c62828';
     const tc=fr.type==='+'?'+':'−';
     const cnt=fr.count||1;
     const le=fr.label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&apos;');
-    // stem
-    o+=`<line x1="${p.x}" y1="${p.y-r}" x2="${p.x+5}" y2="${p.y-r-15}" stroke="#b8956a" stroke-width="2.5" stroke-linecap="round"/>`;
-    // invisible large hitbox
-    o+=`<circle cx="${p.x}" cy="${p.y}" r="${r+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}" onclick="clickFruitDesktop('${le}','${fr.type}')"/>`;
-    // body
-    o+=`<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${col}" stroke="rgba(0,0,0,0.06)" stroke-width="1" pointer-events="none"/>`;
-    // label
-    const fs=r>=29?13:r>=23?11:9;
-    o+=`<text x="${p.x}" y="${p.y+fs*0.4}" text-anchor="middle" font-size="${fs}" fill="#3d2b1f" font-family="'Gamja Flower',cursive" font-weight="400" pointer-events="none">${fr.label}</text>`;
-    // type badge
-    o+=`<circle cx="${p.x-r+11}" cy="${p.y-r+11}" r="11" fill="${fr.type==='+'?'#c8e6c9':'#ffcdd2'}" pointer-events="none"/>`;
-    o+=`<text x="${p.x-r+11}" y="${p.y-r+16}" text-anchor="middle" font-size="13" fill="${tcol}" font-weight="700" pointer-events="none">${tc}</text>`;
-    // count badge — only when >1
-    if(cnt>1){
-      o+=`<circle cx="${p.x+r-10}" cy="${p.y-r+10}" r="12" fill="#e05050" pointer-events="none"/>`;
-      o+=`<text x="${p.x+r-10}" y="${p.y-r+14}" text-anchor="middle" font-size="11" fill="white" font-weight="700" pointer-events="none">${cnt>99?'99+':cnt}</text>`;
+    // 줄기
+    o+=`<line x1="${p.x}" y1="${p.y-R}" x2="${p.x+5}" y2="${p.y-R-14}" stroke="#b8956a" stroke-width="2.5" stroke-linecap="round"/>`;
+    // 히트박스
+    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}" onclick="clickFruitDesktop('${le}','${fr.type}')"/>`;
+    // 열매
+    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R}" fill="${col}" stroke="rgba(0,0,0,0.06)" stroke-width="1" pointer-events="none"/>`;
+    // 텍스트 크기: 1글자=21, 2글자=18, 3글자=15
+    const ll=fr.label.length;
+    const fs=ll<=1?21:ll===2?18:15;
+    o+=`<text x="${p.x}" y="${p.y+fs*0.38}" text-anchor="middle" font-size="${fs}" fill="#3d2b1f" font-family="'Gamja Flower',cursive" pointer-events="none">${fr.label}</text>`;
+    // +/- 뱃지
+    o+=`<circle cx="${p.x-R+12}" cy="${p.y-R+12}" r="12" fill="${fr.type==='+'?'#c8e6c9':'#ffcdd2'}" pointer-events="none"/>`;
+    o+=`<text x="${p.x-R+12}" y="${p.y-R+17}" text-anchor="middle" font-size="14" fill="${tcol}" font-weight="700" pointer-events="none">${tc}</text>`;
+    // 카운트 뱃지: 2 이상일 때만 표시
+    if(cnt>=2){
+      o+=`<circle cx="${p.x+R-11}" cy="${p.y-R+11}" r="13" fill="#e05050" pointer-events="none"/>`;
+      o+=`<text x="${p.x+R-11}" y="${p.y-R+16}" text-anchor="middle" font-size="12" fill="white" font-weight="700" pointer-events="none">${cnt>99?'99+':cnt}</text>`;
     }
   });
 
-  if(n===0){/* 안내문구 없음 */}
   svg.innerHTML=o;
 }
 
