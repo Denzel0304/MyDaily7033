@@ -88,11 +88,11 @@ body{font-family:'Gamja Flower',cursive;background:#fdf6ee;overscroll-behavior:n
     <div class="tab-panel active" id="panel-today">
       <div class="input-area">
         <div class="input-row">
+          <input class="emotion-input" id="emotion-input" placeholder="지금 감정은?" maxlength="8"/>
           <select class="type-select" id="emotion-type">
             <option value="+">😊 긍정</option>
             <option value="-">😔 부정</option>
           </select>
-          <input class="emotion-input" id="emotion-input" placeholder="지금 감정은?" maxlength="8"/>
           <button class="add-btn" onclick="addEmotion()">+</button>
         </div>
       </div>
@@ -203,10 +203,10 @@ window.addEmotion=function(){
 /* === DRAG-TO-DELETE === */
 let dragState=null,longPressTimer=null;
 
-function startLP(e,label,type){
+function startLP(e,label,type,slot){
   const t=e.touches?e.touches[0]:e;
   longPressTimer=setTimeout(()=>{
-    dragState={label,type,moved:false};
+    dragState={label,type,slot,moved:false};
     showDZ(true);updateGhost(t.clientX,t.clientY,label,type);
     document.getElementById('drag-ghost').style.display='block';
     if(navigator.vibrate)navigator.vibrate(40);
@@ -227,7 +227,7 @@ const treeArea=document.getElementById('tree-area');
 treeArea.addEventListener('touchstart',function(e){
   const el=e.target.closest('[data-fruit]');
   if(!el)return;
-  startLP(e,el.dataset.fruit,el.dataset.type);
+  startLP(e,el.dataset.fruit,el.dataset.type,el.dataset.slot);
 },{passive:true});
 treeArea.addEventListener('touchmove',function(e){
   if(!dragState){cancelLP();return;}
@@ -243,7 +243,7 @@ treeArea.addEventListener('touchend',function(e){
   document.getElementById('drag-ghost').style.display='none';
   const t=e.changedTouches[0];
   if(dragState.moved&&overDZ(t.clientY)){
-    deleteFruit(dragState.label,dragState.type);
+    deleteFruit(dragState.label,dragState.type,dragState.slot);
   }
   // 단순 탭은 여기서 처리 안 함 — click 이벤트 위임이 처리
   dragState=null;showDZ(false);
@@ -259,11 +259,12 @@ treeArea.addEventListener('click',function(e){
   if(dragState)return;
   const el=e.target.closest('[data-fruit]');
   if(!el)return;
-  clickFruit(el.dataset.fruit,el.dataset.type);
+  clickFruit(el.dataset.fruit,el.dataset.type,el.dataset.slot);
 });
 
-function clickFruit(label,type){
-  const rec=records.find(r=>r.date===todayStr()&&r.label===label&&r.type===type);
+function clickFruit(label,type,slot){
+  const today=todayStr();
+  const rec=records.find(r=>r.date===today&&r.label===label&&r.type===type&&r.slot===parseInt(slot)&&r.deletedAt!==today);
   if(!rec)return;
   rec.count=(rec.count||0)+1;
   rec.times=rec.times||[];rec.times.push(new Date().getHours());
@@ -271,9 +272,9 @@ function clickFruit(label,type){
 }
 window.clickFruitDesktop=clickFruit;
 
-function deleteFruit(label,type){
+function deleteFruit(label,type,slot){
   const today=todayStr();
-  const rec=records.find(r=>r.date===today&&r.label===label&&r.type===type);
+  const rec=records.find(r=>r.date===today&&r.label===label&&r.type===type&&r.slot===parseInt(slot)&&r.deletedAt!==today);
   if(!rec)return;
   // 오늘 열매만 삭제 플래그. 과거 날짜 기록은 건드리지 않아 이번주/달 통계 보존
   rec.deletedAt=today;
@@ -351,7 +352,7 @@ function drawTree(){
     // 줄기
     o+=`<line x1="${p.x}" y1="${p.y-R}" x2="${p.x+5}" y2="${p.y-R-14}" stroke="#b8956a" stroke-width="2.5" stroke-linecap="round"/>`;
     // 히트박스 — onclick 제거, data 속성만 (이벤트 위임으로 처리)
-    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}"/>`;
+    o+=`<circle cx="${p.x}" cy="${p.y}" r="${R+8}" fill="transparent" data-fruit="${le}" data-type="${fr.type}" data-slot="${si}"/>`;
     // 열매 본체
     o+=`<circle cx="${p.x}" cy="${p.y}" r="${R}" fill="${col}" stroke="rgba(0,0,0,0.06)" stroke-width="1" pointer-events="none"/>`;
     // 텍스트: 볼드, 글자수별 크기
@@ -385,13 +386,13 @@ window.changeMonth=function(d){
 
 function getRange(s,e){const ss=dStr(s),ee=dStr(e);return records.filter(r=>r.date>=ss&&r.date<=ee&&r.deletedAt!==r.date);}
 function buildEM(recs){
-  const m={};recs.forEach(r=>{const k=r.label+'|'+r.type;if(!m[k])m[k]={label:r.label,type:r.type,count:0};m[k].count+=r.count||1;});
+  const m={};recs.forEach(r=>{const k=r.label+'|'+r.type;if(!m[k])m[k]={label:r.label,type:r.type,count:0};m[k].count+=(r.count||0);});
   return Object.values(m).sort((a,b)=>b.count-a.count);
 }
 function buildDD(recs,days){
   return days.map(day=>{
     const it=recs.filter(r=>r.date===day);
-    return{day,p:it.filter(r=>r.type==='+').reduce((a,r)=>a+(r.count||1),0),n:it.filter(r=>r.type==='-').reduce((a,r)=>a+(r.count||1),0)};
+    return{day,p:it.filter(r=>r.type==='+').reduce((a,r)=>a+(r.count||0),0),n:it.filter(r=>r.type==='-').reduce((a,r)=>a+(r.count||0),0)};
   });
 }
 function buildHD(recs){
@@ -403,7 +404,7 @@ function buildHD(recs){
 
 function renderStats(recs,days){
   if(!recs.length)return '<div class="no-data">이 기간엔 기록된 감정이 없어요 🌱</div>';
-  let pos=0,neg=0;recs.forEach(r=>{if(r.type==='+')pos+=r.count||1;else neg+=r.count||1;});
+  let pos=0,neg=0;recs.forEach(r=>{if(r.type==='+')pos+=(r.count||0);else neg+=(r.count||0);});
   const tot=pos+neg,pr=tot>0?Math.round(pos/tot*100):0,nr=100-pr;
   const cmt=pos>neg*1.5?'긍정적인 감정이 풍부했던 기간이에요 🌸':neg>pos*1.5?'힘든 감정이 많았어요. 수고 많으셨어요 💙':'긍정과 부정이 균형을 이뤘어요 🌿';
   let html=`<div class="summary-card"><div class="summary-title">감정 요약</div>
