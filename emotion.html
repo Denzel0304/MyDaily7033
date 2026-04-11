@@ -135,11 +135,34 @@ const SK='haruemotion_v4';
 let records=[];
 function loadData(){
   try{
-    // v4 먼저 시도
     let s=localStorage.getItem('haruemotion_v4');
-    // 없으면 v3 시도 (이전 버전 마이그레이션)
     if(!s)s=localStorage.getItem('haruemotion_v3');
-    if(s)records=JSON.parse(s);
+    if(s){
+      records=JSON.parse(s);
+      // 구버전 데이터 정리
+      // 1) slot 없는 레코드: 날짜별로 슬롯 번호 재부여
+      const dateGroups={};
+      records.forEach(r=>{
+        if(!dateGroups[r.date])dateGroups[r.date]=[];
+        dateGroups[r.date].push(r);
+      });
+      Object.values(dateGroups).forEach(group=>{
+        let nextSlot=0;
+        const usedSlots=new Set(group.filter(r=>typeof r.slot==='number').map(r=>r.slot));
+        group.forEach(r=>{
+          if(typeof r.slot!=='number'){
+            while(usedSlots.has(nextSlot))nextSlot++;
+            r.slot=nextSlot;
+            r.colorIdx=nextSlot%7;
+            usedSlots.add(nextSlot);
+            nextSlot++;
+          }
+          if(typeof r.colorIdx!=='number')r.colorIdx=r.slot%7;
+          if(!r.times)r.times=[];
+          if(typeof r.count!=='number')r.count=0;
+        });
+      });
+    }
   }catch(e){records=[];}
 }
 function saveData(){
@@ -402,15 +425,13 @@ function drawTree(){
     {cx:195,cy:110,rx:65, ry:58, op:0.30,c:'#c6eec6'},
   ].forEach(f=>o+=`<ellipse cx="${f.cx}" cy="${f.cy}" rx="${f.rx}" ry="${f.ry}" fill="${f.c}" opacity="${f.op}"/>`);
 
-  // 열매
+  // 열매: 패스1 - 줄기 + 본체 + 텍스트 (겹침 없도록 먼저)
   fruits.forEach(fr=>{
     const si=typeof fr.slot==='number'?fr.slot:0;
     if(si>=FIXED_SLOTS.length)return;
     const p=FIXED_SLOTS[si];
     const ci=typeof fr.colorIdx==='number'?fr.colorIdx:si%7;
     const col=fr.type==='+'?PP[ci]:NP[ci];
-    const tcol=fr.type==='+'?'#2e7d32':'#c62828';
-    const cnt=fr.count||0;
     const le=fr.label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&apos;');
     // 줄기
     o+=`<line x1="${p.x}" y1="${p.y-R}" x2="${p.x+5}" y2="${p.y-R-14}" stroke="#b8956a" stroke-width="2.5" stroke-linecap="round"/>`;
@@ -419,10 +440,19 @@ function drawTree(){
     // 텍스트
     const ll=fr.label.length,fs=ll<=1?22:ll===2?19:16;
     o+=`<text x="${p.x}" y="${p.y+fs*0.38}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#3d2b1f" font-family="'Gamja Flower',cursive" pointer-events="none">${fr.label}</text>`;
+  });
+
+  // 열매: 패스2 - 뱃지/숫자를 모든 열매 위에 그림 (z-order 보장)
+  fruits.forEach(fr=>{
+    const si=typeof fr.slot==='number'?fr.slot:0;
+    if(si>=FIXED_SLOTS.length)return;
+    const p=FIXED_SLOTS[si];
+    const tcol=fr.type==='+'?'#2e7d32':'#c62828';
+    const cnt=fr.count||0;
     // +/- 뱃지
     o+=`<circle cx="${p.x-R+12}" cy="${p.y-R+12}" r="12" fill="${fr.type==='+'?'#c8e6c9':'#ffcdd2'}" pointer-events="none"/>`;
     o+=`<text x="${p.x-R+12}" y="${p.y-R+17}" text-anchor="middle" font-size="14" fill="${tcol}" font-weight="700" pointer-events="none">${fr.type==='+'?'+':'−'}</text>`;
-    // 카운트 뱃지: 1 이상일 때만
+    // 카운트 뱃지 (1 이상일 때만)
     if(cnt>=1){
       const bc=fr.type==='+'?'#2e7d32':'#c62828';
       o+=`<circle cx="${p.x+R-11}" cy="${p.y-R+11}" r="13" fill="${bc}" pointer-events="none"/>`;
@@ -452,13 +482,14 @@ function getRange(s,e){
   return records.filter(r=>r.date>=ss&&r.date<=ee);
 }
 function buildEM(recs){
+  // label+type 조합별로 합산 (같은 label이라도 긍정/부정은 별도 항목)
   const m={};
   recs.forEach(r=>{
-    const k=r.label+'|'+r.type;
+    const k=r.label+'|||'+r.type;
     if(!m[k])m[k]={label:r.label,type:r.type,count:0};
     m[k].count+=r.count||0;
   });
-  return Object.values(m).sort((a,b)=>b.count-a.count);
+  return Object.values(m).filter(e=>e.count>0).sort((a,b)=>b.count-a.count);
 }
 function buildDD(recs,days){
   return days.map(day=>{
