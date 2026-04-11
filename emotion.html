@@ -131,16 +131,22 @@ body{font-family:'Gamja Flower',cursive;background:#fdf6ee;overscroll-behavior:n
 'use strict';
 
 /* ── 스토리지 ── */
-const SK='haruemotion_v5';
+const SK='haruemotion_v4';
 let records=[];
 function loadData(){
-  try{const s=localStorage.getItem(SK);if(s)records=JSON.parse(s);}catch(e){records=[];}
+  try{
+    // v4 먼저 시도
+    let s=localStorage.getItem('haruemotion_v4');
+    // 없으면 v3 시도 (이전 버전 마이그레이션)
+    if(!s)s=localStorage.getItem('haruemotion_v3');
+    if(s)records=JSON.parse(s);
+  }catch(e){records=[];}
 }
 function saveData(){
   const cut=new Date();cut.setFullYear(cut.getFullYear()-1);
   const cs=dStr(cut);
   records=records.filter(r=>r.date>=cs);
-  try{localStorage.setItem(SK,JSON.stringify(records));}catch(e){}
+  try{localStorage.setItem('haruemotion_v4',JSON.stringify(records));}catch(e){}
 }
 loadData();
 
