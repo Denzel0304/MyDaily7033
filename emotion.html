@@ -88,11 +88,11 @@ body{font-family:'Gamja Flower',cursive;background:#fdf6ee;overscroll-behavior:n
     <div class="tab-panel active" id="panel-today">
       <div class="input-area">
         <div class="input-row">
+          <input class="emotion-input" id="emotion-input" placeholder="지금 감정은?" maxlength="8"/>
           <select class="type-select" id="emotion-type">
             <option value="+">😊 긍정</option>
             <option value="-">😔 부정</option>
           </select>
-          <input class="emotion-input" id="emotion-input" placeholder="지금 감정은?" maxlength="8"/>
           <button class="add-btn" onclick="addEmotion()">+</button>
         </div>
       </div>
@@ -385,13 +385,13 @@ window.changeMonth=function(d){
 
 function getRange(s,e){const ss=dStr(s),ee=dStr(e);return records.filter(r=>r.date>=ss&&r.date<=ee&&r.deletedAt!==r.date);}
 function buildEM(recs){
-  const m={};recs.forEach(r=>{const k=r.label+'|'+r.type;if(!m[k])m[k]={label:r.label,type:r.type,count:0};m[k].count+=r.count||1;});
+  const m={};recs.forEach(r=>{const k=r.label+'|'+r.type;if(!m[k])m[k]={label:r.label,type:r.type,count:0};m[k].count+=r.count||0;});
   return Object.values(m).sort((a,b)=>b.count-a.count);
 }
 function buildDD(recs,days){
   return days.map(day=>{
     const it=recs.filter(r=>r.date===day);
-    return{day,p:it.filter(r=>r.type==='+').reduce((a,r)=>a+(r.count||1),0),n:it.filter(r=>r.type==='-').reduce((a,r)=>a+(r.count||1),0)};
+    return{day,p:it.filter(r=>r.type==='+').reduce((a,r)=>a+(r.count||0),0),n:it.filter(r=>r.type==='-').reduce((a,r)=>a+(r.count||0),0)};
   });
 }
 function buildHD(recs){
@@ -403,7 +403,7 @@ function buildHD(recs){
 
 function renderStats(recs,days){
   if(!recs.length)return '<div class="no-data">이 기간엔 기록된 감정이 없어요 🌱</div>';
-  let pos=0,neg=0;recs.forEach(r=>{if(r.type==='+')pos+=r.count||1;else neg+=r.count||1;});
+  let pos=0,neg=0;recs.forEach(r=>{if(r.type==='+')pos+=r.count||0;else neg+=r.count||0;});
   const tot=pos+neg,pr=tot>0?Math.round(pos/tot*100):0,nr=100-pr;
   const cmt=pos>neg*1.5?'긍정적인 감정이 풍부했던 기간이에요 🌸':neg>pos*1.5?'힘든 감정이 많았어요. 수고 많으셨어요 💙':'긍정과 부정이 균형을 이뤘어요 🌿';
   let html=`<div class="summary-card"><div class="summary-title">감정 요약</div>
