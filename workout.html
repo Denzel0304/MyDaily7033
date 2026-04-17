@@ -405,11 +405,7 @@
 
 <div class="header">
   <div class="header-top">
-    <a href="index.html" class="back-btn">← 홈</a>
-    <div>
-      <div class="header-title">💪 운동 기록</div>
-    </div>
-    <div style="width:36px"></div>
+    <div class="header-title">💪 운동 기록</div>
   </div>
 </div>
 
@@ -530,57 +526,35 @@
 </nav>
 
 <script>
-// ── localStorage 키 ───────────────────────────
 const LS_SCHEDULE   = 'workout_schedule';
-const LS_INBODY     = 'workout_inbody';   // [{date, weight, muscle, fat}] 최신순
-const LS_TODAY_DONE = 'workout_today_done'; // {date:'YYYY-MM-DD', done:{id:bool}}
+const LS_INBODY     = 'workout_inbody';
+const LS_TODAY_DONE = 'workout_today_done';
 
-// ── localStorage 헬퍼 ────────────────────────
 function loadSchedule() {
-  try {
-    const raw = localStorage.getItem(LS_SCHEDULE);
-    if (raw) return JSON.parse(raw);
-  } catch {}
+  try { const raw = localStorage.getItem(LS_SCHEDULE); if (raw) return JSON.parse(raw); } catch {}
   return { sun:[], mon:[], tue:[], wed:[], thu:[], fri:[], sat:[] };
 }
-
-function saveScheduleLS(s) {
-  localStorage.setItem(LS_SCHEDULE, JSON.stringify(s));
-}
-
+function saveScheduleLS(s) { localStorage.setItem(LS_SCHEDULE, JSON.stringify(s)); }
 function loadInbodyLS() {
-  try {
-    const raw = localStorage.getItem(LS_INBODY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
+  try { const raw = localStorage.getItem(LS_INBODY); if (raw) return JSON.parse(raw); } catch {}
   return [];
 }
-
-function saveInbodyLS(arr) {
-  localStorage.setItem(LS_INBODY, JSON.stringify(arr));
-}
-
+function saveInbodyLS(arr) { localStorage.setItem(LS_INBODY, JSON.stringify(arr)); }
 function loadTodayDone() {
   try {
     const raw = localStorage.getItem(LS_TODAY_DONE);
     if (!raw) return {};
     const obj = JSON.parse(raw);
-    // 날짜 검증: 오늘이 아니면 삭제
-    if (obj.date !== todayStr()) {
-      localStorage.removeItem(LS_TODAY_DONE);
-      return {};
-    }
+    if (obj.date !== todayStr()) { localStorage.removeItem(LS_TODAY_DONE); return {}; }
     return obj.done || {};
   } catch { return {}; }
 }
-
 function saveTodayDone() {
   const done = {};
   todayExercises.forEach(ex => { done[ex.id] = ex.done; });
   localStorage.setItem(LS_TODAY_DONE, JSON.stringify({ date: todayStr(), done }));
 }
 
-// ── 날짜 유틸 ──────────────────────────────────
 const DAYS      = ['일','월','화','수','목','금','토'];
 const DAYS_FULL = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 const DAYS_EN   = ['sun','mon','tue','wed','thu','fri','sat'];
@@ -591,19 +565,16 @@ function todayStr() {
 }
 function todayDow() { return new Date().getDay(); }
 
-// ── 상태 ──────────────────────────────────────
 let todayExercises   = [];
 let activeSettingDay = DAYS_EN[todayDow()];
 let inbodyRecords    = [];
 let graphOpen        = false;
 
-// ── 초기화 ────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const now = new Date();
   document.getElementById('todayDateLabel').textContent = `${now.getMonth()+1}월 ${now.getDate()}일`;
   document.getElementById('todayDayBadge').textContent  = DAYS_FULL[now.getDay()];
   document.getElementById('ibDate').value = todayStr();
-
   buildTodayList();
   scheduleMidnightReset();
   buildSettingDayTabs();
@@ -612,47 +583,29 @@ document.addEventListener('DOMContentLoaded', () => {
   renderInbodyList();
 });
 
-// ══════════════════════════════
-// TAB: 오늘 운동
-// ══════════════════════════════
 let midnightTimer = null;
-
 function scheduleMidnightReset() {
   if (midnightTimer) clearTimeout(midnightTimer);
   const now = new Date();
   const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-  midnightTimer = setTimeout(() => {
-    buildTodayList();
-    scheduleMidnightReset();
-  }, nextMidnight - now);
+  midnightTimer = setTimeout(() => { buildTodayList(); scheduleMidnightReset(); }, nextMidnight - now);
 }
 
 function buildTodayList() {
-  const dow      = DAYS_EN[todayDow()];
+  const dow = DAYS_EN[todayDow()];
   const schedule = loadSchedule();
   const exercises = schedule[dow] || [];
-
   const savedDone = loadTodayDone();
-  todayExercises = exercises.map((ex, ei) => {
-    const id = `ex_${ei}`;
-    return { ...ex, id, done: savedDone[id] === true };
-  });
+  todayExercises = exercises.map((ex, ei) => { const id = `ex_${ei}`; return { ...ex, id, done: savedDone[id] === true }; });
   renderTodayList();
 }
 
 function renderTodayList() {
   const container = document.getElementById('todayExerciseList');
-
   if (todayExercises.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="emoji">🏋️</div>
-        <p>오늘(${DAYS_FULL[todayDow()]})에 설정된<br>운동이 없어요.<br><br>설정 탭에서 추가해보세요!</p>
-      </div>`;
-    updateProgress();
-    return;
+    container.innerHTML = `<div class="empty-state"><div class="emoji">🏋️</div><p>오늘(${DAYS_FULL[todayDow()]})에 설정된<br>운동이 없어요.<br><br>설정 탭에서 추가해보세요!</p></div>`;
+    updateProgress(); return;
   }
-
   container.innerHTML = todayExercises.map((ex, ei) => `
     <div class="exercise-card ${ex.done ? 'completed' : ''}" id="exCard_${ei}">
       <div class="exercise-card-header">
@@ -661,13 +614,10 @@ function renderTodayList() {
           <div class="ex-name">${ex.name}</div>
           <div class="ex-meta">${ex.sets}세트 · ${ex.defaultWeight}${ex.defaultUnit}</div>
         </div>
-        <button class="done-btn ${ex.done ? 'done' : ''}" onclick="toggleExDone(${ei})">
-          ${ex.done ? '✓' : '○'}
-        </button>
+        <button class="done-btn ${ex.done ? 'done' : ''}" onclick="toggleExDone(${ei})">${ex.done ? '✓' : '○'}</button>
       </div>
     </div>
   `).join('');
-
   updateProgress();
 }
 
@@ -679,8 +629,7 @@ function toggleExDone(ei) {
   card.classList.toggle('completed', isDone);
   btn.textContent = isDone ? '✓' : '○';
   btn.classList.toggle('done', isDone);
-  updateProgress();
-  saveTodayDone();
+  updateProgress(); saveTodayDone();
 }
 
 function updateProgress() {
@@ -692,17 +641,10 @@ function updateProgress() {
   document.getElementById('todaySubtitle').textContent = `${done} / ${total} 완료`;
 }
 
-// ══════════════════════════════
-// TAB: 인바디
-// ══════════════════════════════
 function loadInbodyData() {
-  // 최신순 정렬 보장 후 최대 12개만 유지
   let arr = loadInbodyLS();
   arr.sort((a, b) => b.date.localeCompare(a.date));
-  if (arr.length > 12) {
-    arr = arr.slice(0, 12);
-    saveInbodyLS(arr);
-  }
+  if (arr.length > 12) { arr = arr.slice(0, 12); saveInbodyLS(arr); }
   inbodyRecords = arr;
 }
 
@@ -711,30 +653,20 @@ function saveInbody() {
   const weight = parseFloat(document.getElementById('ibWeight').value);
   const muscle = parseFloat(document.getElementById('ibMuscle').value);
   const fat    = parseFloat(document.getElementById('ibFat').value);
-
   if (!date)       { showToast('날짜를 입력하세요');   return; }
   if (isNaN(weight)) { showToast('체중을 입력하세요');   return; }
   if (isNaN(muscle)) { showToast('골격근을 입력하세요'); return; }
   if (isNaN(fat))    { showToast('체지방량을 입력하세요'); return; }
-
   let arr = loadInbodyLS();
-
-  // 같은 날짜 기존 기록 덮어쓰기
   arr = arr.filter(r => r.date !== date);
   arr.push({ date, weight, muscle, fat, savedAt: new Date().toISOString() });
-
-  // 최신순 정렬 후 12개 초과 시 오래된 것 제거
   arr.sort((a, b) => b.date.localeCompare(a.date));
   if (arr.length > 12) arr = arr.slice(0, 12);
-
-  saveInbodyLS(arr);
-  inbodyRecords = arr;
-
+  saveInbodyLS(arr); inbodyRecords = arr;
   document.getElementById('ibWeight').value = '';
   document.getElementById('ibMuscle').value = '';
   document.getElementById('ibFat').value    = '';
   document.getElementById('ibDate').value   = todayStr();
-
   renderInbodyList();
   if (graphOpen) renderInbodyChart();
   showToast('✅ 인바디 기록 저장!');
@@ -742,13 +674,10 @@ function saveInbody() {
 
 function deleteInbody(idx) {
   let arr = loadInbodyLS();
-  // inbodyRecords는 최신순이므로 인덱스 그대로 사용
   const target = inbodyRecords[idx];
   if (!target) return;
   arr = arr.filter(r => r.date !== target.date);
-  saveInbodyLS(arr);
-  loadInbodyData();
-  renderInbodyList();
+  saveInbodyLS(arr); loadInbodyData(); renderInbodyList();
   if (graphOpen) renderInbodyChart();
   showToast('삭제됨');
 }
@@ -756,32 +685,20 @@ function deleteInbody(idx) {
 function renderInbodyList() {
   const container = document.getElementById('inbodyList');
   if (inbodyRecords.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--gray-400);font-size:13px;padding:20px">아직 기록이 없어요</div>';
-    return;
+    container.innerHTML = '<div style="text-align:center;color:var(--gray-400);font-size:13px;padding:20px">아직 기록이 없어요</div>'; return;
   }
   container.innerHTML = inbodyRecords.map((rec, idx) => {
-    const d     = new Date(rec.date + 'T00:00:00');
+    const d = new Date(rec.date + 'T00:00:00');
     const label = `${d.getMonth()+1}/${d.getDate()}`;
-    return `
-      <div class="inbody-record">
-        <div class="inbody-record-date">${label}</div>
-        <div class="inbody-record-vals">
-          <div class="inbody-val-group">
-            <div class="inbody-val-label">체중</div>
-            <div class="inbody-val-num" style="color:#4a90d9">${rec.weight ?? '-'}</div>
-          </div>
-          <div class="inbody-val-group">
-            <div class="inbody-val-label">골격근</div>
-            <div class="inbody-val-num" style="color:#e07070">${rec.muscle ?? '-'}</div>
-          </div>
-          <div class="inbody-val-group">
-            <div class="inbody-val-label">체지방</div>
-            <div class="inbody-val-num" style="color:#f0a030">${rec.fat ?? '-'}</div>
-          </div>
-        </div>
-        <button class="inbody-del-btn" onclick="deleteInbody(${idx})">✕</button>
+    return `<div class="inbody-record">
+      <div class="inbody-record-date">${label}</div>
+      <div class="inbody-record-vals">
+        <div class="inbody-val-group"><div class="inbody-val-label">체중</div><div class="inbody-val-num" style="color:#4a90d9">${rec.weight ?? '-'}</div></div>
+        <div class="inbody-val-group"><div class="inbody-val-label">골격근</div><div class="inbody-val-num" style="color:#e07070">${rec.muscle ?? '-'}</div></div>
+        <div class="inbody-val-group"><div class="inbody-val-label">체지방</div><div class="inbody-val-num" style="color:#f0a030">${rec.fat ?? '-'}</div></div>
       </div>
-    `;
+      <button class="inbody-del-btn" onclick="deleteInbody(${idx})">✕</button>
+    </div>`;
   }).join('');
 }
 
@@ -801,172 +718,78 @@ function renderInbodyChart() {
   const PAD = { top: 16, right: 10, bottom: 30, left: 36 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
-
-  // 오래된 것 → 최신 순 (화면 왼→오른쪽)
   const data = [...inbodyRecords].reverse();
-  if (data.length < 1) {
-    wrap.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">기록이 없어요</div>';
-    return;
-  }
-
+  if (data.length < 1) { wrap.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">기록이 없어요</div>'; return; }
   const weights = data.map(r => r.weight).filter(v => v != null);
   const muscles = data.map(r => r.muscle).filter(v => v != null);
   const fats    = data.map(r => r.fat).filter(v => v != null);
   const allVals = [...weights, ...muscles, ...fats];
   const minV = Math.min(...allVals) * 0.95;
   const maxV = Math.max(...allVals) * 1.05;
-
   const xPos = (i) => PAD.left + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
   const yPos = (v) => PAD.top + chartH - ((v - minV) / (maxV - minV)) * chartH;
-
-  const makePoints = (key) =>
-    data.map((r, i) => r[key] != null ? { x: xPos(i), y: yPos(r[key]), v: r[key] } : null);
-
+  const makePoints = (key) => data.map((r, i) => r[key] != null ? { x: xPos(i), y: yPos(r[key]), v: r[key] } : null);
   const makePath = (pts) => {
     const valid = pts.filter(Boolean);
     if (valid.length < 1) return '';
     let d = `M ${valid[0].x} ${valid[0].y}`;
-    for (let i = 1; i < valid.length; i++) {
-      const prev = valid[i-1], curr = valid[i];
-      const cx = (prev.x + curr.x) / 2;
-      d += ` C ${cx} ${prev.y} ${cx} ${curr.y} ${curr.x} ${curr.y}`;
-    }
+    for (let i = 1; i < valid.length; i++) { const prev = valid[i-1], curr = valid[i]; const cx = (prev.x + curr.x) / 2; d += ` C ${cx} ${prev.y} ${cx} ${curr.y} ${curr.x} ${curr.y}`; }
     return d;
   };
-
-  const wPts = makePoints('weight');
-  const mPts = makePoints('muscle');
-  const fPts = makePoints('fat');
-
-  const dateLabels = data.map((r, i) => {
-    const d = new Date(r.date + 'T00:00:00');
-    const label = `${d.getMonth()+1}/${d.getDate()}`;
-    return `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${label}</text>`;
-  }).join('');
-
-  const yLabels = [0, 0.5, 1].map(t => {
-    const v = minV + t * (maxV - minV);
-    const y = PAD.top + chartH - t * chartH;
-    return `<text x="${PAD.left - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="#aaa">${v.toFixed(1)}</text>
-            <line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
-  }).join('');
-
-  const makeDots = (pts, color) => pts.filter(Boolean).map((p, i, arr) => {
-    const isLast = i === arr.length - 1;
-    return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${color}" />
-            ${isLast ? `<text x="${p.x}" y="${p.y - 7}" text-anchor="middle" font-size="9" fill="${color}" font-weight="bold">${p.v}</text>` : ''}`;
-  }).join('');
-
-  wrap.innerHTML = `
-    <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      ${yLabels}
-      ${makePath(wPts) ? `<path d="${makePath(wPts)}" stroke="#4a90d9" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
-      ${makePath(mPts) ? `<path d="${makePath(mPts)}" stroke="#e07070" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
-      ${makePath(fPts) ? `<path d="${makePath(fPts)}" stroke="#f0a030" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
-      ${makeDots(wPts, '#4a90d9')}
-      ${makeDots(mPts, '#e07070')}
-      ${makeDots(fPts, '#f0a030')}
-      ${dateLabels}
-    </svg>`;
+  const wPts = makePoints('weight'); const mPts = makePoints('muscle'); const fPts = makePoints('fat');
+  const dateLabels = data.map((r, i) => { const d = new Date(r.date + 'T00:00:00'); const label = `${d.getMonth()+1}/${d.getDate()}`; return `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${label}</text>`; }).join('');
+  const yLabels = [0, 0.5, 1].map(t => { const v = minV + t * (maxV - minV); const y = PAD.top + chartH - t * chartH; return `<text x="${PAD.left - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="#aaa">${v.toFixed(1)}</text><line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>`; }).join('');
+  const makeDots = (pts, color) => pts.filter(Boolean).map((p, i, arr) => { const isLast = i === arr.length - 1; return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${color}" />${isLast ? `<text x="${p.x}" y="${p.y - 7}" text-anchor="middle" font-size="9" fill="${color}" font-weight="bold">${p.v}</text>` : ''}`; }).join('');
+  wrap.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${yLabels}${makePath(wPts) ? `<path d="${makePath(wPts)}" stroke="#4a90d9" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}${makePath(mPts) ? `<path d="${makePath(mPts)}" stroke="#e07070" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}${makePath(fPts) ? `<path d="${makePath(fPts)}" stroke="#f0a030" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}${makeDots(wPts, '#4a90d9')}${makeDots(mPts, '#e07070')}${makeDots(fPts, '#f0a030')}${dateLabels}</svg>`;
 }
 
-// ══════════════════════════════
-// TAB: 설정
-// ══════════════════════════════
 function buildSettingDayTabs() {
-  const container      = document.getElementById('dayTabs');
-  const MON_FIRST_IDX  = [1,2,3,4,5,6,0];
-  container.innerHTML  = MON_FIRST_IDX.map(i => `
-    <button class="day-tab ${DAYS_EN[i]===activeSettingDay?'active':''}"
-      onclick="selectSettingDay('${DAYS_EN[i]}',this)">${DAYS[i]}</button>
-  `).join('');
+  const container = document.getElementById('dayTabs');
+  const MON_FIRST_IDX = [1,2,3,4,5,6,0];
+  container.innerHTML = MON_FIRST_IDX.map(i => `<button class="day-tab ${DAYS_EN[i]===activeSettingDay?'active':''}" onclick="selectSettingDay('${DAYS_EN[i]}',this)">${DAYS[i]}</button>`).join('');
 }
 
 function selectSettingDay(day, el) {
   activeSettingDay = day;
   document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  cancelEdit();
-  renderSettingList();
+  el.classList.add('active'); cancelEdit(); renderSettingList();
 }
 
 function renderSettingList() {
   const schedule = loadSchedule();
-  const list      = schedule[activeSettingDay] || [];
+  const list = schedule[activeSettingDay] || [];
   const container = document.getElementById('settingExList');
-
   if (list.length === 0) {
-    container.innerHTML = `
-      <div class="ex-list-setting">
-        <div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">
-          아직 운동이 없어요. 아래에서 추가해보세요!
-        </div>
-      </div>`;
-    return;
+    container.innerHTML = `<div class="ex-list-setting"><div style="padding:24px;text-align:center;color:var(--gray-400);font-size:13px">아직 운동이 없어요. 아래에서 추가해보세요!</div></div>`; return;
   }
-
-  container.innerHTML = `
-    <div class="ex-list-setting" id="exDragList">
-      ${list.map((ex, i) => `
-        <div class="ex-setting-item" data-idx="${i}" draggable="true">
-          <div class="drag-handle" data-idx="${i}" title="순서 변경">☰</div>
-          <div style="font-size:22px">${ex.emoji||'💪'}</div>
-          <div class="ex-setting-info">
-            <div class="ex-setting-name">${ex.name}</div>
-            <div class="ex-setting-detail">${ex.sets}세트 · ${ex.defaultWeight}${ex.defaultUnit}</div>
-          </div>
-          <button class="ex-edit-btn" onclick="startEditExercise(${i})" title="수정">✏️</button>
-          <button class="ex-del-btn" onclick="deleteExercise(${i})">✕</button>
-        </div>
-      `).join('')}
-    </div>`;
-
+  container.innerHTML = `<div class="ex-list-setting" id="exDragList">${list.map((ex, i) => `<div class="ex-setting-item" data-idx="${i}" draggable="true"><div class="drag-handle" data-idx="${i}" title="순서 변경">☰</div><div style="font-size:22px">${ex.emoji||'💪'}</div><div class="ex-setting-info"><div class="ex-setting-name">${ex.name}</div><div class="ex-setting-detail">${ex.sets}세트 · ${ex.defaultWeight}${ex.defaultUnit}</div></div><button class="ex-edit-btn" onclick="startEditExercise(${i})" title="수정">✏️</button><button class="ex-del-btn" onclick="deleteExercise(${i})">✕</button></div>`).join('')}</div>`;
   initDragSort();
 }
 
-// ── 수정 모드 상태 ──────────────────────────────
-let editingIdx = -1; // -1이면 추가 모드, 0이상이면 수정 중인 인덱스
+let editingIdx = -1;
 
 function addExercise() {
-  const nameEl   = document.getElementById('fName');
-  const setsEl   = document.getElementById('fSets');
-  const weightEl = document.getElementById('fWeight');
-
-  const name   = nameEl.value.trim();
-  const sets   = parseInt(setsEl.value);
-  const weight = parseFloat(weightEl.value);
-
+  const nameEl = document.getElementById('fName'); const setsEl = document.getElementById('fSets'); const weightEl = document.getElementById('fWeight');
+  const name = nameEl.value.trim(); const sets = parseInt(setsEl.value); const weight = parseFloat(weightEl.value);
   [nameEl, setsEl, weightEl].forEach(el => el.classList.remove('error'));
   const errors = [];
-  if (!name)             { nameEl.classList.add('error');   errors.push('운동 이름'); }
-  if (!sets || sets < 1) { setsEl.classList.add('error');   errors.push('세트 수'); }
-  if (isNaN(weight))     { weightEl.classList.add('error'); errors.push('기본 중량'); }
-
-  if (errors.length > 0) {
-    showToast(`❗ ${errors.join(', ')}을(를) 입력하세요`);
-    return;
-  }
-
-  const emoji    = '💪';
-  const unit     = document.getElementById('fUnit').value;
+  if (!name) { nameEl.classList.add('error'); errors.push('운동 이름'); }
+  if (!sets || sets < 1) { setsEl.classList.add('error'); errors.push('세트 수'); }
+  if (isNaN(weight)) { weightEl.classList.add('error'); errors.push('기본 중량'); }
+  if (errors.length > 0) { showToast(`❗ ${errors.join(', ')}을(를) 입력하세요`); return; }
+  const emoji = '💪'; const unit = document.getElementById('fUnit').value;
   const schedule = loadSchedule();
   if (!schedule[activeSettingDay]) schedule[activeSettingDay] = [];
-
   if (editingIdx >= 0) {
-    // 수정 모드: 기존 항목 덮어쓰기
     schedule[activeSettingDay][editingIdx] = { name, emoji, sets, defaultWeight: weight, defaultUnit: unit };
-    saveScheduleLS(schedule);
-    cancelEdit();
-    showToast(`✅ ${name} 수정됨`);
+    saveScheduleLS(schedule); cancelEdit(); showToast(`✅ ${name} 수정됨`);
   } else {
-    // 추가 모드
     schedule[activeSettingDay].push({ name, emoji, sets, defaultWeight: weight, defaultUnit: unit });
     saveScheduleLS(schedule);
     ['fName','fSets','fWeight'].forEach(id => document.getElementById(id).value = '');
     [nameEl, setsEl, weightEl].forEach(el => el.classList.remove('error'));
     showToast(`✅ ${name} 추가됨`);
   }
-
   renderSettingList();
   if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
 }
@@ -975,20 +798,14 @@ function startEditExercise(idx) {
   const schedule = loadSchedule();
   const ex = (schedule[activeSettingDay] || [])[idx];
   if (!ex) return;
-
   editingIdx = idx;
-  document.getElementById('fName').value   = ex.name;
-  document.getElementById('fSets').value   = ex.sets;
-  document.getElementById('fWeight').value = ex.defaultWeight;
-  document.getElementById('fUnit').value   = ex.defaultUnit || 'kg';
-
+  document.getElementById('fName').value = ex.name; document.getElementById('fSets').value = ex.sets;
+  document.getElementById('fWeight').value = ex.defaultWeight; document.getElementById('fUnit').value = ex.defaultUnit || 'kg';
   document.getElementById('formTitle').textContent = '✏️ 운동 수정';
   document.getElementById('addBtn').textContent = '수정 저장';
   document.getElementById('addBtn').classList.add('edit-mode');
   document.getElementById('cancelEditBtn').style.display = 'block';
   document.getElementById('addExForm').classList.add('edit-mode');
-
-  // 폼으로 스크롤
   document.getElementById('addExForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -1002,163 +819,79 @@ function cancelEdit() {
   document.getElementById('addExForm').classList.remove('edit-mode');
 }
 
-// ── 드래그 정렬 ─────────────────────────────────
 let dragSrcIdx = null;
-
 function initDragSort() {
   const list = document.getElementById('exDragList');
   if (!list) return;
   const items = list.querySelectorAll('.ex-setting-item');
-
   items.forEach(item => {
-    // Desktop drag events
-    item.addEventListener('dragstart', onDragStart);
-    item.addEventListener('dragover',  onDragOver);
-    item.addEventListener('dragleave', onDragLeave);
-    item.addEventListener('drop',      onDrop);
-    item.addEventListener('dragend',   onDragEnd);
-
-    // Touch drag (mobile)
+    item.addEventListener('dragstart', onDragStart); item.addEventListener('dragover', onDragOver);
+    item.addEventListener('dragleave', onDragLeave); item.addEventListener('drop', onDrop);
+    item.addEventListener('dragend', onDragEnd);
     const handle = item.querySelector('.drag-handle');
     handle.addEventListener('touchstart', onTouchStart, { passive: false });
   });
 }
 
-function onDragStart(e) {
-  dragSrcIdx = parseInt(this.dataset.idx);
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-function onDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('.ex-setting-item').forEach(el => el.classList.remove('drag-over'));
-  this.classList.add('drag-over');
-}
+function onDragStart(e) { dragSrcIdx = parseInt(this.dataset.idx); this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; document.querySelectorAll('.ex-setting-item').forEach(el => el.classList.remove('drag-over')); this.classList.add('drag-over'); }
 function onDragLeave() { this.classList.remove('drag-over'); }
-function onDrop(e) {
-  e.preventDefault();
-  const dropIdx = parseInt(this.dataset.idx);
-  if (dragSrcIdx === null || dragSrcIdx === dropIdx) return;
-  reorderExercise(dragSrcIdx, dropIdx);
-}
-function onDragEnd() {
-  document.querySelectorAll('.ex-setting-item').forEach(el => {
-    el.classList.remove('dragging', 'drag-over');
-  });
-  dragSrcIdx = null;
-}
+function onDrop(e) { e.preventDefault(); const dropIdx = parseInt(this.dataset.idx); if (dragSrcIdx === null || dragSrcIdx === dropIdx) return; reorderExercise(dragSrcIdx, dropIdx); }
+function onDragEnd() { document.querySelectorAll('.ex-setting-item').forEach(el => { el.classList.remove('dragging', 'drag-over'); }); dragSrcIdx = null; }
 
-// ── 터치 드래그 ─────────────────────────────────
-let touchDragIdx = null;
-let touchClone   = null;
-let touchOffsetY = 0;
-
+let touchDragIdx = null, touchClone = null, touchOffsetY = 0;
 function onTouchStart(e) {
-  e.preventDefault();
-  const handle = e.currentTarget;
-  const item   = handle.closest('.ex-setting-item');
-  touchDragIdx  = parseInt(item.dataset.idx);
-  touchOffsetY  = e.touches[0].clientY - item.getBoundingClientRect().top;
-
-  // ghost clone
+  e.preventDefault(); const handle = e.currentTarget; const item = handle.closest('.ex-setting-item');
+  touchDragIdx = parseInt(item.dataset.idx); touchOffsetY = e.touches[0].clientY - item.getBoundingClientRect().top;
   touchClone = item.cloneNode(true);
-  touchClone.style.cssText = `
-    position:fixed; left:${item.getBoundingClientRect().left}px;
-    top:${item.getBoundingClientRect().top}px;
-    width:${item.offsetWidth}px; opacity:0.75;
-    background:white; border-radius:12px;
-    box-shadow:0 8px 24px rgba(0,0,0,.18);
-    pointer-events:none; z-index:9999; transition:none;
-  `;
-  document.body.appendChild(touchClone);
-  item.classList.add('dragging');
-
-  document.addEventListener('touchmove', onTouchMove, { passive: false });
-  document.addEventListener('touchend',  onTouchEnd);
+  touchClone.style.cssText = `position:fixed;left:${item.getBoundingClientRect().left}px;top:${item.getBoundingClientRect().top}px;width:${item.offsetWidth}px;opacity:0.75;background:white;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:none;z-index:9999;transition:none;`;
+  document.body.appendChild(touchClone); item.classList.add('dragging');
+  document.addEventListener('touchmove', onTouchMove, { passive: false }); document.addEventListener('touchend', onTouchEnd);
 }
-
 function onTouchMove(e) {
-  e.preventDefault();
-  const y = e.touches[0].clientY;
+  e.preventDefault(); const y = e.touches[0].clientY;
   if (touchClone) touchClone.style.top = (y - touchOffsetY) + 'px';
-
-  // highlight target
   document.querySelectorAll('.ex-setting-item').forEach(el => el.classList.remove('drag-over'));
   const els = Array.from(document.querySelectorAll('.ex-setting-item'));
-  for (const el of els) {
-    const r = el.getBoundingClientRect();
-    if (y >= r.top && y <= r.bottom) { el.classList.add('drag-over'); break; }
-  }
+  for (const el of els) { const r = el.getBoundingClientRect(); if (y >= r.top && y <= r.bottom) { el.classList.add('drag-over'); break; } }
 }
-
 function onTouchEnd(e) {
-  document.removeEventListener('touchmove', onTouchMove);
-  document.removeEventListener('touchend',  onTouchEnd);
-
+  document.removeEventListener('touchmove', onTouchMove); document.removeEventListener('touchend', onTouchEnd);
   if (touchClone) { touchClone.remove(); touchClone = null; }
-
   const y = e.changedTouches[0].clientY;
   const els = Array.from(document.querySelectorAll('.ex-setting-item'));
   let dropIdx = null;
-  for (const el of els) {
-    const r = el.getBoundingClientRect();
-    if (y >= r.top && y <= r.bottom) { dropIdx = parseInt(el.dataset.idx); break; }
-  }
-
-  document.querySelectorAll('.ex-setting-item').forEach(el => {
-    el.classList.remove('dragging', 'drag-over');
-  });
-
-  if (dropIdx !== null && dropIdx !== touchDragIdx) {
-    reorderExercise(touchDragIdx, dropIdx);
-  }
+  for (const el of els) { const r = el.getBoundingClientRect(); if (y >= r.top && y <= r.bottom) { dropIdx = parseInt(el.dataset.idx); break; } }
+  document.querySelectorAll('.ex-setting-item').forEach(el => { el.classList.remove('dragging', 'drag-over'); });
+  if (dropIdx !== null && dropIdx !== touchDragIdx) reorderExercise(touchDragIdx, dropIdx);
   touchDragIdx = null;
 }
 
 function reorderExercise(fromIdx, toIdx) {
-  const schedule = loadSchedule();
-  const list = schedule[activeSettingDay] || [];
-  const [moved] = list.splice(fromIdx, 1);
-  list.splice(toIdx, 0, moved);
-  schedule[activeSettingDay] = list;
-  saveScheduleLS(schedule);
-  renderSettingList();
+  const schedule = loadSchedule(); const list = schedule[activeSettingDay] || [];
+  const [moved] = list.splice(fromIdx, 1); list.splice(toIdx, 0, moved);
+  schedule[activeSettingDay] = list; saveScheduleLS(schedule); renderSettingList();
   if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
   showToast('✅ 순서 변경됨');
 }
 
 function deleteExercise(idx) {
-  const schedule = loadSchedule();
-  schedule[activeSettingDay].splice(idx, 1);
-  saveScheduleLS(schedule);
-  renderSettingList();
+  const schedule = loadSchedule(); schedule[activeSettingDay].splice(idx, 1);
+  saveScheduleLS(schedule); renderSettingList();
   if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
 }
 
-// ── 탭 전환 ──────────────────────────────────
 function switchTab(tabName) {
   document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-  const navBtn  = document.getElementById(`bnav-${tabName}`);
-  if (navBtn) navBtn.classList.add('active');
-
-  const content = document.getElementById(`tab-${tabName}`);
-  if (content) content.classList.add('active');
-
-  if (tabName === 'history') {
-    loadInbodyData();
-    renderInbodyList();
-    if (graphOpen) renderInbodyChart();
-  }
+  const navBtn = document.getElementById(`bnav-${tabName}`); if (navBtn) navBtn.classList.add('active');
+  const content = document.getElementById(`tab-${tabName}`); if (content) content.classList.add('active');
+  if (tabName === 'history') { loadInbodyData(); renderInbodyList(); if (graphOpen) renderInbodyChart(); }
 }
 
-// ── Toast ─────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 </script>
