@@ -381,12 +381,10 @@
 
   <!-- 헤더 -->
   <div class="header">
-    <a href="index.html" class="back-btn">← 홈</a>
     <div class="header-text">
       <h1>🥗 영양 <span style="color:var(--accent)">트래커</span></h1>
       <p id="headerSub">단백질 섭취량을 기록하세요.</p>
     </div>
-    <div style="width:60px;flex-shrink:0;"></div>
   </div>
 
   <!-- 영양소 탭 -->
@@ -445,7 +443,6 @@
       <button class="meal-tab" data-meal="dinner" onclick="selectMeal('dinner')">🌙 저녁</button>
     </div>
     <div class="input-row">
-      <!-- 단백질 셀렉트: 공통 그룹 + 개별 그룹 -->
       <select id="foodSelect" onchange="onFoodChange(); updatePlaceholder()">
         <option value="">음식 선택</option>
         <optgroup label="── 공통 항목 ──" style="background:#eef6ff; color:#6a9fc0; font-size:11px;">
@@ -466,7 +463,6 @@
         <option value="tuna">🐟 참치캔</option>
         <option value="sashimi">🍣 회</option>
       </select>
-      <!-- 탄수화물 셀렉트: 공통 그룹 + 개별 그룹 -->
       <select id="carbSelect" style="display:none" onchange="onFoodChange(); updatePlaceholder()">
         <option value="">음식 선택</option>
         <optgroup label="── 공통 항목 ──" style="background:#fff8ee; color:#c09060; font-size:11px;">
@@ -539,30 +535,23 @@
 </div>
 
 <script>
-  // ── localStorage 키 상수 ───────────────────────
   const LS_GOAL    = 'protein_goal';
   const LS_TODAY   = (dateStr) => `protein_today_${dateStr}`;
   const LS_HISTORY = 'protein_history';
-
   const LS_CARB_GOAL    = 'carb_goal';
   const LS_CARB_HISTORY = 'carb_history';
 
-  // ── 현재 모드 ──────────────────────────────────
-  let currentMode = 'protein'; // 'protein' | 'carb'
+  let currentMode = 'protein';
 
-  // ── 공통 항목 키 목록 ──────────────────────────
-  // protein key -> carb key 매핑
   const COMMON_PAIR = {
     shake:      'shake_c',
     misugaru_p: 'misugaru_c',
     rice:       'grainrice',
     bread_p:    'bread',
   };
-  // carb key -> protein key 매핑 (역방향)
   const COMMON_PAIR_REVERSE = {};
   Object.entries(COMMON_PAIR).forEach(([pk, ck]) => { COMMON_PAIR_REVERSE[ck] = pk; });
 
-  // ── 확인 모달 콜백 ─────────────────────────────
   let confirmResolve = null;
 
   function openConfirmModal(foodName, mealLabel) {
@@ -578,34 +567,24 @@
     if (confirmResolve) { confirmResolve(result); confirmResolve = null; }
   }
 
-  // ── 탭 전환 ───────────────────────────────────
   function switchNutrient(mode) {
     currentMode = mode;
     const isCarb = mode === 'carb';
-
     document.getElementById('tabProtein').className = 'nutrient-tab' + (!isCarb ? ' active' : '');
     document.getElementById('tabCarb').className = 'nutrient-tab' + (isCarb ? ' carb-active' : '');
-
     document.body.classList.toggle('carb-mode', isCarb);
-
     document.getElementById('foodSelect').style.display = isCarb ? 'none' : '';
     document.getElementById('carbSelect').style.display = isCarb ? '' : 'none';
-
     document.getElementById('headerSub').textContent = isCarb
       ? '탄수화물 섭취량을 기록하세요.'
       : '단백질 섭취량을 기록하세요.';
-
     document.getElementById('goalModal').querySelector('h3').textContent = isCarb
       ? '🎯 하루 목표 탄수화물 설정'
       : '🎯 하루 목표 단백질 설정';
-
-    // 음식 입력 초기화
     document.getElementById('foodSelect').value = '';
     document.getElementById('carbSelect').value = '';
     document.getElementById('amountInput').value = '';
     document.getElementById('proteinPreview').innerHTML = '';
-
-    // 데이터 전환
     if (isCarb) {
       goal = lsGet(LS_CARB_GOAL, 350);
       const hist = getCarbHistory();
@@ -617,7 +596,6 @@
       const today = todayStr();
       todayFoods = (hist[today] && hist[today].foods) ? hist[today].foods : [];
     }
-
     updateGoalUI();
     renderFoodList();
     updateGauge();
@@ -626,14 +604,13 @@
     setDefaultMealByTime();
   }
 
-  // ── 단백질 데이터 ──────────────────────────────
   const PROTEIN_PER_100G = {
-    shake:      null,    // 보충제g 입력, 35g당 23g
-    misugaru_p: 13.0,    // 100g당 13g
-    rice:       2.7,     // 100g당 2.7g
-    bread_p:    null,    // 1장당 2g 고정
-    extra_p:    null,    // 입력값 그대로
-    egg:        null,    // 1개당 6g
+    shake:      null,
+    misugaru_p: 13.0,
+    rice:       2.7,
+    bread_p:    null,
+    extra_p:    null,
+    egg:        null,
     pork:       21.0,
     tofu:       8.0,
     fish:       20.0,
@@ -661,38 +638,37 @@
     chicken:'g', beef:'g', tuna:'g', sashimi:'g'
   };
   const EGG_PROTEIN_EACH = 6;
-  const SHAKE_POWDER_G  = 35;   // 35g당
-  const SHAKE_PROTEIN_G = 23;   // 단백질 23g
-  const BREAD_PROTEIN_PER_SLICE = 2; // 1장당 단백질 2g
+  const SHAKE_POWDER_G  = 35;
+  const SHAKE_PROTEIN_G = 23;
+  const BREAD_PROTEIN_PER_SLICE = 2;
 
-  // ── 탄수화물 데이터 ────────────────────────────
   const CARB_PER_100G = {
-    shake_c:     null,   // 보충제g 입력, 35g당 7.5g
-    misugaru_c:  80.0,   // 100g당 80g
-    grainrice:   34.0,   // 100g당 34g
-    bread:       null,   // 1장당 16g 고정
-    extra_c:     null,   // 입력값 그대로
-    banana:      null,   // 1개당 16g
-    yeonyanggaeng: null,   // 1개당 33g (50g 기준)
+    shake_c:     null,
+    misugaru_c:  80.0,
+    grainrice:   34.0,
+    bread:       null,
+    extra_c:     null,
+    banana:      null,
+    yeonyanggaeng: null,
     sweetpotato: 27.7,
-    jam:         null,   // 1큰술당 13g
-    ramen:       null,   // 1개당 83g
-    jjajang:     null,   // 1개당 80g
-    somyeon:     null,   // 1개당 65g
+    jam:         null,
+    ramen:       null,
+    jjajang:     null,
+    somyeon:     null,
     tteok:       50.0,
   };
   const CARB_UNIT_AMOUNT = {
-    shake_c:  7.5,   // 35g당 7.5g (비율 계산)
-    bread:    16,    // 1장당 16g
-    extra_c:  1,     // 입력값 그대로 (1당 1g)
+    shake_c:  7.5,
+    bread:    16,
+    extra_c:  1,
     banana:   16,
     yeonyanggaeng: 33,
-    jam:      13,    // 1큰술당 13g
+    jam:      13,
     ramen:    83,
     jjajang:  80,
     somyeon:  65,
   };
-  const SHAKE_CARB_G    = 7.5;  // 35g당 탄수화물 7.5g
+  const SHAKE_CARB_G    = 7.5;
   const CARB_FOOD_UNIT = {
     shake_c:'g', misugaru_c:'g', grainrice:'g', bread:'장', extra_c:'g',
     banana:'개', sweetpotato:'g', jam:'큰술',
@@ -714,7 +690,6 @@
     ramen:'🍜', jjajang:'🍜', somyeon:'🍜', tteok:'🍡'
   };
 
-  // ── 단백질 계산 ────────────────────────────────
   function calcProtein(key, val) {
     if (key === 'shake')   return parseFloat((SHAKE_PROTEIN_G * val / SHAKE_POWDER_G).toFixed(1));
     if (key === 'egg')     return val * EGG_PROTEIN_EACH;
@@ -723,7 +698,6 @@
     return parseFloat((PROTEIN_PER_100G[key] * val / 100).toFixed(1));
   }
 
-  // ── 탄수화물 계산 ──────────────────────────────
   function calcCarb(key, val) {
     if (key === 'shake_c')  return parseFloat((SHAKE_CARB_G * val / SHAKE_POWDER_G).toFixed(1));
     if (key === 'extra_c')  return parseFloat(val.toFixed(1));
@@ -733,13 +707,11 @@
     return parseFloat((CARB_PER_100G[key] * val / 100).toFixed(1));
   }
 
-  // ── 현재 모드 음식 셀렉트 키 ──────────────────
   function getCurrentFoodKey() {
     if (currentMode === 'carb') return document.getElementById('carbSelect').value;
     return document.getElementById('foodSelect').value;
   }
 
-  // ── placeholder 동적 변경 ──────────────────────
   function updatePlaceholder() {
     const input = document.getElementById('amountInput');
     if (currentMode === 'carb') {
@@ -749,20 +721,12 @@
       input.max = (unit === 'g') ? 2000 : 30;
     } else {
       const key = document.getElementById('foodSelect').value;
-      if (key === 'egg') {
-        input.placeholder = '개';
-        input.max = 30;
-      } else if (key === 'bread_p') {
-        input.placeholder = '장';
-        input.max = 30;
-      } else {
-        input.placeholder = 'g';
-        input.max = 2000;
-      }
+      if (key === 'egg') { input.placeholder = '개'; input.max = 30; }
+      else if (key === 'bread_p') { input.placeholder = '장'; input.max = 30; }
+      else { input.placeholder = 'g'; input.max = 2000; }
     }
   }
 
-  // ── 날짜 헬퍼 ──────────────────────────────────
   const todayStr = () => {
     const d = new Date();
     const y = d.getFullYear();
@@ -771,57 +735,35 @@
     return `${y}-${m}-${day}`;
   };
 
-  // ── 상태 ───────────────────────────────────────
   let goal = 150;
   let todayFoods = [];
   let selectedMeal = 'breakfast';
 
-  // ── localStorage 읽기/쓰기 헬퍼 ───────────────
   function lsGet(key, fallback = null) {
-    try {
-      const v = localStorage.getItem(key);
-      return v !== null ? JSON.parse(v) : fallback;
-    } catch { return fallback; }
+    try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; } catch { return fallback; }
   }
   function lsSet(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.warn('저장 실패', e); }
   }
 
-  // ── 히스토리 관리 ──────────────────────────────
-  function getHistory() {
-    return lsGet(LS_HISTORY, {});
-  }
-  function getCarbHistory() {
-    return lsGet(LS_CARB_HISTORY, {});
-  }
+  function getHistory() { return lsGet(LS_HISTORY, {}); }
+  function getCarbHistory() { return lsGet(LS_CARB_HISTORY, {}); }
   function saveHistory(dateStr, foods) {
     const histKey = currentMode === 'carb' ? LS_CARB_HISTORY : LS_HISTORY;
     let hist = lsGet(histKey, {});
-    if (foods.length === 0) {
-      delete hist[dateStr];
-    } else {
-      hist[dateStr] = { foods };
-    }
+    if (foods.length === 0) { delete hist[dateStr]; } else { hist[dateStr] = { foods }; }
     const keys = Object.keys(hist).sort().reverse();
-    if (keys.length > 14) {
-      keys.slice(14).forEach(k => delete hist[k]);
-    }
+    if (keys.length > 14) keys.slice(14).forEach(k => delete hist[k]);
     lsSet(histKey, hist);
   }
-  // 반대편 모드의 히스토리 직접 저장
   function saveHistoryDirect(histKey, dateStr, foods) {
     let hist = lsGet(histKey, {});
-    if (foods.length === 0) {
-      delete hist[dateStr];
-    } else {
-      hist[dateStr] = { foods };
-    }
+    if (foods.length === 0) { delete hist[dateStr]; } else { hist[dateStr] = { foods }; }
     const keys = Object.keys(hist).sort().reverse();
     if (keys.length > 14) keys.slice(14).forEach(k => delete hist[k]);
     lsSet(histKey, hist);
   }
 
-  // ── 반대편 오늘 데이터 가져오기 ───────────────
   function getOppositeToday() {
     const histKey = currentMode === 'protein' ? LS_CARB_HISTORY : LS_HISTORY;
     const hist = lsGet(histKey, {});
@@ -829,7 +771,6 @@
     return (hist[today] && hist[today].foods) ? [...hist[today].foods] : [];
   }
 
-  // ── 초기화 ─────────────────────────────────────
   window.addEventListener('DOMContentLoaded', () => {
     updateDateLabel();
     setDefaultMealByTime();
@@ -856,7 +797,6 @@
     selectMeal(meal);
   }
 
-  // ── 목표 로드/저장 ─────────────────────────────
   function loadGoal() {
     goal = lsGet(LS_GOAL, 150);
     updateGoalUI();
@@ -866,7 +806,6 @@
     document.getElementById('statGoal').textContent = goal + 'g';
   }
 
-  // ── 오늘 데이터 로드 ───────────────────────────
   function loadTodayData() {
     const hist = getHistory();
     const today = todayStr();
@@ -875,12 +814,8 @@
     updateGauge();
   }
 
-  // ── 오늘 데이터 저장 ───────────────────────────
-  function saveTodayData() {
-    saveHistory(todayStr(), todayFoods);
-  }
+  function saveTodayData() { saveHistory(todayStr(), todayFoods); }
 
-  // ── 끼니 탭 선택 ──────────────────────────────
   function selectMeal(meal) {
     selectedMeal = meal;
     document.querySelectorAll('.meal-tab').forEach(btn => {
@@ -888,13 +823,11 @@
     });
   }
 
-  // ── 음식 변경 프리뷰 ───────────────────────────
   function onFoodChange() {
     const key = getCurrentFoodKey();
     const val = parseFloat(document.getElementById('amountInput').value);
     const preview = document.getElementById('proteinPreview');
     if (!key || !val || val <= 0) { preview.innerHTML = ''; return; }
-
     if (currentMode === 'carb') {
       updatePlaceholder();
       const c = calcCarb(key, val);
@@ -905,59 +838,35 @@
     }
   }
 
-  // ── 음식 추가 (메인 로직) ──────────────────────
   async function addFood() {
     const key = getCurrentFoodKey();
     const val = parseFloat(document.getElementById('amountInput').value);
     if (!key) { showToast('음식을 선택해주세요'); return; }
-
     const MEAL_LABELS = { breakfast:'아침', lunch:'점심', dinner:'저녁' };
 
     if (currentMode === 'carb') {
       const unit = CARB_FOOD_UNIT[key];
       if (!val || val <= 0) { showToast(unit === 'g' ? '그램수를 입력해주세요' : `${unit} 수를 입력해주세요`); return; }
       const carb = calcCarb(key, val);
-
-      // ── 연동 처리 (탄수화물 → 단백질) ──
-      const oppKey = COMMON_PAIR_REVERSE[key]; // 반대편 단백질 키
+      const oppKey = COMMON_PAIR_REVERSE[key];
       if (oppKey) {
         const oppFoods = getOppositeToday();
         const existing = oppFoods.find(f => f.key === oppKey && f.meal === selectedMeal);
         if (existing) {
           const confirmed = await openConfirmModal(FOOD_NAMES[oppKey], MEAL_LABELS[selectedMeal]);
-          if (!confirmed) {
-            // 탄수화물 쪽은 그냥 추가 (반대편만 건드리지 않음)
-          } else {
-            // 반대편 덮어쓰기
+          if (confirmed) {
             existing.gram = val;
             existing.protein = calcProtein(oppKey, val);
             saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
           }
         } else {
-          // 반대편에 새로 추가
           const oppProtein = calcProtein(oppKey, val);
-          oppFoods.push({
-            key: oppKey,
-            name: FOOD_NAMES[oppKey],
-            icon: FOOD_ICONS[oppKey],
-            gram: val,
-            unit: PROTEIN_UNIT[oppKey],
-            protein: oppProtein,
-            meal: selectedMeal
-          });
+          oppFoods.push({ key:oppKey, name:FOOD_NAMES[oppKey], icon:FOOD_ICONS[oppKey], gram:val, unit:PROTEIN_UNIT[oppKey], protein:oppProtein, meal:selectedMeal });
           saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
         }
       }
-
-      todayFoods.push({
-        key, name: CARB_FOOD_NAMES[key], icon: CARB_FOOD_ICONS[key],
-        gram: val, unit: unit,
-        protein: carb, meal: selectedMeal
-      });
-      renderFoodList();
-      updateGauge();
-      saveTodayData();
-      renderHistory();
+      todayFoods.push({ key, name:CARB_FOOD_NAMES[key], icon:CARB_FOOD_ICONS[key], gram:val, unit:unit, protein:carb, meal:selectedMeal });
+      renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
       document.activeElement && document.activeElement.blur();
       document.getElementById('carbSelect').value = '';
       document.getElementById('amountInput').value = '';
@@ -966,7 +875,6 @@
       return;
     }
 
-    // ── 단백질 모드 ──
     const unit = PROTEIN_UNIT[key];
     if (!val || val <= 0) {
       if (key === 'egg') { showToast('개수를 입력해주세요'); return; }
@@ -974,224 +882,126 @@
       showToast('그램수를 입력해주세요'); return;
     }
     const protein = calcProtein(key, val);
-
-    // ── 연동 처리 (단백질 → 탄수화물) ──
-    const oppKey = COMMON_PAIR[key]; // 반대편 탄수화물 키
+    const oppKey = COMMON_PAIR[key];
     if (oppKey) {
       const oppFoods = getOppositeToday();
       const existing = oppFoods.find(f => f.key === oppKey && f.meal === selectedMeal);
       if (existing) {
         const confirmed = await openConfirmModal(CARB_FOOD_NAMES[oppKey], MEAL_LABELS[selectedMeal]);
-        if (!confirmed) {
-          // 단백질 쪽은 그냥 추가 (반대편만 건드리지 않음)
-        } else {
+        if (confirmed) {
           existing.gram = val;
           existing.protein = calcCarb(oppKey, val);
           saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
         }
       } else {
         const oppCarb = calcCarb(oppKey, val);
-        oppFoods.push({
-          key: oppKey,
-          name: CARB_FOOD_NAMES[oppKey],
-          icon: CARB_FOOD_ICONS[oppKey],
-          gram: val,
-          unit: CARB_FOOD_UNIT[oppKey],
-          protein: oppCarb,
-          meal: selectedMeal
-        });
+        oppFoods.push({ key:oppKey, name:CARB_FOOD_NAMES[oppKey], icon:CARB_FOOD_ICONS[oppKey], gram:val, unit:CARB_FOOD_UNIT[oppKey], protein:oppCarb, meal:selectedMeal });
         saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
       }
     }
-
-    todayFoods.push({
-      key, name: FOOD_NAMES[key], icon: FOOD_ICONS[key],
-      gram: val, unit: unit,
-      protein, meal: selectedMeal
-    });
-
-    renderFoodList();
-    updateGauge();
-    saveTodayData();
-    renderHistory();
-
+    todayFoods.push({ key, name:FOOD_NAMES[key], icon:FOOD_ICONS[key], gram:val, unit:unit, protein, meal:selectedMeal });
+    renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
     document.activeElement && document.activeElement.blur();
     document.getElementById('foodSelect').value = '';
     document.getElementById('amountInput').value = '';
     document.getElementById('proteinPreview').innerHTML = '';
-
     showToast(`+${protein}g 추가됐어요!`);
   }
 
-  // ── 음식 삭제 ──────────────────────────────────
   function deleteFood(idx) {
     todayFoods.splice(idx, 1);
-    renderFoodList();
-    updateGauge();
-    saveTodayData();
-    renderHistory();
+    renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
   }
 
-  // ── 게이지 업데이트 ────────────────────────────
   function updateGauge() {
     const total = todayFoods.reduce((s, f) => s + f.protein, 0);
     const pct = total / goal;
     const isOver = pct >= 1;
     const fillPct = Math.min(pct, 1) * 100;
-
     const outer = document.getElementById('waveOuter');
     const fill  = document.getElementById('waveFill');
     outer.classList.toggle('overflow', isOver);
     fill.style.height = fillPct + '%';
-
     const displayPct = Math.round(pct * 100);
     document.getElementById('wavePct').textContent = displayPct + '%';
     document.getElementById('waveSub').textContent = `${total.toFixed(1)} / ${goal}g`;
-
     document.getElementById('statTotal').textContent = total.toFixed(1) + 'g';
     document.getElementById('statTotal').className = 'stat-val intake';
     document.getElementById('statGoal').textContent = goal + 'g';
-
     const remain = goal - total;
     const remainEl  = document.getElementById('statRemain');
     const remainLbl = document.getElementById('statRemainLbl');
     if (remain > 0) {
-      remainEl.textContent = remain.toFixed(1) + 'g';
-      remainEl.className = 'stat-val remain';
-      remainLbl.className = 'stat-lbl remain-lbl';
-      remainLbl.textContent = '남은 양';
+      remainEl.textContent = remain.toFixed(1) + 'g'; remainEl.className = 'stat-val remain';
+      remainLbl.className = 'stat-lbl remain-lbl'; remainLbl.textContent = '남은 양';
     } else {
-      remainEl.textContent = '+' + Math.abs(remain).toFixed(1) + 'g';
-      remainEl.className = 'stat-val green';
-      remainLbl.className = 'stat-lbl';
-      remainLbl.textContent = '초과량';
+      remainEl.textContent = '+' + Math.abs(remain).toFixed(1) + 'g'; remainEl.className = 'stat-val green';
+      remainLbl.className = 'stat-lbl'; remainLbl.textContent = '초과량';
     }
   }
 
-  // ── 음식 목록 렌더 (끼니별 그룹) ───────────────
   const MEAL_INFO  = { breakfast:{label:'아침',icon:'🌅'}, lunch:{label:'점심',icon:'☀️'}, dinner:{label:'저녁',icon:'🌙'} };
   const MEAL_ORDER = ['breakfast', 'lunch', 'dinner'];
 
   function renderFoodList() {
     const list = document.getElementById('foodList');
-    if (todayFoods.length === 0) {
-      list.innerHTML = '<div class="empty-msg">아직 기록이 없어요 🥢</div>';
-      return;
-    }
-
+    if (todayFoods.length === 0) { list.innerHTML = '<div class="empty-msg">아직 기록이 없어요 🥢</div>'; return; }
     const groups = { breakfast: [], lunch: [], dinner: [] };
-    todayFoods.forEach((f, i) => {
-      const m = f.meal || 'breakfast';
-      groups[m].push({ ...f, _idx: i });
-    });
-
+    todayFoods.forEach((f, i) => { const m = f.meal || 'breakfast'; groups[m].push({ ...f, _idx: i }); });
     const activeMeals = MEAL_ORDER.filter(m => groups[m].length > 0);
     let html = '';
-
     activeMeals.forEach((meal, gi) => {
       const items = groups[meal];
       const mealTotal = items.reduce((s, f) => s + f.protein, 0);
       const info = MEAL_INFO[meal];
       if (gi > 0) html += '<div class="meal-divider"></div>';
-      html += `
-        <div class="meal-group">
-          <div class="meal-group-header">
-            <span class="meal-group-title">${info.icon} ${info.label}</span>
-            <span class="meal-group-total">${mealTotal.toFixed(1)}g</span>
-          </div>
-          <div class="food-list-inner">
-            ${items.map(f => `
-              <div class="food-item">
-                <div class="food-left">
-                  <span class="food-icon">${f.icon}</span>
-                  <div>
-                    <div class="food-name">${f.name}</div>
-                    <div class="food-gram">${f.gram}${f.unit || 'g'}</div>
-                  </div>
-                </div>
-                <div style="display:flex;align-items:center;">
-                  <span class="food-protein">+${f.protein}g</span>
-                  <button class="food-delete" data-idx="${f._idx}">×</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
+      html += `<div class="meal-group"><div class="meal-group-header"><span class="meal-group-title">${info.icon} ${info.label}</span><span class="meal-group-total">${mealTotal.toFixed(1)}g</span></div><div class="food-list-inner">${items.map(f => `<div class="food-item"><div class="food-left"><span class="food-icon">${f.icon}</span><div><div class="food-name">${f.name}</div><div class="food-gram">${f.gram}${f.unit || 'g'}</div></div></div><div style="display:flex;align-items:center;"><span class="food-protein">+${f.protein}g</span><button class="food-delete" data-idx="${f._idx}">×</button></div></div>`).join('')}</div></div>`;
     });
-
     list.innerHTML = html;
     list.querySelectorAll('.food-delete').forEach(btn => {
       btn.addEventListener('click', () => deleteFood(parseInt(btn.dataset.idx)));
     });
   }
 
-  // ── 히스토리 렌더 ──────────────────────────────
   function renderHistory() {
     const list = document.getElementById('historyList');
     const hist = currentMode === 'carb' ? getCarbHistory() : getHistory();
     const keys = Object.keys(hist).sort().reverse().slice(0, 14);
-
-    if (keys.length === 0) {
-      list.innerHTML = '<div class="history-empty">기록이 쌓이면 여기 보여요</div>';
-      return;
-    }
-
+    if (keys.length === 0) { list.innerHTML = '<div class="history-empty">기록이 쌓이면 여기 보여요</div>'; return; }
     const totals = keys.map(k => (hist[k].foods||[]).reduce((s,f)=>s+f.protein,0));
     const maxVal = Math.max(...totals, goal);
     const goalLinePct = Math.min(goal / maxVal * 100, 100);
     const DAYS_KO = ['일','월','화','수','목','금','토'];
-
     list.innerHTML = keys.map((dateStr, i) => {
       const total = totals[i];
       const barPct = Math.min(total / maxVal * 100, 100);
       const isOver = total >= goal;
       const [y, m, d] = dateStr.split('-').map(Number);
       const dateObj = new Date(y, m-1, d);
-      return `
-        <div class="history-row">
-          <div class="hist-date-wrap">
-            <span class="hist-date">${m}/${d}</span>
-            <span class="hist-day">(${DAYS_KO[dateObj.getDay()]})</span>
-          </div>
-          <div class="hist-bar-wrap">
-            <div class="hist-bar ${isOver?'over':'normal'}" style="width:${barPct}%"></div>
-            <div class="hist-goal-line" style="left:${goalLinePct}%"></div>
-          </div>
-          <span class="hist-val ${isOver?'over':''}">${total.toFixed(0)}g</span>
-        </div>
-      `;
+      return `<div class="history-row"><div class="hist-date-wrap"><span class="hist-date">${m}/${d}</span><span class="hist-day">(${DAYS_KO[dateObj.getDay()]})</span></div><div class="hist-bar-wrap"><div class="hist-bar ${isOver?'over':'normal'}" style="width:${barPct}%"></div><div class="hist-goal-line" style="left:${goalLinePct}%"></div></div><span class="hist-val ${isOver?'over':''}">${total.toFixed(0)}g</span></div>`;
     }).join('');
   }
 
-  // ── 목표 설정 ──────────────────────────────────
   function openGoalModal() {
     document.getElementById('goalInput').value = goal;
     document.getElementById('goalInput').placeholder = currentMode === 'carb' ? '350' : '150';
     document.getElementById('goalInput').max = currentMode === 'carb' ? '1000' : '500';
     document.getElementById('goalModal').classList.add('show');
   }
-  function closeGoalModal() {
-    document.getElementById('goalModal').classList.remove('show');
-  }
+  function closeGoalModal() { document.getElementById('goalModal').classList.remove('show'); }
   function saveGoal() {
     const maxGoal = currentMode === 'carb' ? 1000 : 500;
     const v = parseInt(document.getElementById('goalInput').value);
     if (!v || v < 50 || v > maxGoal) { showToast(`50~${maxGoal}g 사이로 입력해주세요`); return; }
     goal = v;
     lsSet(currentMode === 'carb' ? LS_CARB_GOAL : LS_GOAL, goal);
-    updateGoalUI();
-    updateGauge();
-    renderHistory();
-    closeGoalModal();
+    updateGoalUI(); updateGauge(); renderHistory(); closeGoalModal();
     showToast(`목표 ${v}g으로 설정됐어요!`);
   }
 
-  // ── 토스트 ─────────────────────────────────────
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
+    t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2200);
   }
 </script>
