@@ -139,7 +139,8 @@ function save() {
 function renderDd() {
   const list = $('dd-list');
   list.innerHTML = '';
-  const sorted = [...S.dd].sort((a, b) => (b.id || 0) - (a.id || 0));
+  // 날짜 기준 내림차순: 미래(먼 날짜)가 상단, 오래된 과거가 하단
+  const sorted = [...S.dd].sort((a, b) => b.date.localeCompare(a.date));
   if (!sorted.length) { list.innerHTML = '<div class="empty-msg">디데이를 추가해보세요</div>'; return; }
   sorted.forEach(it => list.appendChild(makeCard(it)));
 }
