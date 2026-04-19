@@ -629,10 +629,10 @@ function drawAutumnBG() {
   gr.addColorStop(0,'rgba(148,80,22,0.85)'); gr.addColorStop(1,'rgba(95,48,10,0.95)');
   ctx.fillStyle=gr; ctx.fillRect(0,H*0.78,W,H*0.22);
 
-  // 큰 나무 — 좌측
-  drawSoftAutumnTree(W*0.22, H*0.78, H*0.52, 0);
+  // 큰 나무 — 좌측 (잘리지 않도록 충분히 안쪽, 크게)
+  drawSoftAutumnTree(W*0.30, H*0.78, H*0.58, 0);
   // 작은 나무 — 우측
-  drawSoftAutumnTree(W*0.76, H*0.80, H*0.34, 1);
+  drawSoftAutumnTree(W*0.74, H*0.80, H*0.36, 1);
 }
 
 function drawSoftAutumnTree(tx, ty, treeH, idx) {
@@ -649,10 +649,10 @@ function drawSoftAutumnTree(tx, ty, treeH, idx) {
   const topX=tx+lean*0.4, topY=ty-treeH*0.66;
 
   const brs=[
-    {angle:idx===0?-1.05:1.05, len:treeH*0.28, w:treeH*0.018, from:0.08},
-    {angle:idx===0? 0.80:-0.80, len:treeH*0.24, w:treeH*0.016, from:0.16},
-    {angle:idx===0?-0.72: 0.72, len:treeH*0.20, w:treeH*0.013, from:0.25},
-    {angle:idx===0? 0.40:-0.40, len:treeH*0.15, w:treeH*0.011, from:0.34},
+    {angle:idx===0?-0.75:1.05, len:treeH*0.28, w:treeH*0.018, from:0.08},
+    {angle:idx===0? 0.80:-0.80, len:treeH*0.26, w:treeH*0.016, from:0.16},
+    {angle:idx===0?-0.55: 0.72, len:treeH*0.22, w:treeH*0.013, from:0.25},
+    {angle:idx===0? 0.40:-0.40, len:treeH*0.16, w:treeH*0.011, from:0.34},
   ];
   const clusters=[];
   brs.forEach((b,bi)=>{
@@ -663,7 +663,8 @@ function drawSoftAutumnTree(tx, ty, treeH, idx) {
     ctx.beginPath(); ctx.moveTo(bx,by);
     ctx.quadraticCurveTo((bx+ex)/2+(bi%2===0?-8:8),(by+ey)/2-6,ex,ey);
     ctx.stroke();
-    clusters.push({x:ex,y:ey,r:b.len*0.55});
+    const clR = b.len*0.55;
+    clusters.push({x:Math.max(ex, clR*1.1), y:ey, r:clR});
   });
   clusters.push({x:topX,y:topY-treeH*0.04,r:treeH*0.16});
 
