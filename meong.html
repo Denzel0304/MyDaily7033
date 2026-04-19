@@ -382,10 +382,6 @@ function drawNightBG() {
   // offscreen → 메인 canvas
   ctx.save();
   ctx.drawImage(oc, mx-ocCx, my-ocCy);
-  // 달 테두리 은은하게
-  ctx.globalAlpha=0.15;
-  ctx.strokeStyle='rgba(255,248,200,1)'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.arc(mx,my,mr,0,Math.PI*2); ctx.stroke();
   ctx.restore();
 
   ctx.fillStyle='rgba(5,4,20,0.96)';
@@ -530,18 +526,6 @@ function drawSoftSnowTree(px, py, treeH) {
       ctx.ellipse(c.x+(i-2)*2, c.y-(i*3), c.rx*(1-i*0.06), c.ry*(1-i*0.06), 0, 0, Math.PI*2);
       ctx.fill(); ctx.restore();
     });
-  });
-
-  // 눈 — 각 클러스터 위에 흰 타원
-  clusters.forEach(c=>{
-    ctx.save(); ctx.globalAlpha=0.88;
-    ctx.fillStyle='rgba(230,240,255,0.95)';
-    ctx.beginPath(); ctx.ellipse(c.x-c.rx*0.05, c.y-c.ry*0.35, c.rx*0.62, c.ry*0.30, -0.05, 0, Math.PI*2);
-    ctx.fill();
-    ctx.globalAlpha=0.65;
-    ctx.beginPath(); ctx.ellipse(c.x+c.rx*0.18, c.y-c.ry*0.18, c.rx*0.32, c.ry*0.16, 0.1, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
   });
 
   ctx.restore();
@@ -943,25 +927,21 @@ function loop() {
 
   else if(id==='autumn'){
     drawAutumnBG();
+    // settled 낙엽 — 배경 위에 그려야 보임
     extras.forEach(e=>{
       if(e.type!=='settled') return;
       if(e.a < e.targetA) e.a = Math.min(e.targetA, e.a + 0.010);
       ctx.save(); ctx.translate(e.x,e.y); ctx.rotate(e.rot); ctx.globalAlpha=e.a;
-      ctx.fillStyle=`hsl(${e.hue},72%,46%)`;
+      ctx.fillStyle=`hsl(${e.hue},70%,46%)`;
       ctx.beginPath();
       if(e.shape===0){
-        ctx.ellipse(0,0,e.size*0.65,e.size*0.95,0,0,Math.PI*2);
+        ctx.ellipse(0,0,e.size*0.58,e.size*0.88,0,0,Math.PI*2);
       } else if(e.shape===1){
-        ctx.moveTo(0,-e.size);
-        ctx.bezierCurveTo(e.size*0.85,-e.size*0.3,e.size*0.65,e.size*0.55,0,e.size*0.88);
-        ctx.bezierCurveTo(-e.size*0.65,e.size*0.55,-e.size*0.85,-e.size*0.3,0,-e.size);
+        ctx.moveTo(0,-e.size*0.88);
+        ctx.bezierCurveTo(e.size*0.52,-e.size*0.35,e.size*0.60,e.size*0.32,0,e.size*0.88);
+        ctx.bezierCurveTo(-e.size*0.60,e.size*0.32,-e.size*0.52,-e.size*0.35,0,-e.size*0.88);
       } else {
-        ctx.moveTo(0,-e.size); ctx.lineTo(e.size*0.38,-e.size*0.5);
-        ctx.lineTo(e.size*0.88,-e.size*0.28); ctx.lineTo(e.size*0.48,e.size*0.10);
-        ctx.lineTo(e.size*0.38,e.size*0.78); ctx.lineTo(0,e.size*0.48);
-        ctx.lineTo(-e.size*0.38,e.size*0.78); ctx.lineTo(-e.size*0.48,e.size*0.10);
-        ctx.lineTo(-e.size*0.88,-e.size*0.28); ctx.lineTo(-e.size*0.38,-e.size*0.5);
-        ctx.closePath();
+        ctx.ellipse(0,e.size*0.08,e.size*0.52,e.size*0.80,0,0,Math.PI*2);
       }
       ctx.fill(); ctx.restore();
     });
