@@ -148,8 +148,14 @@ const scenes = [
   { name:'봄 나무',      id:'spring_tree'    },
   { name:'별똥별',       id:'shooting_stars' },
   { name:'눈 내리는 밤', id:'snowfall'       },
-  { name:'빗속의 호수',  id:'lake_rain'      },
   { name:'가을 낙엽',    id:'autumn'         },
+  { name:'반딧불이',     id:'fireflies'      },
+  { name:'연꽃 연못',    id:'lotus'          },
+  { name:'벚꽃 비',      id:'sakura'         },
+  { name:'비눗방울',     id:'bubbles'        },
+  { name:'해파리',       id:'jellyfish'      },
+  { name:'오로라',       id:'aurora'         },
+  { name:'모닥불',       id:'campfire'       },
 ];
 
 let currentIdx = Math.floor(Math.random()*scenes.length);
@@ -195,8 +201,14 @@ function initScene() {
   if      (id==='spring_tree')    initSpringTree();
   else if (id==='shooting_stars') initShootingStars();
   else if (id==='snowfall')       initSnowfall();
-  else if (id==='lake_rain')      initLakeRain();
   else if (id==='autumn')         initAutumn();
+  else if (id==='fireflies')      initFireflies();
+  else if (id==='lotus')          initLotus();
+  else if (id==='sakura')         initSakura();
+  else if (id==='bubbles')        initBubbles();
+  else if (id==='jellyfish')      initJellyfish();
+  else if (id==='aurora')         initAurora();
+  else if (id==='campfire')       initCampfire();
   loop();
 }
 
@@ -733,8 +745,749 @@ function updateAutumnLeaf(p) {
 }
 
 /* ════════════════════════════════════════════
-   Main loop
+   6. 반딧불이 초원
    ════════════════════════════════════════════ */
+function initFireflies() {
+  particles = [];
+  for(let i=0;i<38;i++) particles.push(makeFirefly());
+}
+function makeFirefly() {
+  return {
+    type:'firefly',
+    x: Math.random()*W,
+    y: H*0.3 + Math.random()*H*0.65,
+    vx: (Math.random()-0.5)*0.22,
+    vy: (Math.random()-0.5)*0.18,
+    phase: Math.random()*Math.PI*2,
+    phaseS: 0.012 + Math.random()*0.022,
+    blinkPhase: Math.random()*Math.PI*2,
+    blinkS: 0.018 + Math.random()*0.030,
+    r: 1.8 + Math.random()*2.2,
+    wander: Math.random()*Math.PI*2,
+    wanderS: 0.008 + Math.random()*0.010,
+    trail: [],
+  };
+}
+function drawFireflyBG() {
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#050e08');
+  sky.addColorStop(0.5,'#071a0e');
+  sky.addColorStop(1,'#0a1f10');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 별
+  ctx.save();
+  for(let i=0;i<60;i++){
+    const sx=((i*137.5)%1)*W, sy=((i*97.3)%0.55)*H;
+    const sa=0.15+((i*53)%100)/100*0.35;
+    ctx.globalAlpha=sa;
+    ctx.fillStyle='#d8f0d0';
+    ctx.beginPath(); ctx.arc(sx,sy,0.5+((i*31)%10)/10*0.8,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+
+  // 풀밭
+  const gr = ctx.createLinearGradient(0,H*0.72,0,H);
+  gr.addColorStop(0,'#071a0c');
+  gr.addColorStop(1,'#030e06');
+  ctx.fillStyle=gr; ctx.fillRect(0,H*0.74,W,H*0.26);
+
+  // 풀 실루엣
+  ctx.save();
+  ctx.fillStyle='#040f07';
+  for(let i=0;i<60;i++){
+    const gx=((i*73.1)%1)*W;
+    const gh=H*0.05+((i*53.7)%1)*H*0.10;
+    ctx.beginPath();
+    ctx.moveTo(gx-4, H*0.76);
+    ctx.quadraticCurveTo(gx+((i%3)-1)*8, H*0.76-gh*0.5, gx+((i%5)-2)*3, H*0.76-gh);
+    ctx.quadraticCurveTo(gx+((i%3)-1)*5, H*0.76-gh*0.5, gx+4, H*0.76);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+function loopFireflies() {
+  particles.forEach(p=>{
+    p.wander += p.wanderS;
+    p.vx += Math.cos(p.wander)*0.008;
+    p.vy += Math.sin(p.wander)*0.006;
+    p.vx *= 0.98; p.vy *= 0.98;
+    p.x += p.vx; p.y += p.vy;
+    if(p.x<0) p.x=W; if(p.x>W) p.x=0;
+    if(p.y<H*0.25) p.vy+=0.04;
+    if(p.y>H*0.95) p.vy-=0.04;
+
+    p.blinkPhase += p.blinkS;
+    const blink = Math.max(0, Math.sin(p.blinkPhase));
+    const glow = blink * blink;
+
+    p.trail.push({x:p.x, y:p.y, a:glow});
+    if(p.trail.length>18) p.trail.shift();
+
+    if(glow>0.05) {
+      // 외부 글로우
+      ctx.save();
+      const glowR = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*9);
+      glowR.addColorStop(0,`rgba(180,255,120,${glow*0.22})`);
+      glowR.addColorStop(1,'rgba(180,255,120,0)');
+      ctx.fillStyle=glowR;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*9,0,Math.PI*2); ctx.fill();
+      // 코어
+      const coreG = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.2);
+      coreG.addColorStop(0,`rgba(230,255,180,${glow*0.95})`);
+      coreG.addColorStop(0.4,`rgba(160,240,80,${glow*0.7})`);
+      coreG.addColorStop(1,'rgba(100,200,60,0)');
+      ctx.fillStyle=coreG;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2.2,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  });
+}
+
+/* ════════════════════════════════════════════
+   7. 연꽃 연못
+   ════════════════════════════════════════════ */
+let lotusRipples=[];
+function initLotus() {
+  particles=[]; lotusRipples=[];
+  // 연꽃 배치
+  const spots=[
+    {x:W*0.22,y:H*0.58,s:1.0},{x:W*0.60,y:H*0.50,s:0.82},
+    {x:W*0.80,y:H*0.70,s:0.70},{x:W*0.38,y:H*0.74,s:0.90},
+    {x:W*0.10,y:H*0.72,s:0.62},{x:W*0.70,y:H*0.84,s:0.58},
+  ];
+  spots.forEach((sp,i)=>particles.push({type:'lotus',...sp,phase:i*1.1,phaseS:0.004+i*0.001}));
+  // 잠자리
+  extras=[{type:'dragonfly',x:W*0.5,y:H*0.35,vx:0.4,vy:0,phase:0,targetX:W*0.5,targetY:H*0.35,wait:0}];
+}
+function drawLotusBG() {
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#b8d4e8');
+  sky.addColorStop(0.5,'#c8e0f0');
+  sky.addColorStop(1,'#5a8aaa');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 수면
+  const wg=ctx.createLinearGradient(0,H*0.38,0,H);
+  wg.addColorStop(0,'rgba(80,140,170,0.92)');
+  wg.addColorStop(0.3,'rgba(60,115,145,0.97)');
+  wg.addColorStop(1,'rgba(40,85,115,1)');
+  ctx.fillStyle=wg;
+  ctx.beginPath();
+  for(let x2=0;x2<=W;x2+=20){
+    const wy=H*0.42+Math.sin(t*0.5+x2*0.03)*2.5+Math.cos(t*0.35+x2*0.018)*1.8;
+    x2===0?ctx.moveTo(x2,wy):ctx.lineTo(x2,wy);
+  }
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+
+  // 수면 반짝임
+  ctx.save();
+  for(let i=0;i<14;i++){
+    const sx=((i*157)%1)*W, sy=H*0.46+((i*73)%1)*H*0.48;
+    const sa=0.08+0.12*Math.sin(t*1.2+i*2.3);
+    ctx.globalAlpha=Math.max(0,sa);
+    ctx.fillStyle='rgba(220,240,255,1)';
+    ctx.beginPath(); ctx.ellipse(sx,sy,6+i%4,1.5,0,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+
+  // 잔물결
+  lotusRipples=lotusRipples.filter(r=>{
+    r.life++;
+    const a=r.a*(1-r.life/r.maxLife);
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.strokeStyle='rgba(180,215,235,0.7)'; ctx.lineWidth=0.7;
+    ctx.beginPath(); ctx.ellipse(r.x,r.y,(r.life/r.maxLife)*r.maxR,(r.life/r.maxLife)*r.maxR*0.28,0,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+    return r.life<r.maxLife;
+  });
+  if(Math.random()<0.012) lotusRipples.push({x:Math.random()*W,y:H*0.5+Math.random()*H*0.44,r:0,maxR:22+Math.random()*30,life:0,maxLife:120+Math.random()*80,a:0.55});
+}
+function drawLotusFlower(x,y,s,phase) {
+  const bob=Math.sin(t*0.6+phase)*2.5*s;
+  const fy=y+bob;
+
+  // 연잎
+  ctx.save();
+  [[-0.18*W*0.08,0.06*H*0.08],[-0.06*W*0.08,0.12*H*0.08],[0.14*W*0.08,-0.04*H*0.08]].forEach(([lx,ly],i)=>{
+    const lscale=(0.8+i*0.12)*s*55;
+    ctx.save(); ctx.translate(x+lx,fy+ly+lscale*0.4);
+    ctx.globalAlpha=0.72;
+    ctx.fillStyle=`hsl(${140+i*8},52%,${32+i*4}%)`;
+    ctx.beginPath();
+    ctx.ellipse(0,0,lscale,lscale*0.55,i*0.4-0.3,0,Math.PI*2);
+    ctx.fill();
+    // 잎맥
+    ctx.globalAlpha=0.15; ctx.strokeStyle='#1a4a1a'; ctx.lineWidth=0.8;
+    for(let v=0;v<5;v++){
+      const va=(v/4)*Math.PI-Math.PI/2;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(va)*lscale*0.85, Math.sin(va)*lscale*0.5); ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // 꽃
+  const petalCount=8;
+  const pr=s*22;
+  for(let pi=0;pi<petalCount;pi++){
+    const ang=(pi/petalCount)*Math.PI*2;
+    const px2=x+Math.cos(ang)*pr*0.85, py2=fy-s*8+Math.sin(ang)*pr*0.38;
+    ctx.save(); ctx.translate(px2,py2); ctx.rotate(ang+Math.PI/2);
+    ctx.globalAlpha=0.82;
+    const pg=ctx.createLinearGradient(0,-pr*0.9,0,0);
+    pg.addColorStop(0,'rgba(255,182,200,0.95)');
+    pg.addColorStop(0.5,'rgba(255,210,220,0.88)');
+    pg.addColorStop(1,'rgba(255,240,245,0.70)');
+    ctx.fillStyle=pg;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.bezierCurveTo(-pr*0.38,-pr*0.45,-pr*0.32,-pr*0.85,0,-pr*0.92);
+    ctx.bezierCurveTo(pr*0.32,-pr*0.85,pr*0.38,-pr*0.45,0,0);
+    ctx.fill(); ctx.restore();
+  }
+  // 꽃술
+  const cg=ctx.createRadialGradient(x,fy-s*8,0,x,fy-s*8,s*9);
+  cg.addColorStop(0,'rgba(255,230,80,0.98)');
+  cg.addColorStop(0.6,'rgba(255,200,50,0.82)');
+  cg.addColorStop(1,'rgba(200,150,20,0)');
+  ctx.fillStyle=cg;
+  ctx.beginPath(); ctx.arc(x,fy-s*8,s*9,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function loopLotus() {
+  particles.forEach(p=>{
+    if(p.type==='lotus') drawLotusFlower(p.x,p.y,p.s,p.phase);
+  });
+  // 잠자리
+  extras.forEach(d=>{
+    if(d.type!=='dragonfly') return;
+    d.wait--;
+    if(d.wait<=0){
+      d.targetX=W*0.1+Math.random()*W*0.8;
+      d.targetY=H*0.35+Math.random()*H*0.25;
+      d.wait=120+Math.random()*180;
+    }
+    d.x+=(d.targetX-d.x)*0.008;
+    d.y+=(d.targetY-d.y)*0.008;
+    d.phase+=0.25;
+    const wx=d.x, wy=d.y;
+    const ws=12;
+    ctx.save(); ctx.translate(wx,wy);
+    // 날개
+    const wFlap=Math.sin(d.phase)*0.6;
+    ctx.globalAlpha=0.55;
+    ctx.fillStyle='rgba(160,220,240,0.6)';
+    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([sx2,sy2])=>{
+      ctx.save(); ctx.scale(sx2,sy2);
+      ctx.beginPath();
+      ctx.ellipse(ws*0.4,ws*0.15*wFlap,ws*0.9,ws*0.35,wFlap*0.4,0,Math.PI*2);
+      ctx.fill(); ctx.restore();
+    });
+    // 몸통
+    ctx.globalAlpha=0.85;
+    ctx.fillStyle='rgba(30,160,200,0.88)';
+    ctx.beginPath(); ctx.ellipse(0,0,ws*0.22,ws*0.8,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+/* ════════════════════════════════════════════
+   8. 벚꽃 비
+   ════════════════════════════════════════════ */
+function initSakura() {
+  particles=[];
+  for(let i=0;i<55;i++) particles.push(makeSakuraPetal(true));
+}
+function makeSakuraPetal(scatter) {
+  return {
+    type:'sakura',
+    x: Math.random()*W*1.2 - W*0.1,
+    y: scatter ? Math.random()*H : -20,
+    vx: -0.18 - Math.random()*0.28,
+    vy: 0.22 + Math.random()*0.38,
+    rot: Math.random()*Math.PI*2,
+    rotV: (Math.random()-0.5)*0.022,
+    swg: Math.random()*Math.PI*2,
+    swgS: 0.012 + Math.random()*0.018,
+    size: 5 + Math.random()*7,
+    a: 0.6 + Math.random()*0.35,
+    hue: 340 + Math.random()*28,
+    flip: Math.random()*Math.PI*2,
+    flipS: 0.02 + Math.random()*0.025,
+  };
+}
+function drawSakuraBG() {
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#2a1a2e');
+  sky.addColorStop(0.45,'#3d1f3a');
+  sky.addColorStop(1,'#1a0e1e');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 달
+  const mx=W*0.75, my=H*0.15, mr=32;
+  ctx.save();
+  const moonGlow=ctx.createRadialGradient(mx,my,0,mx,my,mr*5);
+  moonGlow.addColorStop(0,'rgba(255,230,240,0.18)');
+  moonGlow.addColorStop(1,'transparent');
+  ctx.fillStyle=moonGlow; ctx.beginPath(); ctx.arc(mx,my,mr*5,0,Math.PI*2); ctx.fill();
+  const moonBody=ctx.createRadialGradient(mx-mr*0.15,my-mr*0.15,0,mx,my,mr);
+  moonBody.addColorStop(0,'#fff8f0'); moonBody.addColorStop(1,'#f0d8e8');
+  ctx.beginPath(); ctx.arc(mx,my,mr,0,Math.PI*2); ctx.fillStyle=moonBody; ctx.fill();
+  ctx.restore();
+
+  // 나무 줄기
+  ctx.save();
+  ctx.strokeStyle='rgba(80,40,55,0.90)'; ctx.lineWidth=18; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(W*0.18,H); ctx.bezierCurveTo(W*0.19,H*0.65,W*0.14,H*0.45,W*0.22,H*0.28); ctx.stroke();
+  ctx.lineWidth=11;
+  ctx.beginPath(); ctx.moveTo(W*0.22,H*0.50); ctx.bezierCurveTo(W*0.32,H*0.38,W*0.48,H*0.32,W*0.60,H*0.28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W*0.22,H*0.38); ctx.bezierCurveTo(W*0.08,H*0.28,W*0.02,H*0.18,W*0.12,H*0.10); ctx.stroke();
+  ctx.restore();
+
+  // 꽃구름
+  const blooms=[
+    {x:W*0.20,y:H*0.25,r:W*0.24},{x:W*0.58,y:H*0.26,r:W*0.20},
+    {x:W*0.10,y:H*0.15,r:W*0.16},{x:W*0.38,y:H*0.22,r:W*0.18},
+  ];
+  blooms.forEach(b=>{
+    ctx.save(); ctx.globalAlpha=0.14;
+    const bg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    bg.addColorStop(0,'rgba(255,180,210,1)'); bg.addColorStop(1,'rgba(220,120,170,0)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+function drawSakuraPetalShape(x,y,size,rot,a,hue,flip) {
+  ctx.save(); ctx.translate(x,y); ctx.rotate(rot);
+  const scaleY=Math.abs(Math.cos(flip));
+  ctx.scale(1, 0.35+scaleY*0.65);
+  ctx.globalAlpha=a;
+  const pg=ctx.createLinearGradient(0,-size,0,size);
+  pg.addColorStop(0,`hsla(${hue},85%,82%,0.95)`);
+  pg.addColorStop(0.5,`hsla(${hue},80%,88%,0.85)`);
+  pg.addColorStop(1,`hsla(${hue},75%,78%,0.70)`);
+  ctx.fillStyle=pg;
+  ctx.beginPath();
+  ctx.moveTo(0,-size);
+  ctx.bezierCurveTo(size*0.55,-size*0.8,size*0.6,-size*0.1,0,size*0.3);
+  ctx.bezierCurveTo(-size*0.6,-size*0.1,-size*0.55,-size*0.8,0,-size);
+  ctx.fill();
+  // 꽃잎 중앙선
+  ctx.globalAlpha=a*0.18; ctx.strokeStyle=`hsl(${hue},60%,65%)`; ctx.lineWidth=0.7;
+  ctx.beginPath(); ctx.moveTo(0,-size*0.9); ctx.lineTo(0,size*0.2); ctx.stroke();
+  ctx.restore();
+}
+function loopSakura() {
+  particles.forEach(p=>{
+    p.swg+=p.swgS; p.flip+=p.flipS;
+    p.x+=p.vx+Math.sin(p.swg)*0.35;
+    p.y+=p.vy+Math.cos(p.swg*0.7)*0.15;
+    p.rot+=p.rotV;
+    if(p.y>H+20||p.x<-50) Object.assign(p,makeSakuraPetal(false));
+    drawSakuraPetalShape(p.x,p.y,p.size,p.rot,p.a,p.hue,p.flip);
+  });
+}
+
+/* ════════════════════════════════════════════
+   9. 비눗방울
+   ════════════════════════════════════════════ */
+function initBubbles() {
+  particles=[];
+  for(let i=0;i<22;i++) particles.push(makeBubble(true));
+}
+function makeBubble(scatter) {
+  const r=14+Math.random()*42;
+  return {
+    type:'bubble',
+    x: W*0.05+Math.random()*W*0.90,
+    y: scatter ? Math.random()*H : H+r,
+    vy: -(0.22+Math.random()*0.38),
+    vx: (Math.random()-0.5)*0.18,
+    r,
+    swg: Math.random()*Math.PI*2,
+    swgS: 0.008+Math.random()*0.012,
+    a: 0.55+Math.random()*0.35,
+    hueShift: Math.random()*360,
+    life: 0,
+    maxLife: 320+Math.random()*280,
+  };
+}
+function drawBubblesBG() {
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#e8f4fc');
+  sky.addColorStop(0.5,'#d0eaf8');
+  sky.addColorStop(1,'#b8d8f0');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 부드러운 빛 원들
+  ctx.save();
+  [[W*0.2,H*0.3,W*0.4],[W*0.75,H*0.6,W*0.3],[W*0.5,H*0.1,W*0.35]].forEach(([bx,by,br])=>{
+    ctx.globalAlpha=0.07;
+    const bg=ctx.createRadialGradient(bx,by,0,bx,by,br);
+    bg.addColorStop(0,'rgba(180,220,255,1)'); bg.addColorStop(1,'transparent');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+function drawBubble(p) {
+  const {x,y,r,a,hueShift,life,maxLife} = p;
+  const lifeA = life>maxLife*0.88 ? (1-(life-maxLife*0.88)/(maxLife*0.12)) : 1;
+  const finalA = a * lifeA;
+
+  ctx.save();
+  // 무지개 테두리
+  const grad=ctx.createLinearGradient(x-r,y-r,x+r,y+r);
+  grad.addColorStop(0,  `hsla(${hueShift},90%,72%,${finalA*0.85})`);
+  grad.addColorStop(0.25,`hsla(${hueShift+80},88%,70%,${finalA*0.75})`);
+  grad.addColorStop(0.5, `hsla(${hueShift+160},88%,72%,${finalA*0.80})`);
+  grad.addColorStop(0.75,`hsla(${hueShift+240},88%,70%,${finalA*0.75})`);
+  grad.addColorStop(1,   `hsla(${hueShift+320},90%,72%,${finalA*0.85})`);
+  ctx.strokeStyle=grad; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
+
+  // 내부 반투명
+  ctx.globalAlpha=finalA*0.06;
+  ctx.fillStyle=`hsla(${hueShift+40},70%,88%,1)`;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+
+  // 반사 하이라이트
+  ctx.globalAlpha=finalA*0.65;
+  const hl=ctx.createRadialGradient(x-r*0.32,y-r*0.35,0,x-r*0.32,y-r*0.35,r*0.38);
+  hl.addColorStop(0,'rgba(255,255,255,0.82)'); hl.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=hl; ctx.beginPath(); ctx.arc(x-r*0.32,y-r*0.35,r*0.38,0,Math.PI*2); ctx.fill();
+  // 작은 반사
+  ctx.globalAlpha=finalA*0.4;
+  const hl2=ctx.createRadialGradient(x+r*0.35,y+r*0.28,0,x+r*0.35,y+r*0.28,r*0.16);
+  hl2.addColorStop(0,'rgba(255,255,255,0.55)'); hl2.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=hl2; ctx.beginPath(); ctx.arc(x+r*0.35,y+r*0.28,r*0.16,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function loopBubbles() {
+  particles.forEach(p=>{
+    p.swg+=p.swgS; p.life++;
+    p.x+=p.vx+Math.sin(p.swg)*0.25;
+    p.y+=p.vy;
+    p.hueShift+=0.4;
+    if(p.y<-p.r*2||p.life>=p.maxLife) Object.assign(p,makeBubble(false));
+    drawBubble(p);
+  });
+  if(particles.length<22) particles.push(makeBubble(false));
+}
+
+/* ════════════════════════════════════════════
+   10. 수중 해파리
+   ════════════════════════════════════════════ */
+function initJellyfish() {
+  particles=[];
+  for(let i=0;i<6;i++) particles.push(makeJellyfish(true,i));
+}
+function makeJellyfish(scatter,idx) {
+  const r=28+Math.random()*48;
+  return {
+    type:'jelly',
+    x: W*0.08+Math.random()*W*0.84,
+    y: scatter ? H*0.1+Math.random()*H*0.8 : H+r*2,
+    vy: -(0.10+Math.random()*0.18),
+    vx: (Math.random()-0.5)*0.08,
+    r,
+    phase: (idx||0)*1.2+Math.random()*Math.PI*2,
+    phaseS: 0.015+Math.random()*0.018,
+    hue: 200+Math.random()*140,
+    a: 0.55+Math.random()*0.30,
+    tentacles: Array.from({length:7+Math.floor(Math.random()*5)},(_,i)=>({
+      offset: (i/(10))*Math.PI*2,
+      swg: Math.random()*Math.PI*2,
+      swgS: 0.012+Math.random()*0.018,
+      len: r*1.4+Math.random()*r*0.8,
+    })),
+  };
+}
+function drawJellyfishBG() {
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#020818');
+  sky.addColorStop(0.4,'#041230');
+  sky.addColorStop(1,'#061840');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 빛 줄기
+  ctx.save();
+  for(let i=0;i<5;i++){
+    const lx=W*(0.1+i*0.2);
+    ctx.globalAlpha=0.025+0.015*Math.sin(t*0.4+i);
+    const lg=ctx.createLinearGradient(lx,0,lx+30,H);
+    lg.addColorStop(0,'rgba(80,160,255,0.5)');
+    lg.addColorStop(1,'rgba(40,100,200,0)');
+    ctx.fillStyle=lg;
+    ctx.beginPath();
+    ctx.moveTo(lx,0); ctx.lineTo(lx+40+i*8,H); ctx.lineTo(lx-20+i*6,H); ctx.lineTo(lx-15,0);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // 부유 입자
+  for(let i=0;i<30;i++){
+    const px2=((i*137+t*0.3)%W);
+    const py2=((i*97+t*0.15)%H);
+    ctx.globalAlpha=0.12+0.08*Math.sin(t+i);
+    ctx.fillStyle='rgba(120,200,255,1)';
+    ctx.beginPath(); ctx.arc(px2,py2,0.8+i%3*0.5,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawJellyBody(p) {
+  const {x,y,r,hue,a,phase,tentacles}=p;
+  const pulse=Math.sin(phase)*0.12;
+  const rx=r*(1-pulse*0.5);
+  const ry=r*(1+pulse*0.3);
+
+  ctx.save();
+  // 벨 — 외부 글로우
+  const glowG=ctx.createRadialGradient(x,y,0,x,y,r*2.2);
+  glowG.addColorStop(0,`hsla(${hue},80%,65%,${a*0.18})`);
+  glowG.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glowG; ctx.beginPath(); ctx.arc(x,y,r*2.2,0,Math.PI*2); ctx.fill();
+
+  // 벨 내부
+  const bellG=ctx.createRadialGradient(x,y-ry*0.2,r*0.1,x,y,ry);
+  bellG.addColorStop(0,`hsla(${hue},75%,85%,${a*0.55})`);
+  bellG.addColorStop(0.5,`hsla(${hue},70%,65%,${a*0.40})`);
+  bellG.addColorStop(1,`hsla(${hue},65%,50%,${a*0.15})`);
+  ctx.fillStyle=bellG;
+  ctx.beginPath();
+  ctx.ellipse(x,y,rx,ry*0.72,0,Math.PI,Math.PI*2);
+  ctx.bezierCurveTo(x+rx,y+ry*0.08,x-rx,y+ry*0.08,x-rx,y);
+  ctx.closePath(); ctx.fill();
+
+  // 테두리
+  ctx.strokeStyle=`hsla(${hue},80%,80%,${a*0.45})`;
+  ctx.lineWidth=1.2;
+  ctx.beginPath();
+  ctx.ellipse(x,y,rx,ry*0.72,0,Math.PI,Math.PI*2);
+  ctx.bezierCurveTo(x+rx,y+ry*0.08,x-rx,y+ry*0.08,x-rx,y);
+  ctx.closePath(); ctx.stroke();
+
+  // 촉수
+  tentacles.forEach(ten=>{
+    ten.swg+=ten.swgS;
+    const tx0=x+Math.cos(ten.offset)*rx*0.65;
+    ctx.beginPath(); ctx.moveTo(tx0,y+ry*0.05);
+    let lx2=tx0, ly2=y+ry*0.05;
+    const segs=12;
+    for(let s=1;s<=segs;s++){
+      const ratio=s/segs;
+      const wave=Math.sin(ten.swg+ratio*3.5)*rx*0.35*ratio;
+      const nx=tx0+wave+Math.cos(ten.offset)*(ratio*4);
+      const ny=y+ry*0.05+ratio*ten.len;
+      ctx.bezierCurveTo(lx2+wave*0.5,ly2+ten.len/segs*0.5,nx-wave*0.3,ny-ten.len/segs*0.3,nx,ny);
+      lx2=nx; ly2=ny;
+    }
+    const ta=a*(0.18+0.22*(1-0));
+    ctx.strokeStyle=`hsla(${hue},75%,72%,${ta})`;
+    ctx.lineWidth=0.9+pulse*0.3; ctx.lineCap='round'; ctx.stroke();
+  });
+  ctx.restore();
+}
+function loopJellyfish() {
+  particles.forEach(p=>{
+    p.phase+=p.phaseS;
+    p.x+=p.vx+Math.sin(p.phase*0.7)*0.12;
+    p.y+=p.vy*(0.85+0.15*Math.sin(p.phase));
+    if(p.y<-p.r*3) Object.assign(p,makeJellyfish(false,0));
+    drawJellyBody(p);
+  });
+}
+
+/* ════════════════════════════════════════════
+   11. 오로라
+   ════════════════════════════════════════════ */
+function initAurora() { particles=[]; }
+function drawAuroraBG() {
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#000810');
+  sky.addColorStop(0.5,'#010f18');
+  sky.addColorStop(1,'#021520');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 별
+  ctx.save();
+  for(let i=0;i<100;i++){
+    const sx=((i*167.3+11)%1)*W, sy=((i*89.7+7)%0.65)*H;
+    const sa=0.2+((i*53)%100)/100*0.55;
+    const twinkle=0.7+0.3*Math.sin(t*1.5+i*2.1);
+    ctx.globalAlpha=sa*twinkle;
+    ctx.fillStyle='#e8f8ff';
+    ctx.beginPath(); ctx.arc(sx,sy,0.4+((i*29)%10)/10*0.9,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+function loopAurora() {
+  // 오로라 커튼 여러 레이어
+  const layers=[
+    {hue:155,speed:0.18,amp:0.32,yBase:0.12,yRange:0.22,alpha:0.13},
+    {hue:175,speed:0.23,amp:0.28,yBase:0.08,yRange:0.28,alpha:0.11},
+    {hue:270,speed:0.14,amp:0.35,yBase:0.15,yRange:0.18,alpha:0.10},
+    {hue:185,speed:0.30,amp:0.22,yBase:0.06,yRange:0.32,alpha:0.09},
+    {hue:140,speed:0.20,amp:0.30,yBase:0.10,yRange:0.25,alpha:0.12},
+  ];
+
+  layers.forEach((l,li)=>{
+    const steps=80;
+    ctx.save();
+    for(let xi=0;xi<steps;xi++){
+      const xRatio=xi/steps;
+      const x1=xRatio*W, x2=(xi+1)/steps*W;
+      const wave1=Math.sin(t*l.speed+xRatio*Math.PI*2.5+li)*l.amp
+                 +Math.sin(t*l.speed*1.3+xRatio*Math.PI*1.8+li*0.7)*l.amp*0.5;
+      const wave2=Math.sin(t*l.speed+((xi+1)/steps)*Math.PI*2.5+li)*l.amp
+                 +Math.sin(t*l.speed*1.3+((xi+1)/steps)*Math.PI*1.8+li*0.7)*l.amp*0.5;
+      const topY1=H*(l.yBase+wave1*0.5);
+      const topY2=H*(l.yBase+wave2*0.5);
+      const botY1=H*(l.yBase+l.yRange+wave1*0.3);
+      const botY2=H*(l.yBase+l.yRange+wave2*0.3);
+
+      const brightness=0.7+0.3*Math.sin(t*0.5+xRatio*4+li);
+      const alphaTop=l.alpha*brightness*(0.6+0.4*Math.sin(t*0.3+xRatio*3));
+      const alphaBot=0;
+
+      const cg=ctx.createLinearGradient(0,topY1,0,botY1);
+      cg.addColorStop(0,`hsla(${l.hue},88%,62%,${alphaTop})`);
+      cg.addColorStop(0.3,`hsla(${l.hue+15},82%,58%,${alphaTop*0.7})`);
+      cg.addColorStop(1,`hsla(${l.hue+30},75%,50%,${alphaBot})`);
+      ctx.fillStyle=cg;
+      ctx.beginPath();
+      ctx.moveTo(x1,topY1); ctx.lineTo(x2,topY2);
+      ctx.lineTo(x2,botY2); ctx.lineTo(x1,botY1);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  // 지평선 실루엣
+  ctx.fillStyle='rgba(0,4,8,0.96)';
+  ctx.beginPath(); ctx.moveTo(0,H);
+  ctx.bezierCurveTo(W*0.08,H*0.88,W*0.18,H*0.84,W*0.30,H*0.90);
+  ctx.bezierCurveTo(W*0.42,H*0.96,W*0.55,H*0.82,W*0.68,H*0.88);
+  ctx.bezierCurveTo(W*0.80,H*0.94,W*0.92,H*0.86,W,H*0.91);
+  ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+}
+
+/* ════════════════════════════════════════════
+   12. 모닥불
+   ════════════════════════════════════════════ */
+let campfireEmbers=[];
+function initCampfire() {
+  particles=[]; campfireEmbers=[];
+  for(let i=0;i<60;i++) particles.push(makeFlameParticle());
+  for(let i=0;i<30;i++) campfireEmbers.push(makeEmber());
+}
+function makeFlameParticle() {
+  const cx=W*0.5, lane=Math.random();
+  return {
+    type:'flame',
+    x: cx+(Math.random()-0.5)*36,
+    y: H*0.70,
+    vx: (Math.random()-0.5)*0.5,
+    vy: -(0.55+Math.random()*1.1),
+    life: Math.random()*80,
+    maxLife: 55+Math.random()*65,
+    size: 5+Math.random()*18,
+    hue: lane<0.5 ? 12+Math.random()*18 : 32+Math.random()*22,
+    swg: Math.random()*Math.PI*2,
+    swgS: 0.06+Math.random()*0.08,
+  };
+}
+function makeEmber() {
+  return {
+    x: W*0.5+(Math.random()-0.5)*30,
+    y: H*0.70,
+    vx: (Math.random()-0.5)*1.2,
+    vy: -(0.8+Math.random()*2.2),
+    life: 0,
+    maxLife: 80+Math.random()*120,
+    size: 0.8+Math.random()*2.2,
+    hue: 20+Math.random()*30,
+  };
+}
+function drawCampfireBG() {
+  // 밤 배경
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#080508');
+  sky.addColorStop(0.5,'#100c08');
+  sky.addColorStop(1,'#180e06');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  // 별
+  ctx.save();
+  for(let i=0;i<80;i++){
+    const sx=((i*173.1)%1)*W, sy=((i*91.7)%0.72)*H;
+    const sa=0.15+((i*61)%100)/100*0.45;
+    ctx.globalAlpha=sa*(0.6+0.4*Math.sin(t*0.8+i));
+    ctx.fillStyle='#fff8f0';
+    ctx.beginPath(); ctx.arc(sx,sy,0.3+((i*37)%10)/10*0.8,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+
+  // 불빛 반경 — 지면 위 warm glow
+  const flameGlow=ctx.createRadialGradient(W*0.5,H*0.70,0,W*0.5,H*0.70,W*0.55);
+  flameGlow.addColorStop(0,`rgba(200,100,20,${0.07+0.03*Math.sin(t*3.1)})`);
+  flameGlow.addColorStop(0.5,`rgba(150,70,10,${0.04+0.02*Math.sin(t*2.5)})`);
+  flameGlow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=flameGlow; ctx.fillRect(0,0,W,H);
+
+  // 나무 장작
+  ctx.save();
+  ctx.strokeStyle='rgba(40,20,8,0.92)'; ctx.lineCap='round'; ctx.lineWidth=9;
+  [[-0.12,0.015,0.10,0.005],[0.12,-0.008,-0.10,0.012]].forEach(([ax,ay,bx,by])=>{
+    ctx.beginPath();
+    ctx.moveTo(W*(0.5+ax),H*(0.72+ay));
+    ctx.lineTo(W*(0.5+bx),H*(0.72+by));
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  // 지면
+  const gr=ctx.createLinearGradient(0,H*0.72,0,H);
+  gr.addColorStop(0,'rgba(25,12,4,0.95)');
+  gr.addColorStop(1,'rgba(10,5,2,1)');
+  ctx.fillStyle=gr; ctx.fillRect(0,H*0.73,W,H*0.27);
+}
+function loopCampfire() {
+  // 불꽃 파티클
+  particles=particles.filter(p=>{
+    p.life++;
+    if(p.life>=p.maxLife){ Object.assign(p,makeFlameParticle()); return true; }
+    p.swg+=p.swgS;
+    p.x+=p.vx+Math.sin(p.swg)*0.6;
+    p.y+=p.vy;
+    p.vy*=0.99;
+    const r=p.life/p.maxLife;
+    const a=(r<0.2?r/0.2:r>0.65?(1-r)/0.35:1);
+    const curSize=p.size*(1-r*0.5);
+    const light=50+r*15;
+    const sat=85-r*20;
+    ctx.save(); ctx.globalAlpha=a*0.78;
+    const fg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,curSize);
+    fg.addColorStop(0,`hsla(${p.hue+r*20},${sat}%,${light+15}%,1)`);
+    fg.addColorStop(0.5,`hsla(${p.hue},${sat}%,${light}%,0.7)`);
+    fg.addColorStop(1,`hsla(${p.hue-10},${sat-10}%,${light-10}%,0)`);
+    ctx.fillStyle=fg;
+    ctx.beginPath(); ctx.arc(p.x,p.y,curSize,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    return true;
+  });
+
+  // 불씨
+  campfireEmbers=campfireEmbers.filter(e=>{
+    e.life++; e.x+=e.vx; e.y+=e.vy; e.vy*=0.992; e.vx*=0.996;
+    if(e.life>=e.maxLife){ Object.assign(e,makeEmber()); return true; }
+    const r=e.life/e.maxLife;
+    const a=(r<0.1?r/0.1:r>0.7?(1-r)/0.3:1)*0.88;
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.fillStyle=`hsl(${e.hue},90%,${60+r*20}%)`;
+    ctx.beginPath(); ctx.arc(e.x,e.y,e.size*(1-r*0.3),0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    return true;
+  });
+}
 function loop() {
   t+=0.016;
   ctx.clearRect(0,0,W,H);
@@ -800,53 +1553,10 @@ function loop() {
     });
   }
 
-  else if(id==='lake_rain'){
-    drawLakeBG();
-    const lakeY=H*0.44;
-
-    particles.forEach(p=>{
-      if(p.type!=='raindrop') return;
-      p.y+=p.vy;
-      if(p.y>=lakeY){
-        spawnRipple(p.x, lakeY+Math.random()*5);
-        Object.assign(p,makeRaindrop(false));
-        p.y=-5; return;
-      }
-      ctx.save(); ctx.globalAlpha=p.a;
-      ctx.strokeStyle='rgba(175,208,238,0.88)';
-      ctx.lineWidth=p.w; ctx.lineCap='round';
-      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x,p.y-p.len); ctx.stroke();
-      ctx.restore();
-    });
-
-    extras=extras.filter(r=>{
-      if(r.type!=='ripple') return true;
-      r.life++;
-      r.r=(r.life/r.maxLife)*r.maxR;
-      const lifeRatio = r.life/r.maxLife;
-      const fadeIn = Math.min(1, r.life / 8);
-      const a = r.a * fadeIn * (1 - lifeRatio);
-      ctx.save(); ctx.globalAlpha=a;
-      ctx.strokeStyle='rgba(175,205,225,0.85)'; ctx.lineWidth=0.8;
-      ctx.beginPath(); ctx.ellipse(r.x,r.y,r.r,r.r*r.ryRatio,0,0,Math.PI*2); ctx.stroke();
-      if(r.maxR>30&&r.r>r.maxR*0.38){
-        ctx.globalAlpha=a*0.38;
-        ctx.beginPath(); ctx.ellipse(r.x,r.y,r.r*0.52,r.r*r.ryRatio*0.52,0,0,Math.PI*2); ctx.stroke();
-      }
-      ctx.restore();
-      return r.life<r.maxLife;
-    });
-
-    if(particles.length<28) particles.push(makeRaindrop(false));
-  }
-
   else if(id==='autumn'){
     drawAutumnBG();
-
-    // 쌓인 낙엽 먼저
     extras.forEach(e=>{
       if(e.type!=='settled') return;
-
       ctx.save(); ctx.translate(e.x,e.y); ctx.rotate(e.rot); ctx.globalAlpha=e.a;
       ctx.fillStyle=`hsl(${e.hue},70%,46%)`;
       ctx.beginPath();
@@ -861,15 +1571,47 @@ function loop() {
       }
       ctx.fill(); ctx.restore();
     });
-
-    // 낙엽 생성 — 동시 낙하 최대 3개, 약 3초마다 1개
     const fallingCount = particles.filter(p=>!p._done).length;
     if(fallingCount < 3 && Math.random()<0.004) {
       particles.push(makeAutumnLeaf());
     }
-
     particles = particles.filter(p=>!p._done);
     particles.forEach(p=>{ updateAutumnLeaf(p); drawAutumnLeaf(p); });
+  }
+
+  else if(id==='fireflies'){
+    drawFireflyBG();
+    loopFireflies();
+  }
+
+  else if(id==='lotus'){
+    drawLotusBG();
+    loopLotus();
+  }
+
+  else if(id==='sakura'){
+    drawSakuraBG();
+    loopSakura();
+  }
+
+  else if(id==='bubbles'){
+    drawBubblesBG();
+    loopBubbles();
+  }
+
+  else if(id==='jellyfish'){
+    drawJellyfishBG();
+    loopJellyfish();
+  }
+
+  else if(id==='aurora'){
+    drawAuroraBG();
+    loopAurora();
+  }
+
+  else if(id==='campfire'){
+    drawCampfireBG();
+    loopCampfire();
   }
 
   animId=requestAnimationFrame(loop);
