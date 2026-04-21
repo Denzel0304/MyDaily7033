@@ -148,7 +148,6 @@ const scenes = [
   { name:'봄 나무',      id:'spring_tree'    },
   { name:'별똥별',       id:'shooting_stars' },
   { name:'눈 내리는 밤', id:'snowfall'       },
-  { name:'가을 낙엽',    id:'autumn'         },
   { name:'반딧불이',     id:'fireflies'      },
   { name:'벚꽃 비',      id:'sakura'         },
   { name:'해파리',       id:'jellyfish'      },
@@ -776,16 +775,16 @@ function makeFirefly() {
   return {
     type:'firefly',
     x: Math.random()*W,
-    y: H*0.3 + Math.random()*H*0.65,
-    vx: (Math.random()-0.5)*0.10,
-    vy: (Math.random()-0.5)*0.08,
+    y: Math.random()*H,  // 화면 전체에서 생성
+    vx: (Math.random()-0.5)*0.06,  // 속도 느리게 (기존 0.10 → 0.06)
+    vy: (Math.random()-0.5)*0.05,  // 속도 느리게 (기존 0.08 → 0.05)
     phase: Math.random()*Math.PI*2,
     phaseS: 0.008 + Math.random()*0.012,
     blinkPhase: Math.random()*Math.PI*2,
     blinkS: 0.010 + Math.random()*0.018,
     r: 1.8 + Math.random()*2.2,
     wander: Math.random()*Math.PI*2,
-    wanderS: 0.004 + Math.random()*0.006,
+    wanderS: 0.003 + Math.random()*0.004,  // 방향 전환도 느리게
     trail: [],
   };
 }
@@ -830,13 +829,12 @@ function drawFireflyBG() {
 function loopFireflies() {
   particles.forEach(p=>{
     p.wander += p.wanderS;
-    p.vx += Math.cos(p.wander)*0.004;
-    p.vy += Math.sin(p.wander)*0.003;
+    p.vx += Math.cos(p.wander)*0.002;  // 가속도 줄임
+    p.vy += Math.sin(p.wander)*0.002;
     p.vx *= 0.97; p.vy *= 0.97;
     p.x += p.vx; p.y += p.vy;
     if(p.x<0) p.x=W; if(p.x>W) p.x=0;
-    if(p.y<H*0.25) p.vy+=0.02;
-    if(p.y>H*0.95) p.vy-=0.02;
+    if(p.y<0) p.y=H; if(p.y>H) p.y=0;  // 화면 전체 순환, 상단 제한 없음
 
     p.blinkPhase += p.blinkS;
     const blink = Math.max(0, Math.sin(p.blinkPhase));
@@ -1200,30 +1198,32 @@ function initJellyfish() {
   for(let i=0;i<6;i++) particles.push(makeJellyfish(true,i));
 }
 function makeJellyfish(scatter,idx) {
-  const r=28+Math.random()*48;
+  const r=12+Math.random()*20;  // 크기 대폭 축소 (기존 28~76 → 12~32)
   // 힐링 색상: 민트, 라벤더, 연보라, 코랄핑크, 하늘파랑, 연녹색
   const healingHues = [168, 175, 185, 190, 210, 220, 255, 270, 280, 200];
   const hue = healingHues[Math.floor(Math.random()*healingHues.length)] + (Math.random()-0.5)*15;
-  // 각각 다른 각도: 위로 가되 약간씩 좌우로 기울어짐
-  const driftAngle = (Math.random()-0.5)*0.35; // -0.35 ~ 0.35 라디안
-  const speed = 0.07 + Math.random()*0.14; // 다른 속도
+  // 각각 다른 방향: 위/아래/좌/우 랜덤하게, 바닷속처럼 자연스럽게
+  const baseAngle = Math.random()*Math.PI*2;  // 완전 랜덤 방향
+  const speed = 0.04 + Math.random()*0.08;
   return {
     type:'jelly',
-    x: W*0.08+Math.random()*W*0.84,
-    y: scatter ? H*0.1+Math.random()*H*0.8 : H+r*2,
-    vy: -speed,
-    vx: Math.sin(driftAngle)*speed*0.6,
+    x: W*0.05+Math.random()*W*0.90,
+    y: scatter ? Math.random()*H : H+r*2,
+    vy: Math.sin(baseAngle)*speed,
+    vx: Math.cos(baseAngle)*speed,
     r,
     phase: (idx||0)*1.2+Math.random()*Math.PI*2,
-    phaseS: 0.012+Math.random()*0.015,
+    phaseS: 0.010+Math.random()*0.012,
     hue,
     a: 0.58+Math.random()*0.28,
-    driftAngle,
-    tentacles: Array.from({length:7+Math.floor(Math.random()*5)},(_,i)=>({
-      offset: (i/(10))*Math.PI*2,
+    driftAngle: baseAngle,
+    wanderAngle: Math.random()*Math.PI*2,
+    wanderSpeed: 0.003+Math.random()*0.004,
+    tentacles: Array.from({length:5+Math.floor(Math.random()*4)},(_,i)=>({
+      offset: (i/(8))*Math.PI*2,
       swg: Math.random()*Math.PI*2,
-      swgS: 0.012+Math.random()*0.018,
-      len: r*1.4+Math.random()*r*0.8,
+      swgS: 0.010+Math.random()*0.015,
+      len: r*1.2+Math.random()*r*0.8,
     })),
   };
 }
@@ -1314,9 +1314,22 @@ function drawJellyBody(p) {
 function loopJellyfish() {
   particles.forEach(p=>{
     p.phase+=p.phaseS;
-    p.x+=p.vx+Math.sin(p.phase*0.7)*0.12;
-    p.y+=p.vy*(0.85+0.15*Math.sin(p.phase));
-    if(p.y<-p.r*3) Object.assign(p,makeJellyfish(false,0));
+    // 자연스러운 방향 전환 (바닷속처럼 서서히 방향 바꿈)
+    p.wanderAngle += p.wanderSpeed;
+    p.vx += Math.cos(p.wanderAngle)*0.0015;
+    p.vy += Math.sin(p.wanderAngle)*0.0015;
+    // 속도 제한
+    const spd = Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+    const maxSpd = 0.12;
+    if(spd>maxSpd){ p.vx=p.vx/spd*maxSpd; p.vy=p.vy/spd*maxSpd; }
+    p.vx *= 0.99; p.vy *= 0.99;
+    p.x += p.vx + Math.sin(p.phase*0.7)*0.08;
+    p.y += p.vy + Math.cos(p.phase*0.5)*0.06;
+    // 화면 밖으로 나가면 반대편에서 다시
+    if(p.x<-p.r*3) p.x=W+p.r*2;
+    if(p.x>W+p.r*3) p.x=-p.r*2;
+    if(p.y<-p.r*3) p.y=H+p.r*2;
+    if(p.y>H+p.r*3) p.y=-p.r*2;
     drawJellyBody(p);
   });
 }
@@ -1405,15 +1418,17 @@ function initFireworks() {
 }
 
 function spawnShell() {
-  const x = W*0.15 + Math.random()*W*0.70;
-  const targetY = H*0.08 + Math.random()*H*0.30;
+  const targetX = W*0.15 + Math.random()*W*0.70;
+  const targetY = H*0.06 + Math.random()*H*0.30;
+  // 발사 위치는 화면 하단 중앙 근처, 약간 랜덤
+  const launchX = W*0.25 + Math.random()*W*0.50;
   fwShells.push({
-    x, y: H*0.92,
-    tx: x + (Math.random()-0.5)*W*0.12,
+    x: launchX, y: H*0.95,
+    tx: targetX + (Math.random()-0.5)*W*0.08,
     ty: targetY,
     vx: 0, vy: 0,
     life: 0,
-    maxLife: 55 + Math.random()*35,
+    maxLife: 110 + Math.random()*70, // 더 느리게 (기존 55~90 → 110~180)
     trail: [],
   });
 }
@@ -1817,12 +1832,12 @@ resize();
   function animate(){
     if(!isSpringScene()){
       ctx.clearRect(0,0,canvas.width,canvas.height);
+      canvas.style.display='none';
       leaves=[]; pile=[];
       requestAnimationFrame(animate);
       return;
     }
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    canvas.style.display='block';
     frameCount++;
     if(frameCount%90===0) spawnLeaf();
 
