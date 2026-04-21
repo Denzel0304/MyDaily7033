@@ -151,7 +151,6 @@ const scenes = [
   { name:'눈 내리는 밤', id:'snowfall'       },
   { name:'반딧불이',     id:'fireflies'      },
   { name:'벚꽃 비',      id:'sakura'         },
-  { name:'해파리',       id:'jellyfish'      },
   { name:'불꽃놀이',      id:'fireworks'      },
 ];
 
@@ -1441,27 +1440,27 @@ function initFireworks() {
 
 function spawnShell() {
   const targetX = W*0.12 + Math.random()*W*0.76;
-  const targetY = H*0.05 + Math.random()*H*0.32;
+  // 화면 상단 0~40% 사이에서 터짐
+  const targetY = H*0.00 + Math.random()*H*0.40;
   const launchX = W*0.20 + Math.random()*W*0.60;
   const launchY = H*0.94;
 
-  // 발사 각도: 목표 방향으로 직접 계산 (사선)
   const dx = targetX - launchX;
   const dy = targetY - launchY; // 음수 (위쪽)
   const dist = Math.sqrt(dx*dx + dy*dy);
 
-  // 느린 속도: 2.0~2.8 픽셀/프레임
-  const spd = 2.0 + Math.random()*0.8;
+  // 속도: 3.5~5px/프레임 (충분히 목표까지 올라갈 수 있게)
+  const spd = 3.5 + Math.random()*1.5;
   const vx = (dx/dist) * spd;
   const vy = (dy/dist) * spd;
 
   fwShells.push({
     x: launchX, y: launchY,
     vx, vy,
-    gravity: 0.022,          // 중력으로 포물선
+    gravity: 0.008,   // 중력 아주 작게 — 포물선 살짝만
     trail: [],
     life: 0,
-    maxLife: Math.round(dist/spd) + 10,
+    maxLife: Math.round(dist/spd) + 20,
     tx: targetX, ty: targetY,
   });
 }
@@ -1618,7 +1617,7 @@ function loopFireworks() {
     ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(s.x,s.y,5,0,Math.PI*2); ctx.fill();
     ctx.restore();
 
-    if(s.life>=s.maxLife || s.vy>0.5){
+    if(s.life>=s.maxLife || s.y<=s.ty){
       explodeShell(s.x, s.y);
       return false;
     }
