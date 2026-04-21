@@ -140,6 +140,7 @@ function resize() {
   lc.width  = Math.round(W*dpr);
   lc.height = Math.round(H*dpr);
   lc.style.width = W+'px'; lc.style.height = H+'px';
+  fireflyStars = null; // 리사이즈 시 별 위치 재생성
   initScene();
 }
 window.addEventListener('resize', resize);
@@ -788,6 +789,7 @@ function makeFirefly() {
     trail: [],
   };
 }
+let fireflyStars = null;
 function drawFireflyBG() {
   const sky = ctx.createLinearGradient(0,0,0,H);
   sky.addColorStop(0,'#050e08');
@@ -795,15 +797,25 @@ function drawFireflyBG() {
   sky.addColorStop(1,'#0a1f10');
   ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
 
-  // 별
-  ctx.save();
-  for(let i=0;i<60;i++){
-    const sx=((i*137.5)%1)*W, sy=((i*97.3)%0.55)*H;
-    const sa=0.15+((i*53)%100)/100*0.35;
-    ctx.globalAlpha=sa;
-    ctx.fillStyle='#d8f0d0';
-    ctx.beginPath(); ctx.arc(sx,sy,0.5+((i*31)%10)/10*0.8,0,Math.PI*2); ctx.fill();
+  // 별 — 진짜 랜덤 위치 (첫 번째 호출 시 생성, 리사이즈 시 재생성)
+  if(!fireflyStars || fireflyStars.length===0){
+    fireflyStars=[];
+    for(let i=0;i<60;i++){
+      fireflyStars.push({
+        x: Math.random()*W,
+        y: Math.random()*H*0.80,
+        r: 0.5+Math.random()*0.8,
+        a: 0.15+Math.random()*0.35,
+        twkOff: Math.random()*Math.PI*2,
+      });
+    }
   }
+  ctx.save();
+  fireflyStars.forEach(st=>{
+    ctx.globalAlpha=st.a*(0.6+0.4*Math.sin(t*1.2+st.twkOff));
+    ctx.fillStyle='#d8f0d0';
+    ctx.beginPath(); ctx.arc(st.x,st.y,st.r,0,Math.PI*2); ctx.fill();
+  });
   ctx.restore();
 
   // 풀밭
@@ -1198,13 +1210,13 @@ function initJellyfish() {
   for(let i=0;i<6;i++) particles.push(makeJellyfish(true,i));
 }
 function makeJellyfish(scatter,idx) {
-  const r=12+Math.random()*20;  // 크기 대폭 축소 (기존 28~76 → 12~32)
-  // 힐링 색상: 민트, 라벤더, 연보라, 코랄핑크, 하늘파랑, 연녹색
+  const r=12+Math.random()*20;
   const healingHues = [168, 175, 185, 190, 210, 220, 255, 270, 280, 200];
   const hue = healingHues[Math.floor(Math.random()*healingHues.length)] + (Math.random()-0.5)*15;
-  // 각각 다른 방향: 위/아래/좌/우 랜덤하게, 바닷속처럼 자연스럽게
-  const baseAngle = Math.random()*Math.PI*2;  // 완전 랜덤 방향
+  const baseAngle = Math.random()*Math.PI*2;
   const speed = 0.04 + Math.random()*0.08;
+  // 머리가 향하는 방향: 이동 방향 기준 (위=0, 오른쪽=π/2, 아래=π, ...)
+  const facingAngle = baseAngle; // 몸체 회전각으로 사용
   return {
     type:'jelly',
     x: W*0.05+Math.random()*W*0.90,
@@ -1216,7 +1228,7 @@ function makeJellyfish(scatter,idx) {
     phaseS: 0.010+Math.random()*0.012,
     hue,
     a: 0.58+Math.random()*0.28,
-    driftAngle: baseAngle,
+    facingAngle,          // 해파리 몸체 회전 (머리 방향)
     wanderAngle: Math.random()*Math.PI*2,
     wanderSpeed: 0.003+Math.random()*0.004,
     tentacles: Array.from({length:5+Math.floor(Math.random()*4)},(_,i)=>({
@@ -1259,53 +1271,57 @@ function drawJellyfishBG() {
   ctx.restore();
 }
 function drawJellyBody(p) {
-  const {x,y,r,hue,a,phase,tentacles}=p;
+  const {x,y,r,hue,a,phase,tentacles,facingAngle}=p;
   const pulse=Math.sin(phase)*0.12;
   const rx=r*(1-pulse*0.5);
   const ry=r*(1+pulse*0.3);
 
   ctx.save();
-  // 벨 — 외부 글로우
-  const glowG=ctx.createRadialGradient(x,y,0,x,y,r*2.2);
+  ctx.translate(x,y);
+  // 이동 방향으로 몸체 회전 (기본 머리 방향=위쪽=-π/2 기준)
+  ctx.rotate(facingAngle + Math.PI/2);
+
+  // 벨 — 외부 글로우 (로컬 좌표 0,0 기준)
+  const glowG=ctx.createRadialGradient(0,0,0,0,0,r*2.2);
   glowG.addColorStop(0,`hsla(${hue},80%,65%,${a*0.18})`);
   glowG.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=glowG; ctx.beginPath(); ctx.arc(x,y,r*2.2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=glowG; ctx.beginPath(); ctx.arc(0,0,r*2.2,0,Math.PI*2); ctx.fill();
 
   // 벨 내부
-  const bellG=ctx.createRadialGradient(x,y-ry*0.2,r*0.1,x,y,ry);
+  const bellG=ctx.createRadialGradient(0,-ry*0.2,r*0.1,0,0,ry);
   bellG.addColorStop(0,`hsla(${hue},75%,85%,${a*0.55})`);
   bellG.addColorStop(0.5,`hsla(${hue},70%,65%,${a*0.40})`);
   bellG.addColorStop(1,`hsla(${hue},65%,50%,${a*0.15})`);
   ctx.fillStyle=bellG;
   ctx.beginPath();
-  ctx.ellipse(x,y,rx,ry*0.72,0,Math.PI,Math.PI*2);
-  ctx.bezierCurveTo(x+rx,y+ry*0.08,x-rx,y+ry*0.08,x-rx,y);
+  ctx.ellipse(0,0,rx,ry*0.72,0,Math.PI,Math.PI*2);
+  ctx.bezierCurveTo(rx,ry*0.08,-rx,ry*0.08,-rx,0);
   ctx.closePath(); ctx.fill();
 
   // 테두리
   ctx.strokeStyle=`hsla(${hue},80%,80%,${a*0.45})`;
   ctx.lineWidth=1.2;
   ctx.beginPath();
-  ctx.ellipse(x,y,rx,ry*0.72,0,Math.PI,Math.PI*2);
-  ctx.bezierCurveTo(x+rx,y+ry*0.08,x-rx,y+ry*0.08,x-rx,y);
+  ctx.ellipse(0,0,rx,ry*0.72,0,Math.PI,Math.PI*2);
+  ctx.bezierCurveTo(rx,ry*0.08,-rx,ry*0.08,-rx,0);
   ctx.closePath(); ctx.stroke();
 
-  // 촉수
+  // 촉수 (아래쪽으로 뻗음, 로컬 y+ 방향)
   tentacles.forEach(ten=>{
     ten.swg+=ten.swgS;
-    const tx0=x+Math.cos(ten.offset)*rx*0.65;
-    ctx.beginPath(); ctx.moveTo(tx0,y+ry*0.05);
-    let lx2=tx0, ly2=y+ry*0.05;
+    const tx0=Math.cos(ten.offset)*rx*0.65;
+    ctx.beginPath(); ctx.moveTo(tx0, ry*0.05);
+    let lx2=tx0, ly2=ry*0.05;
     const segs=12;
     for(let s=1;s<=segs;s++){
       const ratio=s/segs;
       const wave=Math.sin(ten.swg+ratio*3.5)*rx*0.35*ratio;
       const nx=tx0+wave+Math.cos(ten.offset)*(ratio*4);
-      const ny=y+ry*0.05+ratio*ten.len;
+      const ny=ry*0.05+ratio*ten.len;
       ctx.bezierCurveTo(lx2+wave*0.5,ly2+ten.len/segs*0.5,nx-wave*0.3,ny-ten.len/segs*0.3,nx,ny);
       lx2=nx; ly2=ny;
     }
-    const ta=a*(0.18+0.22*(1-0));
+    const ta=a*0.35;
     ctx.strokeStyle=`hsla(${hue},75%,72%,${ta})`;
     ctx.lineWidth=0.9+pulse*0.3; ctx.lineCap='round'; ctx.stroke();
   });
@@ -1314,18 +1330,24 @@ function drawJellyBody(p) {
 function loopJellyfish() {
   particles.forEach(p=>{
     p.phase+=p.phaseS;
-    // 자연스러운 방향 전환 (바닷속처럼 서서히 방향 바꿈)
     p.wanderAngle += p.wanderSpeed;
     p.vx += Math.cos(p.wanderAngle)*0.0015;
     p.vy += Math.sin(p.wanderAngle)*0.0015;
-    // 속도 제한
     const spd = Math.sqrt(p.vx*p.vx+p.vy*p.vy);
     const maxSpd = 0.12;
     if(spd>maxSpd){ p.vx=p.vx/spd*maxSpd; p.vy=p.vy/spd*maxSpd; }
     p.vx *= 0.99; p.vy *= 0.99;
     p.x += p.vx + Math.sin(p.phase*0.7)*0.08;
     p.y += p.vy + Math.cos(p.phase*0.5)*0.06;
-    // 화면 밖으로 나가면 반대편에서 다시
+    // 이동 방향으로 머리 방향 서서히 추종
+    if(spd>0.005){
+      const targetAngle = Math.atan2(p.vy, p.vx);
+      let da = targetAngle - p.facingAngle;
+      // 최단 경로로 회전
+      while(da>Math.PI) da-=Math.PI*2;
+      while(da<-Math.PI) da+=Math.PI*2;
+      p.facingAngle += da*0.02;
+    }
     if(p.x<-p.r*3) p.x=W+p.r*2;
     if(p.x>W+p.r*3) p.x=-p.r*2;
     if(p.y<-p.r*3) p.y=H+p.r*2;
@@ -1418,18 +1440,29 @@ function initFireworks() {
 }
 
 function spawnShell() {
-  const targetX = W*0.15 + Math.random()*W*0.70;
-  const targetY = H*0.06 + Math.random()*H*0.30;
-  // 발사 위치는 화면 하단 중앙 근처, 약간 랜덤
-  const launchX = W*0.25 + Math.random()*W*0.50;
+  const targetX = W*0.12 + Math.random()*W*0.76;
+  const targetY = H*0.05 + Math.random()*H*0.32;
+  const launchX = W*0.20 + Math.random()*W*0.60;
+  const launchY = H*0.94;
+
+  // 발사 각도: 목표 방향으로 직접 계산 (사선)
+  const dx = targetX - launchX;
+  const dy = targetY - launchY; // 음수 (위쪽)
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  // 느린 속도: 2.0~2.8 픽셀/프레임
+  const spd = 2.0 + Math.random()*0.8;
+  const vx = (dx/dist) * spd;
+  const vy = (dy/dist) * spd;
+
   fwShells.push({
-    x: launchX, y: H*0.95,
-    tx: targetX + (Math.random()-0.5)*W*0.08,
-    ty: targetY,
-    vx: 0, vy: 0,
-    life: 0,
-    maxLife: 110 + Math.random()*70, // 더 느리게 (기존 55~90 → 110~180)
+    x: launchX, y: launchY,
+    vx, vy,
+    gravity: 0.022,          // 중력으로 포물선
     trail: [],
+    life: 0,
+    maxLife: Math.round(dist/spd) + 10,
+    tx: targetX, ty: targetY,
   });
 }
 
@@ -1561,13 +1594,11 @@ function loopFireworks() {
   // 껍질 이동 & 폭발
   fwShells = fwShells.filter(s=>{
     s.life++;
-    const prog = s.life/s.maxLife;
-    s.vx += (s.tx-s.x)*0.012;
-    s.vy += (s.ty-s.y)*0.012 - 0.08;
-    s.vx *= 0.96; s.vy *= 0.96;
+    // 중력 적용 포물선 이동 (추적 방식 아님)
+    s.vy += s.gravity;
     s.x += s.vx; s.y += s.vy;
     s.trail.push({x:s.x,y:s.y});
-    if(s.trail.length>14) s.trail.shift();
+    if(s.trail.length>18) s.trail.shift();
 
     // 껍질 궤적
     for(let i=1;i<s.trail.length;i++){
@@ -1587,7 +1618,7 @@ function loopFireworks() {
     ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(s.x,s.y,5,0,Math.PI*2); ctx.fill();
     ctx.restore();
 
-    if(s.life>=s.maxLife||Math.abs(s.y-s.ty)<8){
+    if(s.life>=s.maxLife || s.vy>0.5){
       explodeShell(s.x, s.y);
       return false;
     }
