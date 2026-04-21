@@ -1371,18 +1371,6 @@ function loopJellyfish() {
   });
 }
 
-    ctx.restore();
-  });
-
-  // 지평선 실루엣
-  ctx.fillStyle='rgba(0,4,8,0.96)';
-  ctx.beginPath(); ctx.moveTo(0,H);
-  ctx.bezierCurveTo(W*0.08,H*0.88,W*0.18,H*0.84,W*0.30,H*0.90);
-  ctx.bezierCurveTo(W*0.42,H*0.96,W*0.55,H*0.82,W*0.68,H*0.88);
-  ctx.bezierCurveTo(W*0.80,H*0.94,W*0.92,H*0.86,W,H*0.91);
-  ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
-}
-
 /* ════════════════════════════════════════════
    12. 불꽃놀이
    ════════════════════════════════════════════ */
