@@ -547,16 +547,34 @@ function onHandleDown(e) {
   const rect = card.getBoundingClientRect();
   const cy = getCY(e);
 
-  // Ghost 생성
-  const ghost = card.cloneNode(true);
+  // Ghost 생성 — cloneNode 쓰지 않고 직접 스냅샷 div 생성
+  // (cloneNode는 내부 버튼 이벤트·::after 등이 함께 복제돼 레이아웃 깨짐)
+  const ghost = document.createElement('div');
   ghost.className = 'drag-ghost';
   ghost.style.cssText =
     'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;' +
-    'width:' + rect.width + 'px;z-index:9999;pointer-events:none;' +
+    'width:' + rect.width + 'px;height:' + rect.height + 'px;' +
+    'z-index:9999;pointer-events:none;overflow:hidden;' +
+    'display:flex;align-items:center;gap:12px;padding:12px 12px 12px 8px;' +
     'opacity:0.95;border-radius:10px;background:#fff;' +
     'border:2px solid #5BA3C9;' +
     'box-shadow:0 10px 32px rgba(91,163,201,0.45);' +
-    'transform:scale(1.02) rotate(0.6deg);';
+    'transform:scale(1.02) rotate(0.6deg);' +
+    'font-family:inherit;font-size:14px;color:#1A3A52;';
+  // 핸들 아이콘
+  const hIcon = document.createElement('span');
+  hIcon.textContent = '☰';
+  hIcon.style.cssText = 'color:#B0CCE0;font-size:22px;flex-shrink:0;';
+  ghost.appendChild(hIcon);
+  // 체크 원
+  const chk = document.createElement('span');
+  chk.style.cssText = 'width:28px;height:28px;border-radius:50%;border:2.5px solid #87CEEB;flex-shrink:0;';
+  ghost.appendChild(chk);
+  // 텍스트
+  const txt = document.createElement('span');
+  txt.style.cssText = 'flex:1;font-size:14px;line-height:1.45;word-break:break-word;';
+  txt.textContent = card.querySelector('.item-text').textContent;
+  ghost.appendChild(txt);
   document.body.appendChild(ghost);
 
   // 원본 카드 흐리게
