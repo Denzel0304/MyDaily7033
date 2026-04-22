@@ -838,7 +838,7 @@
     }
   }
 
-  async function addFood() {
+  function addFood() {
     const key = getCurrentFoodKey();
     const val = parseFloat(document.getElementById('amountInput').value);
     if (!key) { showToast('음식을 선택해주세요'); return; }
@@ -851,19 +851,9 @@
       const oppKey = COMMON_PAIR_REVERSE[key];
       if (oppKey) {
         const oppFoods = getOppositeToday();
-        const existing = oppFoods.find(f => f.key === oppKey && f.meal === selectedMeal);
-        if (existing) {
-          const confirmed = await openConfirmModal(FOOD_NAMES[oppKey], MEAL_LABELS[selectedMeal]);
-          if (confirmed) {
-            existing.gram = val;
-            existing.protein = calcProtein(oppKey, val);
-            saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
-          }
-        } else {
-          const oppProtein = calcProtein(oppKey, val);
-          oppFoods.push({ key:oppKey, name:FOOD_NAMES[oppKey], icon:FOOD_ICONS[oppKey], gram:val, unit:PROTEIN_UNIT[oppKey], protein:oppProtein, meal:selectedMeal });
-          saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
-        }
+        const oppProtein = calcProtein(oppKey, val);
+        oppFoods.push({ key:oppKey, name:FOOD_NAMES[oppKey], icon:FOOD_ICONS[oppKey], gram:val, unit:PROTEIN_UNIT[oppKey], protein:oppProtein, meal:selectedMeal });
+        saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
       }
       todayFoods.push({ key, name:CARB_FOOD_NAMES[key], icon:CARB_FOOD_ICONS[key], gram:val, unit:unit, protein:carb, meal:selectedMeal });
       renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
@@ -885,19 +875,9 @@
     const oppKey = COMMON_PAIR[key];
     if (oppKey) {
       const oppFoods = getOppositeToday();
-      const existing = oppFoods.find(f => f.key === oppKey && f.meal === selectedMeal);
-      if (existing) {
-        const confirmed = await openConfirmModal(CARB_FOOD_NAMES[oppKey], MEAL_LABELS[selectedMeal]);
-        if (confirmed) {
-          existing.gram = val;
-          existing.protein = calcCarb(oppKey, val);
-          saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
-        }
-      } else {
-        const oppCarb = calcCarb(oppKey, val);
-        oppFoods.push({ key:oppKey, name:CARB_FOOD_NAMES[oppKey], icon:CARB_FOOD_ICONS[oppKey], gram:val, unit:CARB_FOOD_UNIT[oppKey], protein:oppCarb, meal:selectedMeal });
-        saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
-      }
+      const oppCarb = calcCarb(oppKey, val);
+      oppFoods.push({ key:oppKey, name:CARB_FOOD_NAMES[oppKey], icon:CARB_FOOD_ICONS[oppKey], gram:val, unit:CARB_FOOD_UNIT[oppKey], protein:oppCarb, meal:selectedMeal });
+      saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
     }
     todayFoods.push({ key, name:FOOD_NAMES[key], icon:FOOD_ICONS[key], gram:val, unit:unit, protein, meal:selectedMeal });
     renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
