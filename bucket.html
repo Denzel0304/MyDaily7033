@@ -399,6 +399,9 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Sound ──
+const completeSound = new Audio('effect 1.mp3');
+
 // ── Toggle Done ──
 function toggleDone(tab, id, btn) {
   const item = data[tab].find(i => i.id === id);
@@ -407,6 +410,8 @@ function toggleDone(tab, id, btn) {
   if (item.done) {
     btn.classList.add('anim');
     setTimeout(() => btn.classList.remove('anim'), 400);
+    completeSound.currentTime = 0;
+    completeSound.play().catch(() => {});
     showToast('⭐ 완료! 훌륭해요!');
   }
   save();
