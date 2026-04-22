@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MyDaily7</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sky1: #dff1fb;
+      --sky2: #b8e0f7;
+      --sky3: #85c8f0;
+      --sky4: #4faee0;
+      --accent: #2e90c8;
+      --soft-green: #c8ecd8;
+      --soft-pink: #fcd5e0;
+      --soft-yellow: #fef3c2;
+      --soft-purple: #e4d8f8;
+      --text-dark: #1a2e3b;
+      --text-mid: #4a6478;
+      --text-light: #8aafc2;
+      --card-bg: rgba(255,255,255,0.82);
+      --shadow: 0 8px 32px rgba(79,174,224,0.13);
+      --radius: 24px;
+    }
+
+    html { overflow: hidden; height: 100%; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: none; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(160deg, #e8f6fd 0%, #ceeaf8 40%, #d9f0fc 70%, #e4f5fb 100%);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+      overflow: hidden;
+      height: 100dvh;
+      height: 100vh;
+      overscroll-behavior: none;
+      touch-action: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-blob-1 { width: 280px; height: 280px; background: #aeddf5; top: -60px; left: -80px; }
+    .bg-blob-2 { width: 200px; height: 200px; background: #c5ecfb; bottom: 80px; right: -60px; }
+    .bg-blob-3 { width: 150px; height: 150px; background: #fce4ef; top: 40%; left: -50px; }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 14px 40px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 28px 4px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .app-title {
+      font-family: 'Nunito', sans-serif;
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--text-dark);
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+      text-align: center;
+    }
+    .app-title span { color: var(--accent); }
+
+    .app-subtitle {
+      font-size: 13px;
+      color: var(--text-light);
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .date-pill {
+      background: white;
+      border-radius: 50px;
+      padding: 7px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-mid);
+      box-shadow: 0 2px 12px rgba(79,174,224,0.12);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      margin-top: 10px;
+    }
+    .date-pill .dot {
+      width: 6px; height: 6px;
+      background: var(--sky3);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .menu-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px 8px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(255,255,255,0.7);
+      position: relative;
+      overflow: hidden;
+      min-height: 100px;
+    }
+    .menu-card:active {
+      transform: scale(0.95);
+      box-shadow: 0 4px 16px rgba(79,174,224,0.10);
+    }
+
+    .menu-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      border-radius: 24px 24px 0 0;
+    }
+    .card-economy::before  { background: linear-gradient(90deg, #5dcf8a, #a8e6c4); }
+    .card-protein::before  { background: linear-gradient(90deg, #4faee0, #85c8f0); }
+    .card-workout::before  { background: linear-gradient(90deg, #f87c9b, #fbc4d0); }
+    .card-habit::before    { background: linear-gradient(90deg, #c4b5fd, #ddd6fe); }
+    .card-soso::before     { background: linear-gradient(90deg, #f9a870, #fcc9a0); }
+    .card-emotion::before  { background: linear-gradient(90deg, #d4a882, #e8c4a0); }
+    .card-meong::before    { background: linear-gradient(90deg, #6366f1, #a5b4fc); } /* 새로운 보라색 띠 */
+    .card-bucket::before   { background: linear-gradient(90deg, #0d9488, #5eead4); } /* 청록 띠 */
+
+    .card-icon-wrap {
+      width: 42px; height: 42px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      margin: 0 auto;
+    }
+    .card-economy  .card-icon-wrap { background: #d4f5e3; }
+    .card-protein  .card-icon-wrap { background: #ddf1fb; }
+    .card-workout  .card-icon-wrap { background: #fde4ec; }
+    .card-habit    .card-icon-wrap { background: #ede9fe; }
+    .card-soso     .card-icon-wrap { background: #fdecd8; }
+    .card-emotion  .card-icon-wrap { background: #f5e6d8; }
+    .card-meong    .card-icon-wrap { background: #e0e7ff; } /* 새로운 아이콘 배경색 */
+    .card-bucket   .card-icon-wrap { background: #ccfbf1; }
+
+    .card-label {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1.2;
+      text-align: center;
+      white-space: nowrap;
+      margin-top: 8px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    header                  { animation: fadeUp 0.45s ease both; }
+    .menu-card:nth-child(1) { animation: fadeUp 0.45s 0.10s ease both; }
+    .menu-card:nth-child(2) { animation: fadeUp 0.45s 0.16s ease both; }
+    .menu-card:nth-child(3) { animation: fadeUp 0.45s 0.22s ease both; }
+    .menu-card:nth-child(4) { animation: fadeUp 0.45s 0.28s ease both; }
+    .menu-card:nth-child(5) { animation: fadeUp 0.45s 0.34s ease both; }
+    .menu-card:nth-child(6) { animation: fadeUp 0.45s 0.40s ease both; }
+    .menu-card:nth-child(7) { animation: fadeUp 0.45s 0.46s ease both; }
+    .menu-card:nth-child(8) { animation: fadeUp 0.45s 0.52s ease both; }
+  </style>
+</head>
+<body>
+
+  <div class="bg-blob bg-blob-1"></div>
+  <div class="bg-blob bg-blob-2"></div>
+  <div class="bg-blob bg-blob-3"></div>
+
+  <div class="container">
+
+    <header>
+      <h1 class="app-title">MyDaily<span>7</span></h1>
+      <p class="app-subtitle">오늘도 기록하고, 관리하고, 성장하세요.</p>
+      <div class="date-pill">
+        <span class="dot"></span>
+        <span id="today-date">로딩중...</span>
+      </div>
+    </header>
+
+    <div class="menu-grid">
+
+      <a href="economy.html" class="menu-card card-economy">
+        <div class="card-icon-wrap">📈</div>
+        <div class="card-label">경제 지표</div>
+      </a>
+
+      <a href="nutrition.html" class="menu-card card-protein">
+        <div class="card-icon-wrap">🥩</div>
+        <div class="card-label">영양 트래커</div>
+      </a>
+
+      <a href="workout.html" class="menu-card card-workout">
+        <div class="card-icon-wrap">🏋️</div>
+        <div class="card-label">운동 기록</div>
+      </a>
+
+      <a href="habits.html" class="menu-card card-habit">
+        <div class="card-icon-wrap">✅</div>
+        <div class="card-label">습관 트래커</div>
+      </a>
+
+      <a href="Dday.html" class="menu-card card-soso">
+        <div class="card-icon-wrap">⏳</div>
+        <div class="card-label">디데이</div>
+      </a>
+
+      <a href="emotion.html" class="menu-card card-emotion">
+        <div class="card-icon-wrap">🌳</div>
+        <div class="card-label">하루 감정</div>
+      </a>
+
+      <a href="meong.html" class="menu-card card-meong">
+        <div class="card-icon-wrap">🌙</div>
+        <div class="card-label">멍</div>
+      </a>
+
+      <a href="bucket.html" class="menu-card card-bucket">
+        <div class="card-icon-wrap">🪣</div>
+        <div class="card-label">버킷 리스트</div>
+      </a>
+
+    </div>
+
+  </div>
+
+  <script>
+    const d = new Date();
+    const days = ['일','월','화','수','목','금','토'];
+    const str = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+    document.getElementById('today-date').textContent = str;
+
+    function showBody() {
+      document.body.style.opacity = '1';
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(showBody);
+      setTimeout(showBody, 500);
+    } else {
+      showBody();
+    }
+  </script>
+
+</body>
+</html>
