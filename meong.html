@@ -196,7 +196,22 @@ const scenes = [
   { name:'달빛 구름',    id:'mooncloud'      },
 ];
 
+/* ── 셔플 큐 ───────────────────────────────────────────── */
+function makeShuffleQueue(excludeIdx) {
+  const arr = scenes.map((_,i)=>i).filter(i=>i!==excludeIdx);
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
 let currentIdx = Math.floor(Math.random()*scenes.length);
+let shuffleQueue = makeShuffleQueue(currentIdx);
+
+function nextShuffleIdx() {
+  if(shuffleQueue.length === 0) shuffleQueue = makeShuffleQueue(currentIdx);
+  return shuffleQueue.shift();
+}
 // leaf-canvas 클로저에서 접근할 수 있도록 window에 노출
 window._nmeong = { get currentIdx(){ return currentIdx; }, get scenes(){ return scenes; } };
 let particles=[], extras=[], animId, t=0;
@@ -307,7 +322,7 @@ function updateUI(){ buildDots(); } // 숨김 — 위 주석 참고
 function changeScene(dir) {
   let nextIdx;
   if(dir === 0) {
-    do { nextIdx = Math.floor(Math.random()*scenes.length); } while(nextIdx === currentIdx);
+    nextIdx = nextShuffleIdx();
   } else {
     nextIdx = (currentIdx + dir + scenes.length) % scenes.length;
   }
@@ -328,8 +343,7 @@ function changeScene(dir) {
 
 // 2분마다 랜덤으로 씬 전환 (현재 씬 제외)
 function changeSceneRandom() {
-  let nextIdx;
-  do { nextIdx = Math.floor(Math.random()*scenes.length); } while(nextIdx === currentIdx);
+  const nextIdx = nextShuffleIdx();
   switchMusic(nextIdx);
   fade.style.opacity='1';
   setTimeout(()=>{
