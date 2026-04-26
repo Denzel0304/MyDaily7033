@@ -305,7 +305,12 @@ function updateUI(){ labelEl.textContent=scenes[currentIdx].name; buildDots(); }
 function updateUI(){ buildDots(); } // 숨김 — 위 주석 참고
 
 function changeScene(dir) {
-  const nextIdx = (currentIdx + dir + scenes.length) % scenes.length;
+  let nextIdx;
+  if(dir === 0) {
+    do { nextIdx = Math.floor(Math.random()*scenes.length); } while(nextIdx === currentIdx);
+  } else {
+    nextIdx = (currentIdx + dir + scenes.length) % scenes.length;
+  }
   // 수동 전환: 페이드 타이머 전부 취소 후 즉시 정지 → 즉시 재생
   clearFadeTimers();
   if(currentAudio) {
@@ -352,7 +357,7 @@ document.getElementById('app').addEventListener('touchend',e=>{
   if(touchX0===null) return;
   const dx=e.changedTouches[0].clientX-touchX0;
   const dy=e.changedTouches[0].clientY-touchY0;
-  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>48) changeSceneManual(dx<0?1:-1);
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>48) changeSceneManual(0);
   touchX0=touchY0=null;
 },{passive:true});
 document.getElementById('app').addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
