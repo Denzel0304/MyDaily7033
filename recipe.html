@@ -1125,7 +1125,10 @@ function renderSectionBody(sec, sIdx) {
     const ta = makeEl('textarea', 'memo-textarea');
     ta.value = sec.content || '';
     ta.placeholder = '예: 1. 재료를 준비합니다 (Enter로 자동 번호)';
-    ta.addEventListener('input', () => { sec.content = ta.value; });
+    ta.addEventListener('input', () => {
+      renumberMemo(ta);      // 번호 삭제/수정 시 자동 재정렬
+      sec.content = ta.value;
+    });
     ta.addEventListener('keydown', e => handleMemoKey(e, ta, sec));
     body.appendChild(ta);
   }
@@ -1183,6 +1186,28 @@ function addSection(type) {
 }
 
 // ── MEMO AUTO-NUMBERING ──
+
+// 번호 재정렬: 내용 변경 시 번호가 있는 줄을 1부터 순서대로 재부여
+function renumberMemo(ta) {
+  const oldVal = ta.value;
+  const oldPos = ta.selectionStart;
+  let n = 1;
+  let offsetAdjust = 0;
+
+  // 각 줄에서 "숫자. " 패턴을 찾아 순서대로 교체
+  const newVal = oldVal.replace(/^(\d+)(\.\s)/gm, (match, num, dot, offset) => {
+    const newNum = String(n++);
+    // 커서보다 앞쪽에서 숫자 길이가 바뀌면 커서 위치 보정
+    if (offset < oldPos) offsetAdjust += newNum.length - num.length;
+    return newNum + dot;
+  });
+
+  if (newVal === oldVal) return; // 변경 없으면 그대로
+
+  ta.value = newVal;
+  const newPos = Math.max(0, Math.min(oldPos + offsetAdjust, newVal.length));
+  ta.selectionStart = ta.selectionEnd = newPos;
+}
 function handleMemoKey(e, ta, sec) {
   if (e.key !== 'Enter') return;
 
