@@ -910,8 +910,71 @@ function renderList() {
 // ══════════════════════════════════════════════
 let editSections = []; // [{id, type:'sauce'|'memo', rows|content, title}]
 let editStars = 0;
-let sectionDragSrc = null;
-let rowDragSrc = null; // {sectionId, rowIdx}
+
+// ── 포인터 기반 드래그 정렬 (터치 + 마우스 통합) ──
+const _drag = { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, oy: 0, cb: null };
+
+function _dragStart(e) {
+  const cfg = e.currentTarget._sortCfg;
+  if (!cfg) return;
+  const handle = e.target.closest(cfg.handleSel);
+  if (!handle) return;
+  const item = handle.closest(cfg.itemSel);
+  if (!item || !e.currentTarget.contains(item)) return;
+
+  e.preventDefault();
+  const rect = item.getBoundingClientRect();
+  _drag.on   = true;
+  _drag.el   = item;
+  _drag.cnt  = e.currentTarget;
+  _drag.sel  = cfg.itemSel;
+  _drag.from = [...e.currentTarget.querySelectorAll(cfg.itemSel)].indexOf(item);
+  _drag.oy   = e.clientY - rect.top;
+  _drag.cb   = cfg.onReorder;
+
+  const g = item.cloneNode(true);
+  g.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;`
+    + `opacity:.88;pointer-events:none;z-index:9999;`
+    + `box-shadow:0 10px 32px rgba(20,50,80,.28);border-radius:10px;transform:scale(1.03);margin:0;`;
+  document.body.appendChild(g);
+  _drag.ghost = g;
+  item.style.opacity = '.25';
+}
+
+document.addEventListener('pointermove', e => {
+  if (!_drag.on) return;
+  e.preventDefault();
+  _drag.ghost.style.top = (e.clientY - _drag.oy) + 'px';
+
+  _drag.ghost.style.visibility = 'hidden';
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  _drag.ghost.style.visibility = '';
+
+  const target = under?.closest(_drag.sel);
+  if (target && target !== _drag.el && _drag.cnt.contains(target)) {
+    const items = [..._drag.cnt.querySelectorAll(_drag.sel)];
+    const ci = items.indexOf(_drag.el), ti = items.indexOf(target);
+    if (ci !== ti) ci < ti ? target.after(_drag.el) : target.before(_drag.el);
+  }
+}, { passive: false });
+
+function _dragEnd() {
+  if (!_drag.on) return;
+  _drag.ghost?.remove();
+  _drag.el.style.opacity = '';
+  const toIdx = [..._drag.cnt.querySelectorAll(_drag.sel)].indexOf(_drag.el);
+  if (toIdx !== _drag.from && _drag.from >= 0) _drag.cb(_drag.from, toIdx);
+  Object.assign(_drag, { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, cb: null });
+}
+document.addEventListener('pointerup', _dragEnd);
+document.addEventListener('pointercancel', _dragEnd);
+
+function setupSortable(container, itemSel, handleSel, onReorder) {
+  if (container._sortListener) container.removeEventListener('pointerdown', container._sortListener);
+  container._sortCfg = { itemSel, handleSel, onReorder };
+  container._sortListener = _dragStart;
+  container.addEventListener('pointerdown', _dragStart, { passive: false });
+}
 
 function openEdit(id) {
   editingId = id;
@@ -984,7 +1047,6 @@ function renderSections() {
     const block = makeEl('div', 'section-block');
     block.dataset.secId = sec.id;
     block.dataset.secIdx = sIdx;
-    block.draggable = false; // 핸들로만 드래그 시작
 
     const icon = sec.type === 'sauce' ? '🧂' : '📝';
     const defaultTitle = sec.type === 'sauce' ? `양념장 ${sIdx+1}` : `메모 ${sIdx+1}`;
@@ -1002,38 +1064,15 @@ function renderSections() {
       <div class="section-block-body" id="secBody-${sec.id}"></div>
     `;
 
-    // 핸들에서만 드래그 시작
-    const handle = block.querySelector('.section-drag-handle');
-    handle.addEventListener('mousedown', () => { block.draggable = true; });
-    handle.addEventListener('touchstart', () => { block.draggable = true; }, {passive: true});
-    block.addEventListener('dragend', () => { block.draggable = false; });
-
-    // Section drag
-    block.addEventListener('dragstart', e => {
-      sectionDragSrc = sIdx;
-      e.dataTransfer.effectAllowed = 'move';
-      e.stopPropagation();
-      setTimeout(() => block.classList.add('dragging'), 0);
-    });
-    block.addEventListener('dragend', () => {
-      block.classList.remove('dragging');
-      block.draggable = false;
-      document.querySelectorAll('.section-block').forEach(b => b.classList.remove('drag-over-section'));
-    });
-    block.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); block.classList.add('drag-over-section'); });
-    block.addEventListener('dragleave', () => block.classList.remove('drag-over-section'));
-    block.addEventListener('drop', e => {
-      e.preventDefault(); e.stopPropagation();
-      block.classList.remove('drag-over-section');
-      if (sectionDragSrc !== null && sectionDragSrc !== sIdx) {
-        const [moved] = editSections.splice(sectionDragSrc, 1);
-        editSections.splice(sIdx, 0, moved);
-        renderSections();
-      }
-    });
-
     container.appendChild(block);
     renderSectionBody(sec, sIdx);
+  });
+
+  // 포인터 기반 드래그 정렬 등록
+  setupSortable(container, '.section-block', '.section-drag-handle', (from, to) => {
+    const [moved] = editSections.splice(from, 1);
+    editSections.splice(to, 0, moved);
+    renderSections();
   });
 }
 
@@ -1057,6 +1096,14 @@ function renderSectionBody(sec, sIdx) {
     };
     body.appendChild(addRowBtn);
 
+    // 포인터 기반 드래그 정렬 등록
+    setupSortable(body, '.sauce-row', '.sauce-drag', (from, to) => {
+      const rows = editSections[sIdx].rows;
+      const [moved] = rows.splice(from, 1);
+      rows.splice(to, 0, moved);
+      renderSectionBody(editSections[sIdx], sIdx);
+    });
+
   } else {
     // Memo
     const ta = makeEl('textarea', 'memo-textarea');
@@ -1071,10 +1118,9 @@ function renderSectionBody(sec, sIdx) {
 function makeSauceRow(sec, sIdx, row, rIdx) {
   const rowEl = makeEl('div', 'sauce-row');
   rowEl.dataset.rIdx = rIdx;
-  rowEl.draggable = true;
 
   rowEl.innerHTML = `
-    <span class="sauce-drag" title="드래그로 순서 변경">⠿</span>
+    <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
     <input class="sauce-name" type="text" placeholder="간장" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
     <input class="sauce-amount" type="number" min="0" step="0.1" placeholder="0" value="${escHtml(String(row.amount||''))}" oninput="editSections[${sIdx}].rows[${rIdx}].amount=this.value">
     <div class="sauce-unit-wrap">
@@ -1090,29 +1136,6 @@ function makeSauceRow(sec, sIdx, row, rIdx) {
     </div>
     <button class="sauce-del" onclick="removeSauceRow(${sIdx},${rIdx})" title="삭제">✕</button>
   `;
-
-  // Row drag
-  rowEl.addEventListener('dragstart', e => {
-    rowDragSrc = { sIdx, rIdx };
-    e.stopPropagation();
-    setTimeout(() => rowEl.classList.add('dragging'), 0);
-  });
-  rowEl.addEventListener('dragend', () => {
-    rowEl.classList.remove('dragging');
-    document.querySelectorAll('.sauce-row').forEach(r => r.classList.remove('drag-over-row'));
-  });
-  rowEl.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); rowEl.classList.add('drag-over-row'); });
-  rowEl.addEventListener('dragleave', () => rowEl.classList.remove('drag-over-row'));
-  rowEl.addEventListener('drop', e => {
-    e.preventDefault(); e.stopPropagation();
-    rowEl.classList.remove('drag-over-row');
-    if (rowDragSrc && rowDragSrc.sIdx === sIdx && rowDragSrc.rIdx !== rIdx) {
-      const rows = editSections[sIdx].rows;
-      const [moved] = rows.splice(rowDragSrc.rIdx, 1);
-      rows.splice(rIdx, 0, moved);
-      renderSectionBody(editSections[sIdx], sIdx);
-    }
-  });
 
   return rowEl;
 }
