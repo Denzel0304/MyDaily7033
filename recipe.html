@@ -49,9 +49,7 @@
     box-shadow: 0 2px 16px rgba(58,139,191,0.12);
   }
   .header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    text-align: center;
     margin-bottom: 10px;
   }
   .app-title {
@@ -60,23 +58,31 @@
     font-weight: 700;
     color: var(--sky-deep);
     letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
-  .header-actions { display: flex; gap: 8px; }
-  .btn-icon {
-    background: var(--sky-light);
+  .header-data-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 7px;
+  }
+  .btn-data {
+    background: rgba(255,255,255,0.65);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 7px 12px;
-    font-size: 0.75rem;
-    color: var(--sky-deep);
-    font-weight: 600;
+    border-radius: 20px;
+    padding: 4px 11px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
     cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
     transition: all 0.15s;
     white-space: nowrap;
   }
-  .btn-icon:hover { background: var(--sky-dark); color: white; }
-  .btn-icon.danger { background: #fdeaea; border-color: #f5b8b8; color: var(--danger); }
-  .btn-icon.danger:hover { background: var(--danger); color: white; }
+  .btn-data:hover { background: var(--sky-light); color: var(--sky-deep); border-color: var(--sky-dark); }
 
   .search-bar {
     position: relative;
@@ -140,15 +146,7 @@
     cursor: pointer;
     user-select: none;
   }
-  .drag-handle {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    cursor: grab;
-    padding: 4px 2px;
-    flex-shrink: 0;
-    touch-action: none;
-  }
-  .drag-handle:active { cursor: grabbing; }
+
   .card-title-area { flex: 1; min-width: 0; }
   .card-title {
     font-family: 'Gowun Batang', serif;
@@ -175,28 +173,7 @@
   .card-btn:hover { background: var(--sky-light); }
   .card-btn.delete:hover { background: #fdeaea; }
 
-  .card-preview {
-    padding: 0 14px 14px;
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    border-top: 1px solid var(--sky-light);
-    padding-top: 10px;
-    cursor: pointer;
-  }
-  .card-preview .view-btn {
-    display: inline-block;
-    margin-top: 8px;
-    background: var(--sky-light);
-    color: var(--sky-deep);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .card-preview .view-btn:hover { background: var(--sky-dark); color: white; }
+  /* card-preview removed – click directly opens view */
 
   /* ── FAB ── */
   .fab {
@@ -689,15 +666,15 @@
 <div class="app-header">
   <div class="header-top">
     <span class="app-title">🍳 나만의 레시피</span>
-    <div class="header-actions">
-      <button class="btn-icon" onclick="exportData()">📤 내보내기</button>
-      <button class="btn-icon" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-    </div>
   </div>
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="레시피 검색..." oninput="renderList()">
+  </div>
+  <div class="header-data-row">
+    <button class="btn-data" onclick="exportData()">📤 내보내기</button>
+    <button class="btn-data" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 </div>
 
@@ -771,7 +748,35 @@ const FILE_SIGNATURE = 'RECIPE_APP_V1';
 let recipes = loadRecipes();
 let editingId = null;
 let confirmCallback = null;
-let cardDragSrcIdx = null;
+
+// ── MODAL HISTORY MANAGEMENT ──
+const modalStack = []; // tracks open modals: array of element IDs
+
+window.addEventListener('popstate', function() {
+  if (modalStack.length > 0) {
+    const id = modalStack.pop();
+    document.getElementById(id).classList.remove('active');
+    if (id === 'confirmModal' && confirmCallback) {
+      confirmCallback(false);
+      confirmCallback = null;
+    }
+  }
+});
+
+function openModal(id) {
+  modalStack.push(id);
+  history.pushState({ modal: id, depth: modalStack.length }, '');
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  // Use history.back() so popstate handles the DOM close
+  if (modalStack.includes(id)) {
+    history.back();
+  } else {
+    document.getElementById(id).classList.remove('active');
+  }
+}
 
 function loadRecipes() {
   try {
@@ -810,7 +815,7 @@ function importData(e) {
       recipes = data.recipes || [];
       saveToStorage();
       renderList();
-      showAlert('가져오기 완료', `${recipes.length}개의 레시피를 불러왔습니다.`);
+      showAlert('가져오기 완료', `${recipes.length}개의 레시피를 불러왔습니다.`, 'success');
     } catch {
       showAlert('형식 오류', '파일을 읽을 수 없어요. 손상된 파일이거나 형식이 맞지 않아요.');
     }
@@ -826,38 +831,29 @@ function renderList() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   let list = [...recipes];
   if (q) list = list.filter(r => r.title.toLowerCase().includes(q));
-  list.sort((a, b) => (b.stars || 0) - (a.stars || 0));
+
+  // Sort: starred items by stars desc + title asc; unstarred by title asc; starred above unstarred
+  list.sort((a, b) => {
+    const sa = a.stars || 0, sb = b.stars || 0;
+    if (sa !== sb) return sb - sa;
+    return (a.title || '').localeCompare(b.title || '', 'ko');
+  });
 
   const container = document.getElementById('recipeList');
   container.innerHTML = '';
   document.getElementById('emptyState').style.display = list.length === 0 ? 'block' : 'none';
 
-  list.forEach((recipe, visualIdx) => {
-    const realIdx = recipes.indexOf(recipe);
+  list.forEach((recipe) => {
     const card = document.createElement('div');
     card.className = 'recipe-card';
     card.dataset.id = recipe.id;
-    card.draggable = false;
 
     const starsHtml = Array.from({length:5}, (_,i) =>
       `<span class="star${i < (recipe.stars||0) ? ' filled' : ''}">★</span>`
     ).join('');
 
-    // Preview text
-    let previewTxt = '';
-    if (recipe.sections && recipe.sections.length > 0) {
-      const first = recipe.sections[0];
-      if (first.type === 'sauce') {
-        previewTxt = first.rows.slice(0,3).map(r => r.name || '').filter(Boolean).join(' · ');
-      } else {
-        const lines = (first.content || '').split('\n').filter(Boolean);
-        previewTxt = lines.slice(0,1).join('');
-      }
-    }
-
     card.innerHTML = `
-      <div class="card-header" onclick="toggleCard('${recipe.id}')">
-        <span class="drag-handle" data-id="${recipe.id}" title="드래그로 순서 변경">☰</span>
+      <div class="card-header" onclick="openView('${recipe.id}')">
         <div class="card-title-area">
           <div class="card-title">${escHtml(recipe.title || '제목 없음')}</div>
           <div class="card-stars">${starsHtml}</div>
@@ -867,49 +863,10 @@ function renderList() {
           <button class="card-btn delete" title="삭제" onclick="event.stopPropagation(); deleteRecipe('${recipe.id}')">🗑️</button>
         </div>
       </div>
-      <div class="card-preview" id="preview-${recipe.id}" style="display:none">
-        ${previewTxt ? `<div style="color:var(--text-muted);font-size:0.82rem;margin-bottom:4px">${escHtml(previewTxt)}</div>` : ''}
-        <button class="view-btn" onclick="event.stopPropagation(); openView('${recipe.id}')">📖 레시피 보기</button>
-      </div>
     `;
-
-    // Card-level drag for reordering (by handle)
-    const handle = card.querySelector('.drag-handle');
-    handle.addEventListener('mousedown', () => { card.draggable = true; });
-    handle.addEventListener('touchstart', () => { card.draggable = true; }, {passive:true});
-    card.addEventListener('dragend', () => { card.draggable = false; });
-
-    card.addEventListener('dragstart', e => {
-      cardDragSrcIdx = realIdx;
-      e.dataTransfer.effectAllowed = 'move';
-      setTimeout(() => card.classList.add('dragging'), 0);
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      document.querySelectorAll('.recipe-card').forEach(c => c.classList.remove('drag-over'));
-      card.draggable = false;
-    });
-    card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
-    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
-    card.addEventListener('drop', e => {
-      e.preventDefault();
-      card.classList.remove('drag-over');
-      const targetIdx = recipes.indexOf(recipe);
-      if (cardDragSrcIdx !== null && cardDragSrcIdx !== targetIdx) {
-        const [moved] = recipes.splice(cardDragSrcIdx, 1);
-        recipes.splice(targetIdx, 0, moved);
-        saveToStorage();
-        renderList();
-      }
-    });
 
     container.appendChild(card);
   });
-}
-
-function toggleCard(id) {
-  const el = document.getElementById('preview-' + id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 // ══════════════════════════════════════════════
@@ -922,9 +879,6 @@ let rowDragSrc = null; // {sectionId, rowIdx}
 
 function openEdit(id) {
   editingId = id;
-  const modal = document.getElementById('editModal');
-  modal.classList.add('active');
-
   if (id) {
     const r = recipes.find(x => x.id === id);
     document.getElementById('editModalTitle').textContent = '레시피 수정';
@@ -937,10 +891,11 @@ function openEdit(id) {
     editSections = [];
     renderEditBody('');
   }
+  openModal('editModal');
 }
 
 function closeEdit() {
-  document.getElementById('editModal').classList.remove('active');
+  closeModal('editModal');
 }
 
 function renderEditBody(titleVal) {
@@ -1073,14 +1028,14 @@ function makeSauceRow(sec, sIdx, row, rIdx) {
   rowEl.draggable = true;
 
   rowEl.innerHTML = `
-    <span class="sauce-drag" title="드래그">⠿</span>
-    <input class="sauce-name" type="text" placeholder="간장" value="${escHtml(row.name||'')}" oninput="sec.rows[${rIdx}].name=this.value">
-    <input class="sauce-amount" type="number" min="0" step="0.1" placeholder="0" value="${escHtml(String(row.amount||''))}" oninput="sec.rows[${rIdx}].amount=this.value">
+    <span class="sauce-drag" title="드래그로 순서 변경">⠿</span>
+    <input class="sauce-name" type="text" placeholder="간장" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
+    <input class="sauce-amount" type="number" min="0" step="0.1" placeholder="0" value="${escHtml(String(row.amount||''))}" oninput="editSections[${sIdx}].rows[${rIdx}].amount=this.value">
     <div class="sauce-unit-wrap">
-      <select class="sauce-unit" onchange="sec.rows[${rIdx}].unit=this.value">
+      <select class="sauce-unit" onchange="editSections[${sIdx}].rows[${rIdx}].unit=this.value">
         <option${row.unit==='큰술'?' selected':''}>큰술</option>
-        <option${row.unit==='ml'?' selected':''}>ml</option>
         <option${row.unit==='작은술'?' selected':''}>작은술</option>
+        <option${row.unit==='ml'?' selected':''}>ml</option>
         <option${row.unit==='g'?' selected':''}>g</option>
         <option${row.unit==='개'?' selected':''}>개</option>
         <option${row.unit==='컵'?' selected':''}>컵</option>
@@ -1258,10 +1213,10 @@ function openView(id) {
     ${sectionsHtml || '<p style="color:var(--text-muted);font-size:0.88rem">내용이 없어요.</p>'}
   `;
 
-  document.getElementById('viewModal').classList.add('active');
+  openModal('viewModal');
 }
 function closeView() {
-  document.getElementById('viewModal').classList.remove('active');
+  closeModal('viewModal');
 }
 
 // ══════════════════════════════════════════════
@@ -1271,7 +1226,7 @@ function deleteRecipe(id) {
   const r = recipes.find(x => x.id === id);
   document.getElementById('confirmTitle').textContent = '레시피 삭제';
   document.getElementById('confirmMsg').textContent = `"${r ? r.title : ''}" 레시피를 삭제할까요?\n삭제 후 복구할 수 없어요.`;
-  document.getElementById('confirmModal').classList.add('active');
+  openModal('confirmModal');
   confirmCallback = (yes) => {
     if (yes) {
       recipes = recipes.filter(x => x.id !== id);
@@ -1281,21 +1236,29 @@ function deleteRecipe(id) {
   };
 }
 function closeConfirm(yes) {
-  document.getElementById('confirmModal').classList.remove('active');
-  if (confirmCallback) confirmCallback(yes);
-  confirmCallback = null;
+  if (yes && confirmCallback) {
+    const cb = confirmCallback;
+    confirmCallback = null;
+    cb(true);
+  } else {
+    confirmCallback = null;
+  }
+  closeModal('confirmModal');
 }
 
 // ══════════════════════════════════════════════
 //  ALERT
 // ══════════════════════════════════════════════
-function showAlert(title, msg) {
+function showAlert(title, msg, type) {
   document.getElementById('alertTitle').textContent = title;
   document.getElementById('alertMsg').textContent = msg;
-  document.getElementById('alertModal').classList.add('active');
+  const isSuccess = type === 'success';
+  document.getElementById('alertTitle').style.color = isSuccess ? 'var(--success)' : 'var(--danger)';
+  document.getElementById('alertIcon').textContent = isSuccess ? '✅' : '⚠️';
+  openModal('alertModal');
 }
 function closeAlert() {
-  document.getElementById('alertModal').classList.remove('active');
+  closeModal('alertModal');
 }
 
 // ══════════════════════════════════════════════
