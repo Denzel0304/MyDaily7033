@@ -305,14 +305,37 @@
   .section-block-header {
     display: flex;
     align-items: center;
-    padding: 9px 12px;
     background: var(--sky-light);
     border-bottom: 1px solid var(--border);
     gap: 8px;
+    /* cursor은 handle에만 적용 */
+  }
+  .section-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    min-width: 38px;
+    align-self: stretch;        /* 헤더 전체 높이만큼 터치 영역 확보 */
     cursor: grab;
     touch-action: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    border-right: 1px solid var(--border);
+    background: rgba(0,0,0,0.03);
+    user-select: none;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
   }
-  .section-block-header:active { cursor: grabbing; }
+  .section-drag-handle:hover { background: rgba(91,168,212,0.15); color: var(--sky-deep); }
+  .section-drag-handle:active { cursor: grabbing; }
+  .section-block-header-inner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 9px 10px 9px 0;
+    gap: 8px;
+  }
   .section-block-title {
     flex: 1;
     font-size: 0.8rem;
@@ -339,12 +362,25 @@
   .sauce-row.dragging { opacity: 0.4; }
   .sauce-row.drag-over-row { border-top: 2px solid var(--sky-dark); }
   .sauce-drag {
-    color: #bbb;
-    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 36px;           /* 재료 input과 동일한 높이 */
+    background: #f0f7fd;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
     cursor: grab;
-    flex-shrink: 0;
     touch-action: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    user-select: none;
+    transition: background 0.12s, color 0.12s;
   }
+  .sauce-drag:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .sauce-drag:active { cursor: grabbing; }
   .sauce-name {
     flex: 2;
     padding: 8px 10px;
@@ -948,7 +984,7 @@ function renderSections() {
     const block = makeEl('div', 'section-block');
     block.dataset.secId = sec.id;
     block.dataset.secIdx = sIdx;
-    block.draggable = true;
+    block.draggable = false; // 핸들로만 드래그 시작
 
     const icon = sec.type === 'sauce' ? '🧂' : '📝';
     const defaultTitle = sec.type === 'sauce' ? `양념장 ${sIdx+1}` : `메모 ${sIdx+1}`;
@@ -956,12 +992,21 @@ function renderSections() {
 
     block.innerHTML = `
       <div class="section-block-header">
-        <span style="font-size:1rem">${icon}</span>
-        <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
-        <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
+        <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
+        <div class="section-block-header-inner">
+          <span style="font-size:1rem">${icon}</span>
+          <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
+          <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
+        </div>
       </div>
       <div class="section-block-body" id="secBody-${sec.id}"></div>
     `;
+
+    // 핸들에서만 드래그 시작
+    const handle = block.querySelector('.section-drag-handle');
+    handle.addEventListener('mousedown', () => { block.draggable = true; });
+    handle.addEventListener('touchstart', () => { block.draggable = true; }, {passive: true});
+    block.addEventListener('dragend', () => { block.draggable = false; });
 
     // Section drag
     block.addEventListener('dragstart', e => {
@@ -972,6 +1017,7 @@ function renderSections() {
     });
     block.addEventListener('dragend', () => {
       block.classList.remove('dragging');
+      block.draggable = false;
       document.querySelectorAll('.section-block').forEach(b => b.classList.remove('drag-over-section'));
     });
     block.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); block.classList.add('drag-over-section'); });
