@@ -912,9 +912,10 @@ let editSections = []; // [{id, type:'sauce'|'memo', rows|content, title}]
 let editStars = 0;
 
 // ── 포인터 기반 드래그 정렬 (터치 + 마우스 통합) ──
-const _drag = { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, oy: 0, cb: null };
+const _drag = { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, oy: 0, cb: null, cntRect: null };
 
 function _dragStart(e) {
+  if (_drag.on) return;                           // 이미 드래그 중이면 무시
   const cfg = e.currentTarget._sortCfg;
   if (!cfg) return;
   const handle = e.target.closest(cfg.handleSel);
@@ -923,14 +924,19 @@ function _dragStart(e) {
   if (!item || !e.currentTarget.contains(item)) return;
 
   e.preventDefault();
-  const rect = item.getBoundingClientRect();
-  _drag.on   = true;
-  _drag.el   = item;
-  _drag.cnt  = e.currentTarget;
-  _drag.sel  = cfg.itemSel;
-  _drag.from = [...e.currentTarget.querySelectorAll(cfg.itemSel)].indexOf(item);
-  _drag.oy   = e.clientY - rect.top;
-  _drag.cb   = cfg.onReorder;
+  e.stopPropagation();                            // 부모 컨테이너로 버블링 차단
+
+  const rect  = item.getBoundingClientRect();
+  const cRect = e.currentTarget.getBoundingClientRect();
+
+  _drag.on      = true;
+  _drag.el      = item;
+  _drag.cnt     = e.currentTarget;
+  _drag.sel     = cfg.itemSel;
+  _drag.from    = [...e.currentTarget.querySelectorAll(cfg.itemSel)].indexOf(item);
+  _drag.oy      = e.clientY - rect.top;
+  _drag.cb      = cfg.onReorder;
+  _drag.cntRect = cRect;                          // 컨테이너 경계 저장
 
   const g = item.cloneNode(true);
   g.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;`
@@ -944,13 +950,19 @@ function _dragStart(e) {
 document.addEventListener('pointermove', e => {
   if (!_drag.on) return;
   e.preventDefault();
-  _drag.ghost.style.top = (e.clientY - _drag.oy) + 'px';
+
+  // ghost를 컨테이너 세로 범위 내로 클램프
+  const rawTop  = e.clientY - _drag.oy;
+  const minTop  = _drag.cntRect.top;
+  const maxTop  = _drag.cntRect.bottom - _drag.ghost.offsetHeight;
+  _drag.ghost.style.top = Math.max(minTop, Math.min(maxTop, rawTop)) + 'px';
 
   _drag.ghost.style.visibility = 'hidden';
   const under = document.elementFromPoint(e.clientX, e.clientY);
   _drag.ghost.style.visibility = '';
 
   const target = under?.closest(_drag.sel);
+  // 반드시 같은 컨테이너 내부의 아이템이어야만 이동
   if (target && target !== _drag.el && _drag.cnt.contains(target)) {
     const items = [..._drag.cnt.querySelectorAll(_drag.sel)];
     const ci = items.indexOf(_drag.el), ti = items.indexOf(target);
@@ -962,9 +974,13 @@ function _dragEnd() {
   if (!_drag.on) return;
   _drag.ghost?.remove();
   _drag.el.style.opacity = '';
-  const toIdx = [..._drag.cnt.querySelectorAll(_drag.sel)].indexOf(_drag.el);
-  if (toIdx !== _drag.from && _drag.from >= 0) _drag.cb(_drag.from, toIdx);
-  Object.assign(_drag, { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, cb: null });
+  const items  = [..._drag.cnt.querySelectorAll(_drag.sel)];
+  const toIdx  = items.indexOf(_drag.el);
+  // toIdx가 유효하고 위치가 실제로 바뀐 경우에만 콜백
+  if (toIdx >= 0 && toIdx !== _drag.from) {
+    _drag.cb(_drag.from, toIdx);
+  }
+  Object.assign(_drag, { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, cb: null, cntRect: null });
 }
 document.addEventListener('pointerup', _dragEnd);
 document.addEventListener('pointercancel', _dragEnd);
