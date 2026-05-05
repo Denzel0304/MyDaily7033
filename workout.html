@@ -830,10 +830,7 @@ function renderInbodyChart() {
     /* 선 그리기 */
     if (valid.length >= 2) {
       let d = `M ${valid[0].x} ${valid[0].y}`;
-      for (let i = 1; i < valid.length; i++) {
-        const p = valid[i-1], c = valid[i], cx = (p.x + c.x) / 2;
-        d += ` C ${cx} ${p.y} ${cx} ${c.y} ${c.x} ${c.y}`;
-      }
+      for (let i = 1; i < valid.length; i++) d += ` L ${valid[i].x} ${valid[i].y}`;
       svg += `<path d="${d}" stroke="${m.color}" stroke-width="2.2" fill="none" stroke-linejoin="round"/>`;
     }
 
