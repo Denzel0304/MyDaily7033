@@ -811,8 +811,8 @@ function renderInbodyChart() {
     /* 행 배경 구분선 */
     if (ri > 0) svg += `<line x1="0" y1="${rowY}" x2="${W}" y2="${rowY}" stroke="#f0f0f0" stroke-width="1"/>`;
 
-    /* 지표명 (왼쪽) */
-    svg += `<text x="${PAD_X.left - 4}" y="${rowY + ROW_H / 2 + 4}" text-anchor="end" font-size="10" font-weight="bold" fill="${m.color}">${m.label}</text>`;
+    /* 지표명: 행 왼쪽 여백 중앙, 숫자 영역과 겹치지 않도록 충분히 안쪽에 */
+    svg += `<text x="${(PAD_X.left - 4) / 2}" y="${rowY + ROW_H / 2 + 4}" text-anchor="middle" font-size="10" font-weight="bold" fill="${m.color}">${m.label}</text>`;
 
     /* 유효값 & 스케일 계산 */
     const vals = data.map(r => r[m.key]).filter(v => v != null);
@@ -842,9 +842,10 @@ function renderInbodyChart() {
       svg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${m.color}" stroke="white" stroke-width="1.2"/>`;
       const showLabel = arr.length <= 6 || i === 0 || i === arr.length - 1;
       if (showLabel) {
-        /* 점이 행 위쪽에 붙어 있으면 아래에, 아니면 위에 표시 */
+        /* 첫 점→start(오른쪽으로), 마지막→end(왼쪽으로), 중간→middle */
+        const anchor = i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle';
         const labelY = (p.y - innerTop < 14) ? p.y + 13 : p.y - 5;
-        svg += `<text x="${p.x}" y="${labelY}" text-anchor="middle" font-size="9" font-weight="bold" fill="${m.color}">${p.v}</text>`;
+        svg += `<text x="${p.x}" y="${labelY}" text-anchor="${anchor}" font-size="9" font-weight="bold" fill="${m.color}">${p.v}</text>`;
       }
     });
   });
