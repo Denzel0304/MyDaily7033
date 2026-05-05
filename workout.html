@@ -399,6 +399,57 @@
     transition: all .2s; flex-shrink: 0;
   }
   .ex-edit-btn:hover { background: #d0e8f7; }
+
+  /* ── 삭제 확인 모달 ── */
+  .confirm-modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .confirm-modal-overlay.open { display: flex; }
+  .confirm-modal {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 28px 24px 20px;
+    width: 100%; max-width: 320px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    text-align: center;
+    animation: modalPop .2s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes modalPop {
+    from { opacity:0; transform: scale(.88); }
+    to   { opacity:1; transform: scale(1); }
+  }
+  .confirm-modal-icon { font-size: 36px; margin-bottom: 10px; }
+  .confirm-modal-title {
+    font-size: 16px; font-weight: 800; color: var(--gray-800);
+    margin-bottom: 6px; font-family: 'Nunito', sans-serif;
+  }
+  .confirm-modal-desc {
+    font-size: 13px; color: var(--gray-400); margin-bottom: 20px; line-height: 1.5;
+  }
+  .confirm-modal-btns { display: flex; gap: 8px; }
+  .confirm-modal-cancel {
+    flex: 1; height: 46px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--gray-200); background: var(--gray-100);
+    color: var(--gray-600); font-size: 14px; font-weight: 800;
+    cursor: pointer; font-family: 'Nunito', sans-serif;
+    transition: opacity .2s;
+  }
+  .confirm-modal-cancel:hover { opacity: .8; }
+  .confirm-modal-confirm {
+    flex: 1; height: 46px; border-radius: var(--radius-sm);
+    border: none; background: var(--pink-dark);
+    color: white; font-size: 14px; font-weight: 800;
+    cursor: pointer; font-family: 'Nunito', sans-serif;
+    box-shadow: 0 4px 14px rgba(224,112,112,.4);
+    transition: opacity .2s, transform .15s;
+  }
+  .confirm-modal-confirm:hover { opacity: .9; }
+  .confirm-modal-confirm:active { transform: scale(.97); }
 </style>
 </head>
 <body>
@@ -509,6 +560,19 @@
     </div>
   </div>
 
+</div>
+
+<!-- ── 인바디 삭제 확인 모달 ── -->
+<div class="confirm-modal-overlay" id="deleteInbodyModal">
+  <div class="confirm-modal">
+    <div class="confirm-modal-icon">🗑️</div>
+    <div class="confirm-modal-title">기록을 삭제할까요?</div>
+    <div class="confirm-modal-desc">삭제된 인바디 기록은<br>복구할 수 없어요.</div>
+    <div class="confirm-modal-btns">
+      <button class="confirm-modal-cancel" onclick="closeDeleteInbodyModal()">취소</button>
+      <button class="confirm-modal-confirm" onclick="confirmDeleteInbody()">삭제</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -697,7 +761,7 @@ function renderInbodyList() {
         <div class="inbody-val-group"><div class="inbody-val-label">골격근</div><div class="inbody-val-num" style="color:#e07070">${rec.muscle ?? '-'}</div></div>
         <div class="inbody-val-group"><div class="inbody-val-label">체지방</div><div class="inbody-val-num" style="color:#f0a030">${rec.fat ?? '-'}</div></div>
       </div>
-      <button class="inbody-del-btn" onclick="deleteInbody(${idx})">✕</button>
+      <button class="inbody-del-btn" onclick="showDeleteInbodyModal(${idx})">✕</button>
     </div>`;
   }).join('');
 }
@@ -714,33 +778,68 @@ function toggleInbodyGraph() {
 function renderInbodyChart() {
   const wrap = document.getElementById('inbodyChartWrap');
   const W = wrap.clientWidth || 320;
-  const H = 180;
-  const PAD = { top: 16, right: 10, bottom: 30, left: 36 };
+  const H = 200;
+  const PAD = { top: 20, right: 12, bottom: 30, left: 12 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
   const data = [...inbodyRecords].reverse();
   if (data.length < 1) { wrap.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">기록이 없어요</div>'; return; }
-  const weights = data.map(r => r.weight).filter(v => v != null);
-  const muscles = data.map(r => r.muscle).filter(v => v != null);
-  const fats    = data.map(r => r.fat).filter(v => v != null);
-  const allVals = [...weights, ...muscles, ...fats];
-  const minV = Math.min(...allVals) * 0.95;
-  const maxV = Math.max(...allVals) * 1.05;
+
+  /* ── 각 지표를 독립 스케일로 (추이가 잘 보이도록) ── */
+  const getRange = (key) => {
+    const vals = data.map(r => r[key]).filter(v => v != null);
+    if (vals.length === 0) return { min: 0, max: 1 };
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const spread = mx - mn;
+    /* 변화가 거의 없으면 ±1.5 범위, 있으면 spread의 60% 여백 */
+    const pad = spread < 0.3 ? 1.5 : Math.max(spread * 0.6, 0.5);
+    return { min: mn - pad, max: mx + pad };
+  };
+  const wR = getRange('weight'), mR = getRange('muscle'), fR = getRange('fat');
+
   const xPos = (i) => PAD.left + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
-  const yPos = (v) => PAD.top + chartH - ((v - minV) / (maxV - minV)) * chartH;
-  const makePoints = (key) => data.map((r, i) => r[key] != null ? { x: xPos(i), y: yPos(r[key]), v: r[key] } : null);
+  const yPos = (v, r) => PAD.top + chartH - ((v - r.min) / (r.max - r.min)) * chartH;
+  const makePoints = (key, range) => data.map((r, i) => r[key] != null ? { x: xPos(i), y: yPos(r[key], range), v: r[key] } : null);
   const makePath = (pts) => {
     const valid = pts.filter(Boolean);
-    if (valid.length < 1) return '';
+    if (valid.length < 2) return '';
     let d = `M ${valid[0].x} ${valid[0].y}`;
     for (let i = 1; i < valid.length; i++) { const prev = valid[i-1], curr = valid[i]; const cx = (prev.x + curr.x) / 2; d += ` C ${cx} ${prev.y} ${cx} ${curr.y} ${curr.x} ${curr.y}`; }
     return d;
   };
-  const wPts = makePoints('weight'); const mPts = makePoints('muscle'); const fPts = makePoints('fat');
-  const dateLabels = data.map((r, i) => { const d = new Date(r.date + 'T00:00:00'); const label = `${d.getMonth()+1}/${d.getDate()}`; return `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${label}</text>`; }).join('');
-  const yLabels = [0, 0.5, 1].map(t => { const v = minV + t * (maxV - minV); const y = PAD.top + chartH - t * chartH; return `<text x="${PAD.left - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="#aaa">${v.toFixed(1)}</text><line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>`; }).join('');
-  const makeDots = (pts, color) => pts.filter(Boolean).map((p, i, arr) => { const isLast = i === arr.length - 1; return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${color}" />${isLast ? `<text x="${p.x}" y="${p.y - 7}" text-anchor="middle" font-size="9" fill="${color}" font-weight="bold">${p.v}</text>` : ''}`; }).join('');
-  wrap.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${yLabels}${makePath(wPts) ? `<path d="${makePath(wPts)}" stroke="#4a90d9" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}${makePath(mPts) ? `<path d="${makePath(mPts)}" stroke="#e07070" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}${makePath(fPts) ? `<path d="${makePath(fPts)}" stroke="#f0a030" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}${makeDots(wPts, '#4a90d9')}${makeDots(mPts, '#e07070')}${makeDots(fPts, '#f0a030')}${dateLabels}</svg>`;
+
+  const wPts = makePoints('weight', wR);
+  const mPts = makePoints('muscle', mR);
+  const fPts = makePoints('fat', fR);
+
+  const dateLabels = data.map((r, i) => {
+    const d = new Date(r.date + 'T00:00:00');
+    const label = `${d.getMonth()+1}/${d.getDate()}`;
+    return `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${label}</text>`;
+  }).join('');
+
+  /* 수평 그리드 (3선) */
+  const gridLines = [0.25, 0.5, 0.75].map(t => {
+    const y = PAD.top + t * chartH;
+    return `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
+  }).join('');
+
+  /* 모든 점에 값 표시 (기록이 적으면 전부, 많으면 첫/마지막만) */
+  const makeDots = (pts, color) => pts.filter(Boolean).map((p, i, arr) => {
+    const showLabel = arr.length <= 5 || i === 0 || i === arr.length - 1;
+    const labelY = (p.y < PAD.top + 14) ? p.y + 16 : p.y - 7;
+    return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${color}" stroke="white" stroke-width="1.2"/>` +
+      (showLabel ? `<text x="${p.x}" y="${labelY}" text-anchor="middle" font-size="9" fill="${color}" font-weight="bold">${p.v}</text>` : '');
+  }).join('');
+
+  wrap.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${gridLines}
+    ${makePath(wPts) ? `<path d="${makePath(wPts)}" stroke="#4a90d9" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
+    ${makePath(mPts) ? `<path d="${makePath(mPts)}" stroke="#e07070" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
+    ${makePath(fPts) ? `<path d="${makePath(fPts)}" stroke="#f0a030" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
+    ${makeDots(wPts, '#4a90d9')}${makeDots(mPts, '#e07070')}${makeDots(fPts, '#f0a030')}
+    ${dateLabels}
+  </svg>`;
 }
 
 function buildSettingDayTabs() {
@@ -894,6 +993,37 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+/* ── 인바디 삭제 확인 모달 ── */
+let pendingDeleteIdx = null;
+let confirmingInbodyDelete = false;
+
+function showDeleteInbodyModal(idx) {
+  pendingDeleteIdx = idx;
+  document.getElementById('deleteInbodyModal').classList.add('open');
+  history.pushState({ modal: 'deleteInbody' }, '');
+}
+
+function closeDeleteInbodyModal() {
+  document.getElementById('deleteInbodyModal').classList.remove('open');
+  pendingDeleteIdx = null;
+}
+
+function confirmDeleteInbody() {
+  const idx = pendingDeleteIdx;
+  confirmingInbodyDelete = true;
+  closeDeleteInbodyModal();
+  history.back(); /* 푸시한 state 제거 */
+  if (idx !== null) deleteInbody(idx);
+}
+
+window.addEventListener('popstate', function() {
+  const modal = document.getElementById('deleteInbodyModal');
+  if (modal.classList.contains('open')) {
+    if (!confirmingInbodyDelete) closeDeleteInbodyModal();
+    confirmingInbodyDelete = false;
+  }
+});
 </script>
 </body>
 </html>
