@@ -778,68 +778,84 @@ function toggleInbodyGraph() {
 function renderInbodyChart() {
   const wrap = document.getElementById('inbodyChartWrap');
   const W = wrap.clientWidth || 320;
-  const H = 200;
-  const PAD = { top: 20, right: 12, bottom: 30, left: 12 };
-  const chartW = W - PAD.left - PAD.right;
-  const chartH = H - PAD.top - PAD.bottom;
-  const data = [...inbodyRecords].reverse();
-  if (data.length < 1) { wrap.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">기록이 없어요</div>'; return; }
+  const ROW_H   = 56;   /* 지표 하나당 행 높이 */
+  const PAD_X   = { left: 46, right: 14 };
+  const ROW_PAD = { top: 10, bottom: 10 };
+  const DATE_H  = 22;   /* 날짜 레이블 영역 */
+  const TOTAL_H = ROW_H * 3 + DATE_H;
+  const chartW  = W - PAD_X.left - PAD_X.right;
+  const rowInnerH = ROW_H - ROW_PAD.top - ROW_PAD.bottom;
 
-  /* ── 각 지표를 독립 스케일로 (추이가 잘 보이도록) ── */
-  const getRange = (key) => {
-    const vals = data.map(r => r[key]).filter(v => v != null);
-    if (vals.length === 0) return { min: 0, max: 1 };
+  const data = [...inbodyRecords].reverse();
+  if (data.length < 1) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:30px;font-size:13px">기록이 없어요</div>';
+    return;
+  }
+
+  const metrics = [
+    { key: 'weight', label: '체중',  color: '#4a90d9' },
+    { key: 'muscle', label: '골격근', color: '#e07070' },
+    { key: 'fat',    label: '체지방', color: '#f0a030' },
+  ];
+
+  const xPos = (i) => PAD_X.left + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
+
+  let svg = '';
+
+  /* ── 행 구분선 + 각 지표 행 ── */
+  metrics.forEach((m, ri) => {
+    const rowY  = ri * ROW_H;          /* 행 상단 y */
+    const innerTop = rowY + ROW_PAD.top;
+    const innerBot = rowY + ROW_H - ROW_PAD.bottom;
+
+    /* 행 배경 구분선 */
+    if (ri > 0) svg += `<line x1="0" y1="${rowY}" x2="${W}" y2="${rowY}" stroke="#f0f0f0" stroke-width="1"/>`;
+
+    /* 지표명 (왼쪽) */
+    svg += `<text x="${PAD_X.left - 4}" y="${rowY + ROW_H / 2 + 4}" text-anchor="end" font-size="10" font-weight="bold" fill="${m.color}">${m.label}</text>`;
+
+    /* 유효값 & 스케일 계산 */
+    const vals = data.map(r => r[m.key]).filter(v => v != null);
+    if (vals.length === 0) return;
     const mn = Math.min(...vals), mx = Math.max(...vals);
     const spread = mx - mn;
-    /* 변화가 거의 없으면 ±1.5 범위, 있으면 spread의 60% 여백 */
     const pad = spread < 0.3 ? 1.5 : Math.max(spread * 0.6, 0.5);
-    return { min: mn - pad, max: mx + pad };
-  };
-  const wR = getRange('weight'), mR = getRange('muscle'), fR = getRange('fat');
+    const rMin = mn - pad, rMax = mx + pad;
+    const yPos = (v) => innerTop + rowInnerH - ((v - rMin) / (rMax - rMin)) * rowInnerH;
 
-  const xPos = (i) => PAD.left + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
-  const yPos = (v, r) => PAD.top + chartH - ((v - r.min) / (r.max - r.min)) * chartH;
-  const makePoints = (key, range) => data.map((r, i) => r[key] != null ? { x: xPos(i), y: yPos(r[key], range), v: r[key] } : null);
-  const makePath = (pts) => {
+    /* 포인트 생성 */
+    const pts = data.map((r, i) => r[m.key] != null ? { x: xPos(i), y: yPos(r[m.key]), v: r[m.key] } : null);
     const valid = pts.filter(Boolean);
-    if (valid.length < 2) return '';
-    let d = `M ${valid[0].x} ${valid[0].y}`;
-    for (let i = 1; i < valid.length; i++) { const prev = valid[i-1], curr = valid[i]; const cx = (prev.x + curr.x) / 2; d += ` C ${cx} ${prev.y} ${cx} ${curr.y} ${curr.x} ${curr.y}`; }
-    return d;
-  };
 
-  const wPts = makePoints('weight', wR);
-  const mPts = makePoints('muscle', mR);
-  const fPts = makePoints('fat', fR);
+    /* 선 그리기 */
+    if (valid.length >= 2) {
+      let d = `M ${valid[0].x} ${valid[0].y}`;
+      for (let i = 1; i < valid.length; i++) {
+        const p = valid[i-1], c = valid[i], cx = (p.x + c.x) / 2;
+        d += ` C ${cx} ${p.y} ${cx} ${c.y} ${c.x} ${c.y}`;
+      }
+      svg += `<path d="${d}" stroke="${m.color}" stroke-width="2.2" fill="none" stroke-linejoin="round"/>`;
+    }
 
-  const dateLabels = data.map((r, i) => {
+    /* 점 + 값 레이블 (행 안에서 위/아래 판단) */
+    pts.filter(Boolean).forEach((p, i, arr) => {
+      svg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${m.color}" stroke="white" stroke-width="1.2"/>`;
+      const showLabel = arr.length <= 6 || i === 0 || i === arr.length - 1;
+      if (showLabel) {
+        /* 점이 행 위쪽에 붙어 있으면 아래에, 아니면 위에 표시 */
+        const labelY = (p.y - innerTop < 14) ? p.y + 13 : p.y - 5;
+        svg += `<text x="${p.x}" y="${labelY}" text-anchor="middle" font-size="9" font-weight="bold" fill="${m.color}">${p.v}</text>`;
+      }
+    });
+  });
+
+  /* ── 날짜 레이블 ── */
+  data.forEach((r, i) => {
     const d = new Date(r.date + 'T00:00:00');
-    const label = `${d.getMonth()+1}/${d.getDate()}`;
-    return `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${label}</text>`;
-  }).join('');
+    svg += `<text x="${xPos(i)}" y="${ROW_H * 3 + DATE_H - 4}" text-anchor="middle" font-size="9" fill="#aaa">${d.getMonth()+1}/${d.getDate()}</text>`;
+  });
 
-  /* 수평 그리드 (3선) */
-  const gridLines = [0.25, 0.5, 0.75].map(t => {
-    const y = PAD.top + t * chartH;
-    return `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
-  }).join('');
-
-  /* 모든 점에 값 표시 (기록이 적으면 전부, 많으면 첫/마지막만) */
-  const makeDots = (pts, color) => pts.filter(Boolean).map((p, i, arr) => {
-    const showLabel = arr.length <= 5 || i === 0 || i === arr.length - 1;
-    const labelY = (p.y < PAD.top + 14) ? p.y + 16 : p.y - 7;
-    return `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${color}" stroke="white" stroke-width="1.2"/>` +
-      (showLabel ? `<text x="${p.x}" y="${labelY}" text-anchor="middle" font-size="9" fill="${color}" font-weight="bold">${p.v}</text>` : '');
-  }).join('');
-
-  wrap.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-    ${gridLines}
-    ${makePath(wPts) ? `<path d="${makePath(wPts)}" stroke="#4a90d9" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
-    ${makePath(mPts) ? `<path d="${makePath(mPts)}" stroke="#e07070" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
-    ${makePath(fPts) ? `<path d="${makePath(fPts)}" stroke="#f0a030" stroke-width="2.2" fill="none" stroke-linejoin="round"/>` : ''}
-    ${makeDots(wPts, '#4a90d9')}${makeDots(mPts, '#e07070')}${makeDots(fPts, '#f0a030')}
-    ${dateLabels}
-  </svg>`;
+  wrap.innerHTML = `<svg width="${W}" height="${TOTAL_H}" viewBox="0 0 ${W} ${TOTAL_H}" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`;
 }
 
 function buildSettingDayTabs() {
