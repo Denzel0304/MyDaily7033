@@ -506,45 +506,88 @@ function openSheet(id = null) {
   const saveBtn = document.getElementById('saveBtn');
   const btnRow = document.getElementById('btnRow');
 
-  if (isEdit) {
+  // 모든 필드 초기화 (활성/비활성/readonly)
+  function setFieldReadonly(id, val) {
+    const el = document.getElementById(id);
+    el.value = val ?? '';
+    el.readOnly = true;
+    el.disabled = false;
+    el.style.opacity = '';
+    el.style.cursor = 'default';
+    el.style.pointerEvents = 'none';
+  }
+  function setFieldEditable(id, val) {
+    const el = document.getElementById(id);
+    el.value = val ?? '';
+    el.readOnly = false;
+    el.disabled = false;
+    el.style.opacity = '';
+    el.style.cursor = '';
+    el.style.pointerEvents = '';
+  }
+
+  if (isEdit && t && t.sold) {
+    // ── 완료 카드: 조회만 가능, 수정 불가 ──
+    document.getElementById('sheetTitle').textContent = '거래 상세';
+    sellSection.style.display = '';
+    btnRow.style.display = 'none';
+    sellBtn.style.display = 'none';
+
+    // 매수 정보 readonly
+    setFieldReadonly('buyRate', t.buyRate);
+    setFieldReadonly('buyQty', t.buyQty);
+    document.getElementById('buyDateBtn').style.pointerEvents = 'none';
+
+    // 매도 정보 readonly
+    const sd = t.sellDate || '';
+    document.getElementById('sellDateLabel').textContent = fmtDate(sd);
+    document.getElementById('sellDateBtn').dataset.date = sd;
+    document.getElementById('sellDateBtn').style.pointerEvents = 'none';
+    setFieldReadonly('sellRate', t.sellRate);
+    setFieldReadonly('sellQty', t.sellQty);
+
+  } else if (isEdit) {
+    // ── 매수 카드: 날짜·가격만 수정 가능, 수량 고정 ──
     sellSection.style.display = '';
     btnRow.style.display = 'flex';
+    sellBtn.style.display = '';
     saveBtn.textContent = '수정 저장';
 
-    // 매수 수량 비활성화 (수량은 변경 불가)
+    // 날짜·가격은 편집 가능
+    document.getElementById('buyDateBtn').style.pointerEvents = '';
+    setFieldEditable('buyRate', t.buyRate);
+
+    // 매수 수량 비활성화
     const buyQtyInput = document.getElementById('buyQty');
-    buyQtyInput.disabled = true;
+    buyQtyInput.value = t.buyQty;
+    buyQtyInput.readOnly = true;
     buyQtyInput.style.opacity = '0.5';
     buyQtyInput.style.cursor = 'not-allowed';
-
-    // 완료된 거래면 수정저장 버튼 및 매도완료 버튼 모두 숨기기
-    if (t && t.sold) {
-      sellBtn.style.display = 'none';
-      btnRow.style.display = 'none';
-    } else {
-      sellBtn.style.display = '';
-    }
+    buyQtyInput.style.pointerEvents = 'none';
 
     const sd = t.sellDate || today();
     document.getElementById('sellDateLabel').textContent = fmtDate(sd);
     document.getElementById('sellDateBtn').dataset.date = sd;
-    document.getElementById('sellRate').value = t.sellRate || '';
+    document.getElementById('sellDateBtn').style.pointerEvents = '';
+    setFieldEditable('sellRate', t.sellRate || '');
 
-    // 매도 수량은 매수 수량으로 고정 + 비활성화
+    // 매도 수량 고정
     const sellQtyInput = document.getElementById('sellQty');
     sellQtyInput.value = t.buyQty;
-    sellQtyInput.disabled = true;
+    sellQtyInput.readOnly = true;
     sellQtyInput.style.opacity = '0.5';
     sellQtyInput.style.cursor = 'not-allowed';
+    sellQtyInput.style.pointerEvents = 'none';
+
   } else {
+    // ── 새 매수 기록 ──
     sellSection.style.display = 'none';
     sellBtn.style.display = 'none';
     btnRow.style.display = 'flex';
     saveBtn.textContent = '저장';
-    // 새 매수 시 필드 활성화 초기화
-    document.getElementById('buyQty').disabled = false;
-    document.getElementById('buyQty').style.opacity = '';
-    document.getElementById('buyQty').style.cursor = '';
+    document.getElementById('buyDateBtn').style.pointerEvents = '';
+    setFieldEditable('buyRate', '');
+    setFieldEditable('buyQty', '');
   }
 
   sheetOverlay.classList.add('visible');
