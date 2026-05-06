@@ -123,15 +123,15 @@
     .menu-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-top: 18px;
+      gap: 9px;
+      margin-top: 12px;
     }
 
     .menu-card {
       background: var(--card-bg);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 12px 8px 10px;
+      padding: 10px 8px 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -144,7 +144,7 @@
       border: 1.5px solid rgba(255,255,255,0.7);
       position: relative;
       overflow: hidden;
-      min-height: 100px;
+      min-height: 88px;
     }
     .menu-card:active {
       transform: scale(0.95);
@@ -167,6 +167,7 @@
     .card-meong::before    { background: linear-gradient(90deg, #6366f1, #a5b4fc); } /* 새로운 보라색 띠 */
     .card-bucket::before   { background: linear-gradient(90deg, #0d9488, #5eead4); } /* 청록 띠 */
     .card-recipe::before   { background: linear-gradient(90deg, #d97706, #fde68a); } /* 황금/노란 띠 */
+    .card-dollar::before   { background: linear-gradient(90deg, #34c98a, #20e3b2); } /* 민트/에메랄드 띠 */
 
     .card-icon-wrap {
       width: 42px; height: 42px;
@@ -184,6 +185,7 @@
     .card-meong    .card-icon-wrap { background: #e0e7ff; } /* 새로운 아이콘 배경색 */
     .card-bucket   .card-icon-wrap { background: #ccfbf1; }
     .card-recipe   .card-icon-wrap { background: #fef3c7; }
+    .card-dollar   .card-icon-wrap { background: #d4f0e8; }
 
     .card-label {
       font-family: 'Noto Sans KR', sans-serif;
@@ -209,7 +211,8 @@
     .menu-card:nth-child(6) { animation: fadeUp 0.45s 0.40s ease both; }
     .menu-card:nth-child(7) { animation: fadeUp 0.45s 0.46s ease both; }
     .menu-card:nth-child(8) { animation: fadeUp 0.45s 0.52s ease both; }
-    .menu-card:nth-child(9) { animation: fadeUp 0.45s 0.58s ease both; }
+    .menu-card:nth-child(9)  { animation: fadeUp 0.45s 0.58s ease both; }
+    .menu-card:nth-child(10) { animation: fadeUp 0.45s 0.64s ease both; }
   </style>
 </head>
 <body>
@@ -274,6 +277,11 @@
       <a href="recipe.html" class="menu-card card-recipe">
         <div class="card-icon-wrap">🍳</div>
         <div class="card-label">레시피</div>
+      </a>
+
+      <a href="DollarTrade.html" class="menu-card card-dollar">
+        <div class="card-icon-wrap">💵</div>
+        <div class="card-label">달러 매매</div>
       </a>
 
     </div>
