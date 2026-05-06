@@ -41,19 +41,19 @@
   .gear-wrap { position: relative; }
   .gear-btn { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.35); color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
   .gear-btn:active { background: rgba(255,255,255,0.3); transform: rotate(30deg); }
-  .gear-menu { position: absolute; top: 46px; right: 0; background: var(--surface); border: 1.5px solid var(--border-light); border-radius: 12px; box-shadow: var(--shadow-md); overflow: hidden; min-width: 150px; opacity: 0; pointer-events: none; transform: translateY(-8px) scale(0.96); transition: all 0.18s cubic-bezier(0.32,0.72,0,1); z-index: 50; }
+  .gear-menu { position: absolute; top: 46px; right: 0; background: #ffffff; border: 1.5px solid #e2f5ef; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; min-width: 150px; opacity: 0; pointer-events: none; transform: translateY(-8px) scale(0.96); transition: all 0.18s cubic-bezier(0.32,0.72,0,1); z-index: 50; }
   .gear-menu.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
-  .gear-menu-item { display: flex; align-items: center; gap: 9px; padding: 13px 16px; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.1s; white-space: nowrap; }
-  .gear-menu-item:not(:last-child) { border-bottom: 1px solid var(--border-light); }
-  .gear-menu-item:active { background: var(--primary-bg); }
+  .gear-menu-item { display: flex; align-items: center; gap: 9px; padding: 13px 16px; font-size: 14px; font-weight: 600; color: #1a3a2e; cursor: pointer; transition: background 0.1s; white-space: nowrap; }
+  .gear-menu-item:not(:last-child) { border-bottom: 1px solid #e8f8f1; }
+  .gear-menu-item:active { background: #f3fdf8; }
   /* hide old actions */
   .header-actions { display: none; }
   .icon-btn { display: none; }
 
   /* ── TABS ── */
-  .tabs { display: flex; gap: 0; background: rgba(255,255,255,0.15); border-radius: 12px 12px 0 0; padding: 4px 4px 0; }
-  .tab { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.65); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; position: relative; border-radius: 10px 10px 0 0; }
-  .tab.active { color: #fff; border-bottom-color: #fff; background: rgba(255,255,255,0.18); }
+  .tabs { display: flex; gap: 0; background: rgba(0,0,0,0.15); border-radius: 12px 12px 0 0; padding: 4px 4px 0; }
+  .tab { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.55); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; position: relative; border-radius: 10px 10px 0 0; }
+  .tab.active { color: #fff; border-bottom-color: #fff; background: rgba(0,0,0,0.12); }
   .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; background: rgba(255,255,255,0.3); color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; margin-left: 5px; vertical-align: middle; }
   .tab.active .tab-badge { background: #fff; color: var(--primary-dark); }
 
@@ -71,18 +71,20 @@
   .trade-card-left { flex: 1; min-width: 0; }
   .trade-card-date { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
   /* Buy card main row */
-  .trade-card-rate { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
-  .trade-card-rate span { font-size: 12px; font-weight: 500; color: var(--text2); margin-left: 2px; }
-  .trade-card-qty { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: 'DM Mono', monospace; }
-  .trade-card-total-inline { font-size: 14px; font-weight: 700; color: var(--primary-dark); margin-top: 2px; }
+  .trade-card-buy-row { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; flex-wrap: nowrap; }
+  .buy-field { display: flex; flex-direction: column; align-items: flex-start; }
+  .buy-field-label { font-size: 10px; color: var(--text3); font-weight: 600; margin-bottom: 1px; }
+  .buy-field-val { font-size: 14px; font-weight: 700; color: var(--text); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .buy-field-val.total { color: var(--primary-dark); }
+  .buy-field-sep { width: 1px; height: 28px; background: var(--border-light); align-self: center; flex-shrink: 0; }
   /* Done card */
   .trade-card-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 5px; }
   .info-cell { display: flex; flex-direction: column; }
   .info-label { font-size: 10px; color: var(--text3); font-weight: 600; }
   .info-val { font-size: 13px; font-weight: 700; color: var(--text); font-family: 'DM Mono', monospace; }
   .info-val.total { color: var(--primary-dark); }
-  .info-val.pnl-positive { color: var(--success); }
-  .info-val.pnl-negative { color: var(--danger); }
+  .info-val.pnl-positive { color: #e03131; }
+  .info-val.pnl-negative { color: #1971c2; }
   .del-btn { width: 30px; height: 30px; border-radius: 8px; background: #FEE2E2; border: none; color: var(--danger); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
   .del-btn:active { transform: scale(0.9); background: #FECACA; }
 
@@ -413,9 +415,22 @@ function renderList() {
       return `<div class="trade-card" data-id="${t.id}">
         <div class="trade-card-left">
           <div class="trade-card-date">${fmtDate(t.buyDate)}</div>
-          <div class="trade-card-rate">${fmtNum(t.buyRate)}<span>원</span></div>
-          <div class="trade-card-qty">$${fmtNum(t.buyQty)}</div>
-          <div class="trade-card-total-inline">${fmtKrw(total)}</div>
+          <div class="trade-card-buy-row">
+            <div class="buy-field">
+              <div class="buy-field-label">매수가</div>
+              <div class="buy-field-val">${fmtNum(t.buyRate)}원</div>
+            </div>
+            <div class="buy-field-sep"></div>
+            <div class="buy-field">
+              <div class="buy-field-label">수량</div>
+              <div class="buy-field-val">$${fmtNum(t.buyQty)}</div>
+            </div>
+            <div class="buy-field-sep"></div>
+            <div class="buy-field">
+              <div class="buy-field-label">총 금액</div>
+              <div class="buy-field-val total">${fmtKrw(total)}</div>
+            </div>
+          </div>
         </div>
         <button class="del-btn" data-del="${t.id}" aria-label="삭제">✕</button>
       </div>`;
