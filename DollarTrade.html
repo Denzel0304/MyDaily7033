@@ -51,7 +51,7 @@
   .icon-btn { display: none; }
 
   /* ── TABS ── */
-  .tabs { display: flex; gap: 6px; background: rgba(0,0,0,0.25); border-radius: 12px 12px 0 0; padding: 6px 6px 0; }
+  .tabs { display: flex; gap: 6px; background: transparent; border-radius: 12px 12px 0 0; padding: 6px 6px 0; }
   .tab { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.5); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; position: relative; border-radius: 10px 10px 0 0; background: rgba(0,0,0,0.10); }
   .tab.active { color: var(--primary-dark); border-bottom-color: var(--primary-dark); background: #ffffff; font-weight: 700; }
   .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; background: rgba(255,255,255,0.25); color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; margin-left: 5px; vertical-align: middle; }
@@ -511,10 +511,16 @@ function openSheet(id = null) {
     btnRow.style.display = 'flex';
     saveBtn.textContent = '수정 저장';
 
+    // 매수 수량 비활성화 (수량은 변경 불가)
+    const buyQtyInput = document.getElementById('buyQty');
+    buyQtyInput.disabled = true;
+    buyQtyInput.style.opacity = '0.5';
+    buyQtyInput.style.cursor = 'not-allowed';
+
     // 완료된 거래면 수정저장 버튼 및 매도완료 버튼 모두 숨기기
     if (t && t.sold) {
       sellBtn.style.display = 'none';
-      btnRow.style.display = 'none'; // 수정저장 버튼 숨김
+      btnRow.style.display = 'none';
     } else {
       sellBtn.style.display = '';
     }
@@ -523,12 +529,22 @@ function openSheet(id = null) {
     document.getElementById('sellDateLabel').textContent = fmtDate(sd);
     document.getElementById('sellDateBtn').dataset.date = sd;
     document.getElementById('sellRate').value = t.sellRate || '';
-    document.getElementById('sellQty').value = t.sellQty || t.buyQty || '';
+
+    // 매도 수량은 매수 수량으로 고정 + 비활성화
+    const sellQtyInput = document.getElementById('sellQty');
+    sellQtyInput.value = t.buyQty;
+    sellQtyInput.disabled = true;
+    sellQtyInput.style.opacity = '0.5';
+    sellQtyInput.style.cursor = 'not-allowed';
   } else {
     sellSection.style.display = 'none';
     sellBtn.style.display = 'none';
     btnRow.style.display = 'flex';
     saveBtn.textContent = '저장';
+    // 새 매수 시 필드 활성화 초기화
+    document.getElementById('buyQty').disabled = false;
+    document.getElementById('buyQty').style.opacity = '';
+    document.getElementById('buyQty').style.cursor = '';
   }
 
   sheetOverlay.classList.add('visible');
@@ -584,13 +600,7 @@ document.getElementById('sellBtn').addEventListener('click', () => {
   const sellDate = document.getElementById('sellDateBtn').dataset.date;
   if (!sellRate || !sellQty || !sellDate) { showToast('매도 정보를 모두 입력해주세요.'); return; }
 
-  // 매수수량과 매도수량 일치 확인
   const t = trades.find(x=>x.id===editingId);
-  if (sellQty !== t.buyQty) {
-    showToast('전액 매도만 가능합니다.');
-    return;
-  }
-
   t.sellRate = sellRate; t.sellQty = sellQty; t.sellDate = sellDate; t.sold = true;
   saveData(); renderList();
   closeSheetOnly();
