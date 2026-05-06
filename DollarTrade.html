@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>DollarTrade</title>
+<title>Dollar Trade</title>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #F97316;
-    --primary-light: #FED7AA;
-    --primary-dark: #EA580C;
-    --primary-bg: #FFF7ED;
-    --accent: #FB923C;
+    --primary: #10b981;
+    --primary-light: #a7f3d0;
+    --primary-dark: #059669;
+    --primary-bg: #f0fdf9;
+    --accent: #34d399;
     --surface: #FFFFFF;
-    --surface2: #FFF7ED;
-    --border: #FDBA74;
-    --border-light: #FEE4C7;
-    --text: #1C1917;
-    --text2: #78716C;
-    --text3: #A8A29E;
+    --surface2: #f0fdf9;
+    --border: #6ee7b7;
+    --border-light: #d1fae5;
+    --text: #0f2d24;
+    --text2: #4b7a68;
+    --text3: #84b0a0;
     --danger: #EF4444;
-    --success: #22C55E;
+    --success: #059669;
     --radius: 16px;
     --radius-sm: 10px;
-    --shadow: 0 4px 24px rgba(249,115,22,0.10);
-    --shadow-md: 0 8px 32px rgba(249,115,22,0.15);
+    --shadow: 0 4px 24px rgba(16,185,129,0.10);
+    --shadow-md: 0 8px 32px rgba(16,185,129,0.15);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; font-family: 'Pretendard', sans-serif; background: var(--primary-bg); color: var(--text); overflow: hidden; }
@@ -33,12 +33,12 @@
   #app { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; background: var(--surface); position: relative; overflow: hidden; }
 
   /* ── HEADER ── */
-  header { background: var(--surface); padding: 16px 20px 0; border-bottom: 1.5px solid var(--border-light); }
-  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .logo { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 6px; }
+  header { background: var(--surface); padding: 14px 20px 0; border-bottom: 1.5px solid var(--border-light); }
+  .header-top { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 10px; }
+  .logo { font-size: 20px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 6px; justify-content: center; }
   .logo-icon { font-size: 22px; }
-  .header-actions { display: flex; gap: 8px; }
-  .icon-btn { background: var(--primary-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 7px 10px; font-size: 13px; color: var(--primary-dark); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
+  .header-actions { display: flex; gap: 8px; margin-top: 8px; width: 100%; justify-content: center; }
+  .icon-btn { background: var(--primary-bg); border: 1.5px solid var(--border); border-radius: 10px; padding: 7px 12px; font-size: 13px; color: var(--primary-dark); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; white-space: nowrap; }
   .icon-btn:active { transform: scale(0.96); background: var(--primary-light); }
 
   /* ── TABS ── */
@@ -76,7 +76,7 @@
   .pnl-negative { color: var(--danger) !important; }
 
   /* ── FAB ── */
-  .fab { position: absolute; bottom: 28px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--primary-dark)); border: none; color: #fff; font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 20px rgba(249,115,22,0.45); transition: all 0.2s; z-index: 10; }
+  .fab { position: absolute; bottom: 28px; right: 20px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--primary-dark)); border: none; color: #fff; font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,0.45); transition: all 0.2s; z-index: 10; }
   .fab:active { transform: scale(0.92); }
 
   /* ── OVERLAY ── */
@@ -106,7 +106,7 @@
   .divider { height: 1.5px; background: var(--border-light); margin: 18px 0; border-radius: 1px; }
   .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), var(--primary-dark)); border: none; border-radius: var(--radius-sm); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; margin-top: 4px; }
   .btn-primary:active { transform: scale(0.98); }
-  .btn-sell { background: linear-gradient(135deg, #34D399, #059669); margin-top: 8px; }
+  .btn-sell { background: linear-gradient(135deg, #20e3b2, #0d9488); margin-top: 8px; }
   .btn-row { display: flex; gap: 10px; }
   .btn-outline { flex: 1; padding: 14px; background: var(--primary-bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--primary-dark); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
   .btn-outline:active { background: var(--primary-light); }
@@ -159,7 +159,7 @@
   <!-- HEADER -->
   <header>
     <div class="header-top">
-      <div class="logo"><span class="logo-icon">💵</span> DollarTrade</div>
+      <div class="logo"><span class="logo-icon">💵</span> Dollar Trade</div>
       <div class="header-actions">
         <button class="icon-btn" id="exportBtn">📤 내보내기</button>
         <button class="icon-btn" id="importBtn">📥 가져오기</button>
