@@ -52,7 +52,8 @@
 
   /* ── TABS ── */
   .tabs { display: flex; gap: 6px; background: transparent; border-radius: 12px 12px 0 0; padding: 6px 6px 0; }
-  .tab { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.5); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; position: relative; border-radius: 10px 10px 0 0; background: rgba(0,0,0,0.10); }
+  .tab { flex: 1; text-align: center; padding: 9px 0 11px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; position: relative; border-radius: 10px 10px 0 0; background: rgba(52,211,153,0.35); }
+  .tab[data-tab="done"] { background: rgba(239,108,78,0.55); }
   .tab.active { color: var(--primary-dark); border-bottom-color: var(--primary-dark); background: #ffffff; font-weight: 700; }
   .tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; background: rgba(255,255,255,0.25); color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; margin-left: 5px; vertical-align: middle; }
   .tab.active .tab-badge { background: var(--primary); color: #fff; }
@@ -66,7 +67,7 @@
   .empty-sub { font-size: 13px; }
 
   /* ── TRADE CARD ── */
-  .trade-card { background: var(--surface); border: 1.5px solid var(--border-light); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 8px rgba(16,185,129,0.06); position: relative; }
+  .trade-card { background: var(--surface); border: 1.5px solid #34d399; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 8px rgba(16,185,129,0.06); position: relative; }
   .trade-card:active { transform: scale(0.985); box-shadow: var(--shadow); }
   .trade-card-left { flex: 1; min-width: 0; }
   .trade-card-date { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
@@ -591,6 +592,7 @@ function openSheet(id = null) {
   }
 
   sheetOverlay.classList.add('visible');
+  sheet.scrollTop = 0;
   requestAnimationFrame(() => sheet.classList.add('open'));
   pushState(1);
 }
