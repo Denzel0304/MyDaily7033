@@ -1193,6 +1193,33 @@
     line-height: 1.5;
     word-break: break-word;
   }
+  .take-med-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+  }
+  .take-med-row .med-name {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .take-med-del {
+    background: none;
+    border: none;
+    color: #c8c8c8;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+    transition: background 0.12s, color 0.12s;
+  }
+  .take-med-del:hover {
+    color: var(--danger);
+    background: #fdeaea;
+  }
   .take-time {
     font-size: 0.92rem;
     color: var(--sky-deep);
@@ -2900,15 +2927,18 @@ function buildTakeDayGroup(day, dayBundles, allDone) {
   dayBundles.forEach(bundle => {
     const bEl = makeEl('div', 'take-bundle' + (bundle.checked ? ' checked' : ''));
     const medListHtml = (bundle.meds || []).map(m =>
-      `<div>• ${escHtml(m.name)}</div>`
+      `<div class="take-med-row">
+         <span class="med-name">• ${escHtml(m.name)}</span>
+         <button class="take-med-del" onclick="event.stopPropagation(); deleteTakeMed('${bundle.id}','${m.id}')" title="이 약만 삭제">✕</button>
+       </div>`
     ).join('');
     const srcHtml = bundle.sourceLabel
       ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:5px">📌 ${escHtml(bundle.sourceLabel)}</div>`
       : '';
     bEl.innerHTML = `
       <button class="take-check${bundle.checked ? ' checked' : ''}" onclick="toggleTake('${bundle.id}')">${bundle.checked ? '✓' : ''}</button>
-      <div class="take-bundle-info" onclick="openTakeEdit('${bundle.id}')" style="cursor:pointer">
-        <div class="take-time">⏰ ${escHtml(bundle.time || '')}</div>
+      <div class="take-bundle-info">
+        <div class="take-time" onclick="openTakeEdit('${bundle.id}')" style="cursor:pointer">⏰ ${escHtml(bundle.time || '')}</div>
         <div class="take-med-list">${medListHtml}</div>
         ${srcHtml}
       </div>
@@ -2921,6 +2951,32 @@ function buildTakeDayGroup(day, dayBundles, allDone) {
 function toggleTakeDayCollapse(day) {
   takeDayCollapsed[day] = !takeDayCollapsed[day];
   renderTakes();
+}
+
+// 묶음 안의 특정 약 1개만 삭제 (마지막 약이면 묶음 자체 삭제)
+function deleteTakeMed(bundleId, medId) {
+  const bundle = takeBundles.find(b => b.id === bundleId);
+  if (!bundle) return;
+  const med = (bundle.meds || []).find(m => m.id === medId);
+  if (!med) return;
+
+  const isLast = (bundle.meds || []).length <= 1;
+  document.getElementById('confirmTitle').textContent = '약 삭제';
+  document.getElementById('confirmMsg').textContent = isLast
+    ? `"${med.name || '이 약'}" 을(를) 삭제하면 이 시간(${bundle.time || ''}) 묶음도 함께 사라져요.\n계속할까요?`
+    : `"${med.name || '이 약'}" 을(를) 이 묶음에서 삭제할까요?\n삭제 후 복구할 수 없어요.`;
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (!yes) return;
+    if (isLast) {
+      // 마지막 약 → 묶음 통째로 제거
+      takeBundles = takeBundles.filter(b => b.id !== bundleId);
+    } else {
+      bundle.meds = bundle.meds.filter(m => m.id !== medId);
+    }
+    saveToStorage();
+    renderTakes();
+  };
 }
 
 // 한 날짜의 모든 복약 묶음을 삭제
