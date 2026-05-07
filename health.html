@@ -2833,13 +2833,9 @@ let takeDayCollapsed = {};
 
 function renderTakes() {
   const list = [...takeBundles];
-  // 1차 정렬: 날짜 오름차순(빠른 날짜가 위)
-  // 같은 날짜 안에서는 → createdAt 내림차순(나중에 등록한 묶음이 위)
-  // 같은 묶음(=같은 createdAt) 안에서는 → 시간 오름차순
+  // 정렬: 날짜 오름차순(빠른 날짜가 위), 같은 날짜 안에서는 시간 오름차순(빠른 시간이 위)
   list.sort((a, b) => {
     if (a.day !== b.day) return (a.day || '').localeCompare(b.day || '');
-    const ca = a.createdAt || 0, cb = b.createdAt || 0;
-    if (ca !== cb) return cb - ca; // 나중에 등록한 것이 위로
     return (a.time || '').localeCompare(b.time || '');
   });
   // 날짜별 그룹화 (등장 순서 유지 = 빠른 날짜부터)
