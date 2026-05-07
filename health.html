@@ -2599,7 +2599,7 @@ function openTakeEdit(id) {
     document.getElementById('editModalTitle').textContent = '새 복약';
     takeDraft = {
       day: todayStr(),
-      duration: 1,
+      duration: '',
       times: ['08:00'],
       meds: [{ id: newId(), name: '' }],
       sourceLabel: '',
@@ -2727,9 +2727,11 @@ function renderTakeEditBody() {
   // 복용 일수 (신규일 때만)
   if (!takeDraft.isEditing) {
     const dayCntGroup = makeEl('div', 'form-group');
+    const durVal = (takeDraft.duration === '' || takeDraft.duration === undefined || takeDraft.duration === null) ? '' : takeDraft.duration;
     dayCntGroup.innerHTML = `<label class="form-label">📆 복용 일수</label>
       <div style="display:flex;align-items:center;gap:8px">
-        <input type="number" min="1" max="60" class="take-day-count" value="${takeDraft.duration}" oninput="takeDraft.duration=parseInt(this.value)||1">
+        <input type="number" min="1" max="60" class="take-day-count" value="${durVal}" placeholder="숫자"
+               oninput="takeDraft.duration=this.value===''?'':(parseInt(this.value)||'')">
         <span style="color:var(--text-muted);font-size:0.85rem">일치</span>
       </div>`;
     body.appendChild(dayCntGroup);
@@ -2827,7 +2829,12 @@ function saveTake() {
     }
   } else {
     // 신규: duration일 × times회
-    const duration = Math.max(1, parseInt(takeDraft.duration) || 1);
+    const durVal = parseInt(takeDraft.duration);
+    if (!durVal || durVal < 1) {
+      showAlert('복용 일수 필요', '복용 일수를 입력해주세요.');
+      return;
+    }
+    const duration = Math.max(1, durVal);
     const groupId = newId();
     const startD = new Date(takeDraft.day + 'T00:00:00');
     for (let i = 0; i < duration; i++) {
