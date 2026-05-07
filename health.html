@@ -1184,7 +1184,17 @@
     color: var(--text);
     padding: 2px 0;
     outline: none;
-    width: 78px;
+    width: 95px;
+    min-width: 95px;
+  }
+  .dose-time-chip input[type="time"]:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+  .dose-time-chip.disabled {
+    background: #f0f0f0;
+    border-color: #ddd;
+    opacity: 0.75;
   }
   .dose-time-chip-del {
     background: none;
@@ -1196,6 +1206,11 @@
     line-height: 1;
   }
   .dose-time-chip-del:hover { color: var(--danger); }
+  .dose-time-chip-del:disabled {
+    color: #ddd;
+    cursor: not-allowed;
+  }
+  .dose-time-chip-del:disabled:hover { color: #ddd; }
   .dose-time-add {
     background: white;
     border: 1.5px dashed var(--border);
@@ -1226,6 +1241,61 @@
     border-style: solid;
   }
 
+  /* 투약/메모 섹션 접기/펴기 */
+  .section-collapse-btn {
+    background: none;
+    border: none;
+    color: var(--sky-deep);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .section-collapse-btn.collapsed {
+    transform: rotate(-90deg);
+  }
+  .section-block.collapsed .section-block-body {
+    display: none;
+  }
+  .section-block.collapsed .section-block-header {
+    border-bottom: none;
+  }
+  .section-block-summary {
+    display: none;
+    padding: 6px 12px 8px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    background: #fafdff;
+    border-top: 1px dashed var(--border);
+  }
+  .section-block.collapsed .section-block-summary {
+    display: block;
+  }
+  .section-block.collapsed .section-block-summary:empty {
+    display: none;
+  }
+
+  /* 복약 묶음 헤더의 X 버튼 */
+  .take-day-delete {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 4px;
+    margin-left: 8px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .take-day-delete:hover { color: var(--danger); }
+  .take-day-header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -1253,7 +1323,7 @@
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="병명 / 병원 / 약 검색..." oninput="renderList()">
   </div>
-  <div class="sort-info" id="doseSortInfo">🕒 최신순</div>
+  <div class="sort-info" id="doseSortInfo">🕒 날짜순</div>
   <div class="recipe-list" id="recipeList"></div>
   <div class="empty-state" id="emptyState" style="display:none">
     <div class="emoji">💊</div>
@@ -1263,7 +1333,7 @@
 
 <!-- MAIN: 복약 탭 -->
 <div class="main-container" id="takeView" style="display:none">
-  <div class="sort-info">🕒 최신순</div>
+  <div class="sort-info">🕒 날짜순</div>
   <div class="take-list" id="takeList"></div>
   <div class="empty-state" id="takeEmptyState" style="display:none">
     <div class="emoji">⏰</div>
@@ -1517,8 +1587,8 @@ function renderList() {
     });
   }
 
-  // 최신순 (startDate desc, 없으면 id 기반)
-  list.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+  // 날짜순 (startDate asc - 빠른 날짜가 위)
+  list.sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
 
   const container = document.getElementById('recipeList');
   container.innerHTML = '';
@@ -1710,55 +1780,118 @@ function renderSections() {
   const container = document.getElementById('sectionsContainer');
   if (!container) return;
   container.innerHTML = '';
+
+  // 메모/투약 별도 넘버링용 카운터
+  let doseNum = 0;
+  let memoNum = 0;
+
   editSections.forEach((sec, sIdx) => {
     const block = makeEl('div', 'section-block');
     block.dataset.secId = sec.id;
     block.dataset.secIdx = sIdx;
+    if (sec.collapsed) block.classList.add('collapsed');
 
     if (sec.type === 'sauce') {
-      // 투약 섹션: 헤더에 [드래그] [💊] [병원입력+별] [묶음별] [✕]
+      doseNum++;
+      // 투약 섹션: 헤더에 [드래그] [▼/▶ 토글] [💊 투약 N] [병원입력+별] [묶음별] [✕]
       const hospStarFilled = sec.hospStarred ? ' filled' : '';
       const groupStarFilled = sec.starred ? ' filled' : '';
+      const collapsedClass = sec.collapsed ? ' collapsed' : '';
       block.innerHTML = `
         <div class="section-block-header">
           <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
-          <div class="section-block-header-inner" style="padding-right:8px">
-            <span style="font-size:1rem">💊</span>
+          <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
+          <div class="section-block-header-inner" style="padding-right:8px;padding-left:0">
+            <span style="font-size:0.78rem;font-weight:700;color:var(--sky-deep);white-space:nowrap">💊 투약 ${doseNum}</span>
             <button class="dose-hosp-star${hospStarFilled}" onclick="toggleHospStar(${sIdx})" title="이 병원에 효과">★</button>
             <input class="dose-hosp-input" placeholder="병원 이름" value="${escHtml(sec.title || '')}" oninput="editSections[${sIdx}].title=this.value">
             <button class="dose-group-star${groupStarFilled}" onclick="toggleGroupStar(${sIdx})" title="이 투약에 효과">★</button>
             <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
           </div>
         </div>
+        <div class="section-block-summary" id="secSummary-${sec.id}"></div>
         <div class="section-block-body" id="secBody-${sec.id}"></div>
       `;
     } else {
-      // 메모 (기존 그대로)
-      const defaultTitle = `메모 ${sIdx+1}`;
+      memoNum++;
+      // 메모: [드래그] [▼/▶ 토글] [📝 제목] [✕]
+      const defaultTitle = `메모 ${memoNum}`;
       const displayTitle = sec.title || defaultTitle;
+      const collapsedClass = sec.collapsed ? ' collapsed' : '';
       block.innerHTML = `
         <div class="section-block-header">
           <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
-          <div class="section-block-header-inner">
+          <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
+          <div class="section-block-header-inner" style="padding-left:0">
             <span style="font-size:1rem">📝</span>
             <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
-            <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
+            <button class="btn-remove-section" onclick="removeMemoSection(${sIdx})" title="삭제">✕</button>
           </div>
         </div>
+        <div class="section-block-summary" id="secSummary-${sec.id}"></div>
         <div class="section-block-body" id="secBody-${sec.id}"></div>
       `;
     }
 
     container.appendChild(block);
     renderSectionBody(sec, sIdx);
+    renderSectionSummary(sec, sIdx);
   });
 
-  // 포인터 기반 드래그 정렬 등록
+  // 포인터 기반 드래그 정렬 등록 (투약/메모 모두 가능)
   setupSortable(container, '.section-block', '.section-drag-handle', (from, to) => {
     const [moved] = editSections.splice(from, 1);
     editSections.splice(to, 0, moved);
     renderSections();
   });
+}
+
+// 접힌 상태일 때 표시할 요약 텍스트
+function renderSectionSummary(sec, sIdx) {
+  const el = document.getElementById('secSummary-' + sec.id);
+  if (!el) return;
+  if (sec.type === 'sauce') {
+    const meds = (sec.rows || []).map(r => (r.name || '').trim()).filter(Boolean);
+    const medText = meds.length ? meds.join(', ') : '(약 없음)';
+    const dateText = sec.date ? `📅 ${fmtDate(sec.date)}` : '';
+    const regBadge = sec.registered ? ' · ✓ 등록됨' : '';
+    el.textContent = `${dateText} · ${medText}${regBadge}`;
+  } else {
+    const txt = (sec.content || '').trim();
+    if (!txt) {
+      el.textContent = '';
+    } else {
+      const firstLine = txt.split('\n')[0];
+      el.textContent = firstLine.length > 40 ? firstLine.slice(0, 40) + '…' : firstLine;
+    }
+  }
+}
+
+function toggleSectionCollapse(sIdx) {
+  editSections[sIdx].collapsed = !editSections[sIdx].collapsed;
+  renderSections();
+}
+
+// 메모 삭제: 내용이 있으면 확인 모달, 없으면 즉시 삭제
+function removeMemoSection(sIdx) {
+  const sec = editSections[sIdx];
+  if (!sec) return;
+  const hasContent = (sec.content || '').trim().length > 0 || (sec.title || '').trim().length > 0;
+  if (!hasContent) {
+    editSections.splice(sIdx, 1);
+    renderSections();
+    return;
+  }
+  // 확인 모달
+  document.getElementById('confirmTitle').textContent = '메모 삭제';
+  document.getElementById('confirmMsg').textContent = '이 메모를 삭제할까요?\n삭제 후 복구할 수 없어요.';
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      editSections.splice(sIdx, 1);
+      renderSections();
+    }
+  };
 }
 
 function toggleHospStar(sIdx) {
@@ -1776,12 +1909,19 @@ function renderSectionBody(sec, sIdx) {
   body.innerHTML = '';
 
   if (sec.type === 'sauce') {
+    const isReg = !!sec.registered;
     // 처방일 (날짜) 버튼 - 기본은 발병일과 같음
     if (!sec.date) sec.date = editStartDate || todayStr();
     const dateBtn = makeEl('button', 'dose-section-date');
     dateBtn.type = 'button';
     dateBtn.innerHTML = `📅 처방일: <span data-date>${fmtDate(sec.date)}</span>`;
-    dateBtn.onclick = () => openCalendarFor('section', sIdx, null);
+    if (isReg) {
+      dateBtn.disabled = true;
+      dateBtn.style.opacity = '0.6';
+      dateBtn.style.cursor = 'not-allowed';
+    } else {
+      dateBtn.onclick = () => openCalendarFor('section', sIdx, null);
+    }
     body.appendChild(dateBtn);
 
     // Rows (약 이름만)
@@ -1790,17 +1930,21 @@ function renderSectionBody(sec, sIdx) {
       const rowEl = makeMedRow(sec, sIdx, row, rIdx);
       body.appendChild(rowEl);
     });
-    const addRowBtn = makeEl('button', 'btn-add-row');
-    addRowBtn.textContent = '+ 약 추가';
-    addRowBtn.onclick = () => {
-      sec.rows.push({ id: newId(), name: '' });
-      renderSectionBody(sec, sIdx);
-    };
-    body.appendChild(addRowBtn);
+    if (!isReg) {
+      const addRowBtn = makeEl('button', 'btn-add-row');
+      addRowBtn.textContent = '+ 약 추가';
+      addRowBtn.onclick = () => {
+        sec.rows.push({ id: newId(), name: '' });
+        renderSectionBody(sec, sIdx);
+      };
+      body.appendChild(addRowBtn);
+    }
 
     // 1일 N회 + 시간들 입력
     if (!sec.dailyTimes) sec.dailyTimes = ['08:00'];
-    if (!sec.duration) sec.duration = 1;
+    // sec.duration 은 명시적으로 설정되지 않은 경우 빈칸 (사용자가 입력)
+    if (sec.duration === undefined) sec.duration = '';
+    const disAttr = isReg ? 'disabled' : '';
     const timesWrap = makeEl('div', 'dose-times-wrap');
     timesWrap.style.marginTop = '10px';
     timesWrap.innerHTML = `
@@ -1811,8 +1955,9 @@ function renderSectionBody(sec, sIdx) {
       <div class="dose-times-row" id="timesRow-${sec.id}"></div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
         <span class="dose-times-label">📆 복용 일수</span>
-        <input type="number" min="1" max="60" value="${sec.duration}" oninput="editSections[${sIdx}].duration=parseInt(this.value)||1"
-               style="width:60px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-family:'Noto Sans KR',sans-serif;font-size:0.85rem;outline:none">
+        <input type="number" min="1" max="60" value="${sec.duration === '' ? '' : sec.duration}" placeholder="숫자" ${disAttr}
+               oninput="editSections[${sIdx}].duration=this.value===''?'':parseInt(this.value)||''"
+               style="width:60px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-family:'Noto Sans KR',sans-serif;font-size:0.85rem;outline:none${isReg ? ';background:#f0f0f0;color:#888;cursor:not-allowed' : ''}">
         <span style="font-size:0.78rem;color:var(--text-muted)">일</span>
       </div>
     `;
@@ -1859,45 +2004,58 @@ function renderDoseTimes(sec, sIdx) {
   const row = document.getElementById('timesRow-' + sec.id);
   if (!row) return;
   row.innerHTML = '';
+  const isReg = !!sec.registered;
   sec.dailyTimes.forEach((t, i) => {
-    const chip = makeEl('div', 'dose-time-chip');
+    const chip = makeEl('div', 'dose-time-chip' + (isReg ? ' disabled' : ''));
     chip.innerHTML = `
-      <input type="time" value="${escHtml(t)}" data-i="${i}">
-      <button class="dose-time-chip-del" title="삭제">✕</button>
+      <input type="time" value="${escHtml(t)}" data-i="${i}" ${isReg ? 'disabled' : ''}>
+      <button class="dose-time-chip-del" title="삭제" ${isReg ? 'disabled' : ''}>✕</button>
     `;
-    chip.querySelector('input').addEventListener('input', e => {
-      sec.dailyTimes[i] = e.target.value;
-    });
-    chip.querySelector('button').addEventListener('click', () => {
-      if (sec.dailyTimes.length <= 1) {
-        showAlert('알림', '최소 1개의 시간이 필요해요.');
-        return;
-      }
-      sec.dailyTimes.splice(i, 1);
-      renderSectionBody(sec, sIdx);
-    });
+    if (!isReg) {
+      chip.querySelector('input').addEventListener('input', e => {
+        sec.dailyTimes[i] = e.target.value;
+      });
+      chip.querySelector('button').addEventListener('click', () => {
+        if (sec.dailyTimes.length <= 1) {
+          showAlert('알림', '최소 1개의 시간이 필요해요.');
+          return;
+        }
+        sec.dailyTimes.splice(i, 1);
+        renderSectionBody(sec, sIdx);
+      });
+    }
     row.appendChild(chip);
   });
-  const addBtn = makeEl('button', 'dose-time-add');
-  addBtn.type = 'button';
-  addBtn.textContent = '+ 시간';
-  addBtn.onclick = () => {
-    sec.dailyTimes.push('12:00');
-    renderSectionBody(sec, sIdx);
-  };
-  row.appendChild(addBtn);
+  if (!isReg) {
+    const addBtn = makeEl('button', 'dose-time-add');
+    addBtn.type = 'button';
+    addBtn.textContent = '+ 시간';
+    addBtn.onclick = () => {
+      sec.dailyTimes.push('12:00');
+      renderSectionBody(sec, sIdx);
+    };
+    row.appendChild(addBtn);
+  }
 }
 
 function makeMedRow(sec, sIdx, row, rIdx) {
   // sauce-row 클래스 + med-row 추가하면 amount/unit 자동 숨김
   const rowEl = makeEl('div', 'sauce-row med-row');
   rowEl.dataset.rIdx = rIdx;
+  const isReg = !!sec.registered;
 
-  rowEl.innerHTML = `
-    <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
-    <input class="sauce-name" type="text" placeholder="약 이름" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
-    <button class="sauce-del" onclick="removeMedRow(${sIdx},${rIdx})" title="삭제">✕</button>
-  `;
+  if (isReg) {
+    rowEl.innerHTML = `
+      <span class="sauce-drag" style="opacity:0.4;cursor:not-allowed" title="등록된 투약은 변경할 수 없어요">☰</span>
+      <input class="sauce-name" type="text" placeholder="약 이름" value="${escHtml(row.name||'')}" disabled style="background:#f0f0f0;color:#666;cursor:not-allowed">
+    `;
+  } else {
+    rowEl.innerHTML = `
+      <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
+      <input class="sauce-name" type="text" placeholder="약 이름" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
+      <button class="sauce-del" onclick="removeMedRow(${sIdx},${rIdx})" title="삭제">✕</button>
+    `;
+  }
 
   return rowEl;
 }
@@ -1922,6 +2080,8 @@ function addSection(type) {
     date: editStartDate || todayStr(),
     rows: type === 'sauce' ? [{ id: newId(), name: '' }] : undefined,
     content: type === 'memo' ? '' : undefined,
+    collapsed: false,
+    ...(type === 'sauce' ? { duration: '' } : {}),
   });
   renderSections();
   // Scroll to bottom
@@ -2193,7 +2353,12 @@ function sendSectionToTake(sIdx) {
     showAlert('시간 없음', '복용 시간을 1개 이상 설정해주세요.');
     return;
   }
-  const duration = Math.max(1, parseInt(sec.duration) || 1);
+  const durationVal = parseInt(sec.duration);
+  if (!durationVal || durationVal < 1) {
+    showAlert('복용 일수 필요', '복용 일수를 입력해주세요.');
+    return;
+  }
+  const duration = Math.max(1, durationVal);
 
   // 현재 dose 자동 저장 (dose 변경분과 sec.registered 같이 보존)
   const titleEl = document.getElementById('editTitle');
@@ -2440,15 +2605,12 @@ function toggleTake(id) {
 
 function renderTakes() {
   const list = [...takeBundles];
-  // 최신순 (createdAt desc, 없으면 day desc + time desc)
+  // 날짜순 (day asc - 빠른 날짜가 위), 같은 날짜는 시간 오름차순
   list.sort((a, b) => {
-    if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
-      return b.createdAt - a.createdAt;
-    }
-    if (a.day !== b.day) return b.day.localeCompare(a.day);
-    return (b.time || '').localeCompare(a.time || '');
+    if (a.day !== b.day) return (a.day || '').localeCompare(b.day || '');
+    return (a.time || '').localeCompare(b.time || '');
   });
-  // 날짜별 그룹화 (등장 순서 유지 = 최신 날짜부터)
+  // 날짜별 그룹화 (등장 순서 유지 = 빠른 날짜부터)
   const byDay = {};
   const dayOrder = [];
   list.forEach(b => {
@@ -2472,7 +2634,10 @@ function renderTakes() {
     dayGroup.innerHTML = `
       <div class="take-day-header">
         <span>${dayLabel}</span>
-        <span class="day-progress">${checkedCnt}/${dayBundles.length}</span>
+        <div class="take-day-header-right">
+          <span class="day-progress">${checkedCnt}/${dayBundles.length}</span>
+          <button class="take-day-delete" onclick="deleteTakeDay('${day}')" title="이 날짜 묶음 삭제">✕</button>
+        </div>
       </div>
     `;
     dayBundles.forEach(bundle => {
@@ -2490,12 +2655,27 @@ function renderTakes() {
           <div class="take-med-list">${medListHtml}</div>
           ${srcHtml}
         </div>
-        <button class="take-del" onclick="deleteTake('${bundle.id}')" title="삭제">✕</button>
       `;
       dayGroup.appendChild(bEl);
     });
     container.appendChild(dayGroup);
   });
+}
+
+// 한 날짜의 모든 복약 묶음을 삭제
+function deleteTakeDay(day) {
+  const cnt = takeBundles.filter(b => b.day === day).length;
+  if (cnt === 0) return;
+  document.getElementById('confirmTitle').textContent = '복약 묶음 삭제';
+  document.getElementById('confirmMsg').textContent = `${fmtDate(day)} 의 복약 ${cnt}개를 모두 삭제할까요?\n삭제 후 복구할 수 없어요.`;
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      takeBundles = takeBundles.filter(b => b.day !== day);
+      saveToStorage();
+      renderTakes();
+    }
+  };
 }
 
 // ══════════════════════════════════════════════
