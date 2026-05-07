@@ -347,8 +347,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    min-width: 38px;
+    width: 46px;
+    min-width: 46px;
     align-self: stretch;        /* 헤더 전체 높이만큼 터치 영역 확보 */
     cursor: grab;
     touch-action: none;
@@ -804,17 +804,6 @@
     flex-wrap: wrap;
   }
   .card-meta-row .meta-date { color: var(--sky-deep); font-weight: 600; }
-  .card-meta-row .meta-hospital {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    background: #fff7e0;
-    color: #b88820;
-    padding: 1px 7px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.72rem;
-  }
 
   /* ── DATE INPUT BUTTON (편집 모달) ── */
   .date-input-btn {
@@ -834,20 +823,6 @@
   }
   .date-input-btn:hover { border-color: var(--sky-dark); }
   .date-input-btn .date-icon { font-size: 1rem; }
-
-  /* ── DOSE GROUP STAR (투약 묶음, 병원 옆 별) ── */
-  .dose-group-star, .dose-hosp-star {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    color: #ddd;
-    padding: 2px 4px;
-    line-height: 1;
-    transition: color 0.15s, transform 0.12s;
-  }
-  .dose-group-star.filled, .dose-hosp-star.filled { color: #f5b842; }
-  .dose-group-star:hover, .dose-hosp-star:hover { transform: scale(1.15); }
 
   .dose-hosp-input {
     flex: 1;
@@ -1420,7 +1395,7 @@ const FILE_SIGNATURE = 'HEALTH_APP_V1';
 
 // 기존 recipes 변수명을 doses 로 의미 전환 (구조는 동일하게 sections 활용)
 // dose item: { id, title(병명), startDate(YYYY-MM-DD), sections:[
-//    {id, type:'sauce', title(병원명), starred(bool), hospStarred(bool), date(YYYY-MM-DD),
+//    {id, type:'sauce', title(병원명), date(YYYY-MM-DD),
 //     rows:[{id, name(약), starred(bool)}]}
 //   |{id, type:'memo', title, content}
 // ]}
@@ -1599,14 +1574,6 @@ function renderList() {
     card.className = 'recipe-card';
     card.dataset.id = dose.id;
 
-    // 별표한 병원 찾기 (sec.hospStarred true 인 sauce sec 의 title)
-    const starredHosp = (dose.sections || [])
-      .filter(s => s.type === 'sauce' && s.hospStarred && s.title)
-      .map(s => s.title);
-    const hospHtml = starredHosp.length
-      ? starredHosp.map(h => `<span class="meta-hospital">⭐ ${escHtml(h)}</span>`).join('')
-      : '';
-
     const dateHtml = dose.startDate ? `<span class="meta-date">📅 ${fmtDate(dose.startDate)}</span>` : '';
 
     card.innerHTML = `
@@ -1615,7 +1582,6 @@ function renderList() {
           <div class="card-title">${escHtml(dose.title || '병명 없음')}</div>
           <div class="card-meta-row">
             ${dateHtml}
-            ${hospHtml}
           </div>
         </div>
         <div class="card-actions">
@@ -1631,7 +1597,7 @@ function renderList() {
 // ══════════════════════════════════════════════
 //  EDIT MODAL
 // ══════════════════════════════════════════════
-let editSections = []; // [{id, type:'sauce'|'memo', rows|content, title, hospStarred, date}]
+let editSections = []; // [{id, type:'sauce'|'memo', rows|content, title, date}]
 let editStartDate = '';
 
 // ── 포인터 기반 드래그 정렬 (터치 + 마우스 통합) ──
@@ -1720,22 +1686,27 @@ function openEdit(id) {
   editingId = id;
   if (id) {
     const r = doses.find(x => x.id === id);
-    document.getElementById('editModalTitle').textContent = '병명 수정';
+    document.getElementById('editModalTitle').textContent = '투약 수정';
     editStartDate = r.startDate || todayStr();
     editSections = JSON.parse(JSON.stringify(r.sections || []));
+    // 편집 진입 시 모든 투약/메모 카드를 접어서 시작 (필요할 때만 펴서 보도록)
+    editSections.forEach(s => { s.collapsed = true; });
     renderEditBody(r.title || '');
   } else {
-    document.getElementById('editModalTitle').textContent = '새 병명';
+    document.getElementById('editModalTitle').textContent = '투약';
     editStartDate = todayStr();
     editSections = [];
     renderEditBody('');
   }
   openModal('editModal');
-  // 스크롤 항상 최상단으로
-  requestAnimationFrame(() => {
+  // 스크롤 항상 최상단으로 (한 번 더 보장)
+  const scrollToTop = () => {
     const body = document.getElementById('editBody');
     if (body) body.scrollTop = 0;
-  });
+  };
+  requestAnimationFrame(scrollToTop);
+  setTimeout(scrollToTop, 50);
+  setTimeout(scrollToTop, 200);
 }
 
 function closeEdit() {
@@ -1793,9 +1764,7 @@ function renderSections() {
 
     if (sec.type === 'sauce') {
       doseNum++;
-      // 투약 섹션: 헤더에 [드래그] [▼/▶ 토글] [💊 투약 N] [병원입력+별] [묶음별] [✕]
-      const hospStarFilled = sec.hospStarred ? ' filled' : '';
-      const groupStarFilled = sec.starred ? ' filled' : '';
+      // 투약 섹션: 헤더에 [드래그] [▼/▶ 토글] [💊 투약 N] [병원입력] [✕]
       const collapsedClass = sec.collapsed ? ' collapsed' : '';
       block.innerHTML = `
         <div class="section-block-header">
@@ -1803,9 +1772,7 @@ function renderSections() {
           <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
           <div class="section-block-header-inner" style="padding-right:8px;padding-left:0">
             <span style="font-size:0.78rem;font-weight:700;color:var(--sky-deep);white-space:nowrap">💊 투약 ${doseNum}</span>
-            <button class="dose-hosp-star${hospStarFilled}" onclick="toggleHospStar(${sIdx})" title="이 병원에 효과">★</button>
             <input class="dose-hosp-input" placeholder="병원 이름" value="${escHtml(sec.title || '')}" oninput="editSections[${sIdx}].title=this.value">
-            <button class="dose-group-star${groupStarFilled}" onclick="toggleGroupStar(${sIdx})" title="이 투약에 효과">★</button>
             <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
           </div>
         </div>
@@ -1894,15 +1861,6 @@ function removeMemoSection(sIdx) {
   };
 }
 
-function toggleHospStar(sIdx) {
-  editSections[sIdx].hospStarred = !editSections[sIdx].hospStarred;
-  renderSections();
-}
-function toggleGroupStar(sIdx) {
-  editSections[sIdx].starred = !editSections[sIdx].starred;
-  renderSections();
-}
-
 function renderSectionBody(sec, sIdx) {
   const body = document.getElementById('secBody-' + sec.id);
   if (!body) return;
@@ -1941,7 +1899,7 @@ function renderSectionBody(sec, sIdx) {
     }
 
     // 1일 N회 + 시간들 입력
-    if (!sec.dailyTimes) sec.dailyTimes = ['08:00'];
+    if (!sec.dailyTimes) sec.dailyTimes = ['09:00'];
     // sec.duration 은 명시적으로 설정되지 않은 경우 빈칸 (사용자가 입력)
     if (sec.duration === undefined) sec.duration = '';
     const disAttr = isReg ? 'disabled' : '';
@@ -2031,7 +1989,11 @@ function renderDoseTimes(sec, sIdx) {
     addBtn.type = 'button';
     addBtn.textContent = '+ 시간';
     addBtn.onclick = () => {
-      sec.dailyTimes.push('12:00');
+      // 추가 시간 시퀀스: 1번째=09:00, 2번째=13:00, 3번째=18:00, 4번째 이후=23:00
+      const nextIdx = sec.dailyTimes.length; // 추가될 위치(0-based) → 즉 (현재 길이)번째
+      const seq = ['09:00', '13:00', '18:00', '23:00'];
+      const next = seq[nextIdx] || '23:00';
+      sec.dailyTimes.push(next);
       renderSectionBody(sec, sIdx);
     };
     row.appendChild(addBtn);
@@ -2075,8 +2037,6 @@ function addSection(type) {
     id: newId(),
     type,
     title: '',
-    starred: false,
-    hospStarred: false,
     date: editStartDate || todayStr(),
     rows: type === 'sauce' ? [{ id: newId(), name: '' }] : undefined,
     content: type === 'memo' ? '' : undefined,
@@ -2171,11 +2131,45 @@ function saveCurrent() {
 function saveDose() {
   const titleEl = document.getElementById('editTitle');
   const title = titleEl.value.trim();
+
+  // 1) 병명 필수
   if (!title) {
     titleEl.focus();
     titleEl.style.borderColor = var_css('--danger');
     setTimeout(() => titleEl.style.borderColor = '', 1500);
+    showAlert('병명 필요', '병명을 입력해주세요.');
     return;
+  }
+
+  // 2) 투약 섹션이 최소 1개 있어야 함
+  const doseSecs = editSections.filter(s => s.type === 'sauce');
+  if (doseSecs.length === 0) {
+    showAlert('투약 필요', '투약을 1개 이상 추가해주세요.');
+    return;
+  }
+
+  // 3) 각 투약 섹션마다: 병원 이름, 약 이름 1개 이상, 복용 일수 필수
+  for (let i = 0; i < editSections.length; i++) {
+    const sec = editSections[i];
+    if (sec.type !== 'sauce') continue;
+
+    // 등록된 섹션은 검증 통과 (이미 등록 시 검증됨)
+    if (sec.registered) continue;
+
+    if (!(sec.title || '').trim()) {
+      showAlert('병원 이름 필요', '모든 투약에 병원 이름을 입력해주세요.');
+      return;
+    }
+    const meds = (sec.rows || []).filter(r => (r.name || '').trim());
+    if (meds.length === 0) {
+      showAlert('약 이름 필요', `투약에 약 이름을 1개 이상 입력해주세요.`);
+      return;
+    }
+    const dur = parseInt(sec.duration);
+    if (!dur || dur < 1) {
+      showAlert('복용 일수 필요', `투약의 복용 일수를 입력해주세요.`);
+      return;
+    }
   }
 
   if (editingId) {
