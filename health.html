@@ -285,8 +285,9 @@
     background: rgba(20,50,80,0.45);
     backdrop-filter: blur(4px);
     z-index: 300;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: center;
+    overflow-y: auto;
   }
   .modal-overlay.active { display: flex; }
   .modal-overlay.center-modal { align-items: center; }
@@ -294,17 +295,17 @@
   /* ── EDIT MODAL (bottom sheet) ── */
   .edit-sheet {
     background: white;
-    border-radius: 24px 24px 0 0;
+    border-radius: 0 0 24px 24px;
     width: 100%;
     max-width: 600px;
-    max-height: 92vh;
+    min-height: min-content;
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.28s ease;
-    box-shadow: 0 -8px 40px rgba(20,50,80,0.25);
+    animation: slideDown 0.28s ease;
+    box-shadow: 0 8px 40px rgba(20,50,80,0.25);
   }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
     to { transform: translateY(0); }
   }
   .sheet-handle {
@@ -330,8 +331,6 @@
     color: var(--text);
   }
   .sheet-body {
-    flex: 1;
-    overflow-y: auto;
     padding: 16px;
     -webkit-overflow-scrolling: touch;
   }
@@ -648,18 +647,16 @@
   /* ── VIEW MODAL ── */
   .view-sheet {
     background: white;
-    border-radius: 24px 24px 0 0;
+    border-radius: 0 0 24px 24px;
     width: 100%;
     max-width: 600px;
-    max-height: 92vh;
+    min-height: min-content;
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.28s ease;
-    box-shadow: 0 -8px 40px rgba(20,50,80,0.25);
+    animation: slideDown 0.28s ease;
+    box-shadow: 0 8px 40px rgba(20,50,80,0.25);
   }
   .view-body {
-    flex: 1;
-    overflow-y: auto;
     padding: 20px;
     -webkit-overflow-scrolling: touch;
   }
@@ -1493,7 +1490,7 @@
 <!-- HEADER -->
 <div class="app-header">
   <div class="header-top">
-    <span class="app-title">💙 건강 지킴이</span>
+    <span class="app-title">❤️ 건강 지킴이</span>
     <button class="header-gear-btn" id="gearBtn" onclick="toggleGearMenu(event)" title="메뉴">⚙️</button>
     <div class="gear-menu" id="gearMenu">
       <button onclick="exportData(); closeGearMenu()">📤 내보내기</button>
@@ -1635,7 +1632,9 @@ window.addEventListener('popstate', function() {
 function openModal(id) {
   modalStack.push(id);
   history.pushState({ modal: id, depth: modalStack.length }, '');
-  document.getElementById(id).classList.add('active');
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.scrollTop = 0;
 }
 
 function closeModal(id) {
