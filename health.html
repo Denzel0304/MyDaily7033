@@ -33,7 +33,7 @@
     background: linear-gradient(160deg, #b8e4f7 0%, #87CEEB 40%, #a8d8ea 80%, #caeaf7 100%);
     min-height: 100vh;
     color: var(--text);
-    padding-bottom: 78px;
+    padding-bottom: 150px;
   }
 
   /* ── HEADER ── */
@@ -42,15 +42,15 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(255,255,255,0.6);
-    padding: 14px 16px 10px;
+    padding: 14px 16px 12px;
     position: sticky;
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 16px rgba(58,139,191,0.12);
   }
   .header-top {
+    position: relative;
     text-align: center;
-    margin-bottom: 10px;
   }
   .app-title {
     font-family: 'Gowun Batang', serif;
@@ -58,34 +58,67 @@
     font-weight: 700;
     color: var(--sky-deep);
     letter-spacing: -0.5px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
   }
-  .header-data-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 7px;
-  }
-  .btn-data {
-    background: rgba(255,255,255,0.65);
+  .header-gear-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.7);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 11px;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    font-weight: 500;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--sky-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.2s;
+  }
+  .header-gear-btn:hover { background: var(--sky-light); }
+  .header-gear-btn.open { transform: translateY(-50%) rotate(60deg); background: var(--sky-light); }
+
+  .gear-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(20,50,80,0.20);
+    border: 1px solid var(--border);
+    z-index: 110;
+    min-width: 150px;
+    overflow: hidden;
+    animation: popIn 0.15s ease;
+  }
+  .gear-menu.active { display: block; }
+  .gear-menu button {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 11px 14px;
+    font-size: 0.85rem;
+    text-align: left;
     cursor: pointer;
     font-family: 'Noto Sans KR', sans-serif;
-    transition: all 0.15s;
-    white-space: nowrap;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .btn-data:hover { background: var(--sky-light); color: var(--sky-deep); border-color: var(--sky-dark); }
+  .gear-menu button:hover { background: var(--sky-light); }
+  .gear-menu button + button { border-top: 1px solid var(--sky-light); }
 
   .search-bar {
     position: relative;
+    margin-bottom: 12px;
   }
   .search-bar input {
     width: 100%;
@@ -178,10 +211,10 @@
   /* ── FAB ── */
   .fab {
     position: fixed;
-    bottom: 24px;
-    right: 20px;
-    width: 58px;
-    height: 58px;
+    bottom: 80px;          /* 탭바(64px) 위 여유 */
+    right: 18px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
     color: white;
@@ -696,7 +729,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 62px;
+    height: 64px;
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -712,7 +745,7 @@
     cursor: pointer;
     font-family: 'Noto Sans KR', sans-serif;
     color: var(--text-muted);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 500;
     display: flex;
     flex-direction: column;
@@ -720,11 +753,45 @@
     justify-content: center;
     gap: 3px;
     padding: 6px 4px 8px;
-    transition: color 0.15s;
+    transition: color 0.15s, background 0.15s, font-size 0.15s;
+    position: relative;
   }
-  .tab-btn .tab-icon { font-size: 1.35rem; line-height: 1; }
-  .tab-btn.active { color: var(--sky-deep); font-weight: 700; }
-  .tab-btn.active .tab-icon { transform: scale(1.05); }
+  .tab-btn .tab-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+    transition: font-size 0.15s, transform 0.15s;
+  }
+  .tab-btn.active {
+    color: var(--sky-deep);
+    font-weight: 700;
+    font-size: 0.82rem;
+    background: linear-gradient(180deg, rgba(184,228,247,0.55) 0%, rgba(168,216,234,0.55) 100%);
+  }
+  .tab-btn.active .tab-icon {
+    font-size: 1.6rem;
+    transform: translateY(-1px);
+  }
+  /* 탭 위/아래 띠 (active 강조) */
+  .tab-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8%;
+    right: 8%;
+    height: 3px;
+    background: var(--sky-deep);
+    border-radius: 0 0 3px 3px;
+  }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 8%;
+    right: 8%;
+    height: 3px;
+    background: var(--sky-deep);
+    border-radius: 3px 3px 0 0;
+  }
 
   /* ── DOSE (투약) CARD EXTRAS ── */
   .card-meta-row {
@@ -1039,6 +1106,47 @@
 
   .take-day-count:focus { border-color: var(--sky-dark); }
 
+  /* ── 투약 → 복약 등록 버튼 ── */
+  .btn-to-take {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, var(--sky-light), #d8eef9);
+    border: 1.5px dashed var(--sky-dark);
+    border-radius: 8px;
+    color: var(--sky-deep);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-to-take:hover { background: var(--sky-light); border-style: solid; }
+
+  /* ── 복약 등록 미리보기 (모달 내) ── */
+  .take-preview {
+    background: #f4f9fd;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-bottom: 14px;
+  }
+  .take-preview-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    margin-bottom: 6px;
+  }
+  .take-preview-list {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -1051,20 +1159,21 @@
 <div class="app-header">
   <div class="header-top">
     <span class="app-title">💙 건강 지킴이</span>
-  </div>
-  <div class="search-bar" id="searchBar">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="병명 / 병원 / 약 검색..." oninput="renderList()">
-  </div>
-  <div class="header-data-row">
-    <button class="btn-data" onclick="exportData()">📤 내보내기</button>
-    <button class="btn-data" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="header-gear-btn" id="gearBtn" onclick="toggleGearMenu(event)" title="메뉴">⚙️</button>
+    <div class="gear-menu" id="gearMenu">
+      <button onclick="exportData(); closeGearMenu()">📤 내보내기</button>
+      <button onclick="document.getElementById('importFile').click(); closeGearMenu()">📥 가져오기</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
   </div>
 </div>
 
 <!-- MAIN: 투약 탭 -->
 <div class="main-container" id="doseView">
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="병명 / 병원 / 약 검색..." oninput="renderList()">
+  </div>
   <div class="sort-info" id="doseSortInfo">🕒 최신순</div>
   <div class="recipe-list" id="recipeList"></div>
   <div class="empty-state" id="emptyState" style="display:none">
@@ -1079,7 +1188,7 @@
   <div class="take-list" id="takeList"></div>
   <div class="empty-state" id="takeEmptyState" style="display:none">
     <div class="emoji">⏰</div>
-    <p>오늘 복약 일정이 없어요.<br>아래 + 버튼을 눌러 추가해보세요!</p>
+    <p>오늘 복약 일정이 없어요.<br>투약 항목에서 등록하거나<br>+ 버튼으로 직접 추가해보세요!</p>
   </div>
 </div>
 
@@ -1245,8 +1354,6 @@ function switchTab(tab) {
   document.getElementById('tabTake').classList.toggle('active', tab === 'take');
   document.getElementById('doseView').style.display = tab === 'dose' ? 'block' : 'none';
   document.getElementById('takeView').style.display = tab === 'take' ? 'block' : 'none';
-  // 검색창은 투약 탭에서만 표시
-  document.getElementById('searchBar').style.display = tab === 'dose' ? 'block' : 'none';
   if (tab === 'dose') renderList();
   else renderTakes();
 }
@@ -1255,6 +1362,28 @@ function onFabClick() {
   if (currentTab === 'dose') openEdit(null);
   else openTakeEdit(null);
 }
+
+// ── GEAR MENU ──
+function toggleGearMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('gearMenu');
+  const btn = document.getElementById('gearBtn');
+  const isOpen = menu.classList.toggle('active');
+  btn.classList.toggle('open', isOpen);
+}
+function closeGearMenu() {
+  document.getElementById('gearMenu').classList.remove('active');
+  document.getElementById('gearBtn').classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('gearMenu');
+  const btn = document.getElementById('gearBtn');
+  if (!menu || !btn) return;
+  if (menu.classList.contains('active') &&
+      !menu.contains(e.target) && !btn.contains(e.target)) {
+    closeGearMenu();
+  }
+});
 
 // ══════════════════════════════════════════════
 //  EXPORT / IMPORT
@@ -1585,6 +1714,13 @@ function renderSectionBody(sec, sIdx) {
     };
     body.appendChild(addRowBtn);
 
+    // 이 묶음을 복약으로 보내기 버튼
+    const toTakeBtn = makeEl('button', 'btn-to-take');
+    toTakeBtn.type = 'button';
+    toTakeBtn.innerHTML = '⏰ 이 투약 묶음을 복약에 등록';
+    toTakeBtn.onclick = () => sendSectionToTake(sIdx);
+    body.appendChild(toTakeBtn);
+
     // 포인터 기반 드래그 정렬 등록 (기존 로직 그대로)
     setupSortable(body, '.sauce-row', '.sauce-drag', (from, to) => {
       const rows = editSections[sIdx].rows;
@@ -1873,6 +2009,7 @@ function openTakeEdit(id) {
       day: t.day,
       dayCount: 1,           // 수정 시에는 그 하나만 수정
       meds: JSON.parse(JSON.stringify(t.meds || [])),
+      sourceLabel: '',
     };
   } else {
     document.getElementById('editModalTitle').textContent = '새 복약';
@@ -1880,15 +2017,73 @@ function openTakeEdit(id) {
       day: todayStr(),
       dayCount: 1,
       meds: [{ id: newId(), name: '', time: '08:00' }],
+      sourceLabel: '',
     };
   }
   renderTakeEditBody();
   openModal('editModal');
 }
 
+// 투약 편집 모달 안에서, 특정 sec(투약 묶음)을 복약으로 보냄
+// 현재 편집 중인 dose의 변경분을 먼저 임시 저장 → 복약 편집 모달로 전환
+function sendSectionToTake(sIdx) {
+  const sec = editSections[sIdx];
+  if (!sec || sec.type !== 'sauce') return;
+  const meds = (sec.rows || []).filter(r => (r.name || '').trim());
+  if (meds.length === 0) {
+    showAlert('약 없음', '먼저 이 투약 묶음에 약 이름을 1개 이상 입력해주세요.');
+    return;
+  }
+
+  // 현재 편집중인 dose 변경사항을 자동 저장 (사용자가 modal 닫으면 잃어버리니까)
+  const titleEl = document.getElementById('editTitle');
+  const title = titleEl ? titleEl.value.trim() : '';
+  if (title) {
+    if (editingId) {
+      const idx = doses.findIndex(r => r.id === editingId);
+      if (idx !== -1) {
+        doses[idx] = { ...doses[idx], title, startDate: editStartDate, sections: editSections };
+      }
+    } else {
+      const newDose = { id: newId(), title, startDate: editStartDate, sections: editSections };
+      doses.push(newDose);
+      editingId = newDose.id;
+    }
+    saveToStorage();
+  }
+
+  // 라벨: 병명 + 병원명
+  const dose = editingId ? doses.find(d => d.id === editingId) : null;
+  const doseTitle = dose ? dose.title : title;
+  const hospName = sec.title || '';
+  const sourceLabel = doseTitle + (hospName ? ` · ${hospName}` : '');
+
+  // 복약 모달 prefill 상태로 전환 (editModal은 동일하지만 편집 내용만 갈아끼움)
+  editMode = 'take';
+  editingId = null;
+  document.getElementById('editModalTitle').textContent = '복약 등록';
+  takeDraft = {
+    day: sec.date || todayStr(),
+    dayCount: 1,
+    meds: meds.map(m => ({ id: newId(), name: m.name, time: '08:00' })),
+    sourceLabel,
+  };
+  renderTakeEditBody();
+}
+
 function renderTakeEditBody() {
   const body = document.getElementById('editBody');
   body.innerHTML = '';
+
+  // 출처 표시 (투약에서 넘어온 경우)
+  if (takeDraft.sourceLabel) {
+    const src = makeEl('div', 'take-preview');
+    src.innerHTML = `
+      <div class="take-preview-title">📌 출처: 투약 항목</div>
+      <div class="take-preview-list">${escHtml(takeDraft.sourceLabel)}</div>
+    `;
+    body.appendChild(src);
+  }
 
   // 시작일
   const dateGroup = makeEl('div', 'form-group');
@@ -1960,6 +2155,8 @@ function saveTake() {
     return;
   }
 
+  const wasFromDose = !!takeDraft.sourceLabel;
+
   if (editingId) {
     // 수정: 해당 bundle만 갱신
     const idx = takeBundles.findIndex(x => x.id === editingId);
@@ -1988,7 +2185,12 @@ function saveTake() {
   }
   saveToStorage();
   closeEdit();
-  renderTakes();
+  // 투약에서 넘어와 등록한 거면 복약 탭으로 자동 이동
+  if (wasFromDose) {
+    switchTab('take');
+  } else {
+    renderTakes();
+  }
 }
 
 function deleteTake(id) {
