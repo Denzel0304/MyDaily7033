@@ -366,8 +366,9 @@
     flex: 1;
     display: flex;
     align-items: center;
-    padding: 9px 10px 9px 0;
+    padding: 9px 12px 9px 0;
     gap: 8px;
+    min-width: 0;
   }
   .section-block-title {
     flex: 1;
@@ -383,6 +384,37 @@
     cursor: pointer;
     color: var(--danger);
     padding: 2px 6px;
+    flex-shrink: 0;
+  }
+
+  /* 투약 카드: 두 줄 헤더 (1행: 라벨+✕, 2행: 병원 이름) */
+  .section-block-header.two-line {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+  }
+  .section-block-header.two-line .section-header-row1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+  }
+  .section-block-header.two-line .section-header-row1 .section-drag-handle {
+    border-bottom: 1px solid var(--border);
+  }
+  .section-block-header.two-line .section-header-row2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 9px 12px;
+    background: var(--sky-light);
+    border-top: 1px dashed var(--border);
+    min-width: 0;
+  }
+  .section-block-header.two-line .section-header-row2 .dose-hosp-input {
+    flex: 1;
+    min-width: 0;
   }
 
   /* ── SAUCE ROWS ── */
@@ -978,6 +1010,34 @@
     border: 1px solid rgba(255,255,255,0.8);
     overflow: hidden;
   }
+  .take-day-group.collapsed .take-bundle {
+    display: none;
+  }
+  .take-day-group.collapsed .take-day-header {
+    border-bottom: none;
+  }
+  .take-day-collapse-btn {
+    background: none;
+    border: none;
+    color: var(--sky-deep);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .take-day-collapse-btn.collapsed {
+    transform: rotate(-90deg);
+  }
+  .take-day-header-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
   .take-day-header {
     background: var(--sky-light);
     padding: 8px 14px;
@@ -1478,8 +1538,18 @@ function switchTab(tab) {
   document.getElementById('tabTake').classList.toggle('active', tab === 'take');
   document.getElementById('doseView').style.display = tab === 'dose' ? 'block' : 'none';
   document.getElementById('takeView').style.display = tab === 'take' ? 'block' : 'none';
-  if (tab === 'dose') renderList();
-  else renderTakes();
+  if (tab === 'dose') {
+    renderList();
+  } else {
+    // 복약 탭 진입 시: 모든 날짜 그룹을 접고, 스크롤 최상단
+    takeDayCollapsed = {};
+    takeBundles.forEach(b => { takeDayCollapsed[b.day] = true; });
+    renderTakes();
+  }
+  // 스크롤 최상단 (탭 전환 시 항상)
+  const scrollTop = () => window.scrollTo({ top: 0, behavior: 'auto' });
+  requestAnimationFrame(scrollTop);
+  setTimeout(scrollTop, 50);
 }
 
 function onFabClick() {
@@ -1764,16 +1834,20 @@ function renderSections() {
 
     if (sec.type === 'sauce') {
       doseNum++;
-      // 투약 섹션: 헤더에 [드래그] [▼/▶ 토글] [💊 투약 N] [병원입력] [✕]
+      // 투약 섹션 (두 줄 헤더):
+      //   1행: [드래그] [▼토글] [💊 투약 N]                [✕]
+      //   2행:               [병원 이름 입력란]
       const collapsedClass = sec.collapsed ? ' collapsed' : '';
       block.innerHTML = `
-        <div class="section-block-header">
-          <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
-          <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
-          <div class="section-block-header-inner" style="padding-right:8px;padding-left:0">
-            <span style="font-size:0.78rem;font-weight:700;color:var(--sky-deep);white-space:nowrap">💊 투약 ${doseNum}</span>
+        <div class="section-block-header two-line">
+          <div class="section-header-row1">
+            <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
+            <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
+            <span style="flex:1;font-size:0.78rem;font-weight:700;color:var(--sky-deep);white-space:nowrap;padding:9px 0">💊 투약 ${doseNum}</span>
+            <button class="btn-remove-section" onclick="removeDoseSection(${sIdx})" title="삭제" style="margin-right:10px">✕</button>
+          </div>
+          <div class="section-header-row2">
             <input class="dose-hosp-input" placeholder="병원 이름" value="${escHtml(sec.title || '')}" oninput="editSections[${sIdx}].title=this.value">
-            <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
           </div>
         </div>
         <div class="section-block-summary" id="secSummary-${sec.id}"></div>
@@ -1791,7 +1865,7 @@ function renderSections() {
           <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
           <div class="section-block-header-inner" style="padding-left:0">
             <span style="font-size:1rem">📝</span>
-            <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
+            <input class="section-title-input" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
             <button class="btn-remove-section" onclick="removeMemoSection(${sIdx})" title="삭제">✕</button>
           </div>
         </div>
@@ -1852,6 +1926,37 @@ function removeMemoSection(sIdx) {
   // 확인 모달
   document.getElementById('confirmTitle').textContent = '메모 삭제';
   document.getElementById('confirmMsg').textContent = '이 메모를 삭제할까요?\n삭제 후 복구할 수 없어요.';
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      editSections.splice(sIdx, 1);
+      renderSections();
+    }
+  };
+}
+
+// 투약 삭제: 비어있으면 즉시, 내용 있으면 확인 모달
+function removeDoseSection(sIdx) {
+  const sec = editSections[sIdx];
+  if (!sec) return;
+  // 내용 판정: 병원 이름, 약 이름 1개 이상, 복용 일수, 처방일 변경, 또는 이미 등록됨 — 중 하나라도 있으면 "내용 있음"
+  const hasHosp = (sec.title || '').trim().length > 0;
+  const hasMeds = (sec.rows || []).some(r => (r.name || '').trim().length > 0);
+  const hasDuration = sec.duration !== '' && sec.duration !== undefined && sec.duration !== null && parseInt(sec.duration) >= 1;
+  const isReg = !!sec.registered;
+  const hasContent = hasHosp || hasMeds || hasDuration || isReg;
+
+  if (!hasContent) {
+    editSections.splice(sIdx, 1);
+    renderSections();
+    return;
+  }
+
+  document.getElementById('confirmTitle').textContent = '투약 삭제';
+  const msg = isReg
+    ? '이 투약은 이미 복약에 등록되었어요.\n투약만 삭제하고 복약 항목은 그대로 둘까요?'
+    : '이 투약을 삭제할까요?\n삭제 후 복구할 수 없어요.';
+  document.getElementById('confirmMsg').textContent = msg;
   openModal('confirmModal');
   confirmCallback = (yes) => {
     if (yes) {
@@ -2025,11 +2130,6 @@ function makeMedRow(sec, sIdx, row, rIdx) {
 function removeMedRow(sIdx, rIdx) {
   editSections[sIdx].rows.splice(rIdx, 1);
   renderSectionBody(editSections[sIdx], sIdx);
-}
-
-function removeSection(sIdx) {
-  editSections.splice(sIdx, 1);
-  renderSections();
 }
 
 function addSection(type) {
@@ -2597,11 +2697,18 @@ function toggleTake(id) {
   renderTakes();
 }
 
+// 복약 탭 - 날짜 그룹별 접기 상태 (key: 'YYYY-MM-DD' → bool)
+let takeDayCollapsed = {};
+
 function renderTakes() {
   const list = [...takeBundles];
-  // 날짜순 (day asc - 빠른 날짜가 위), 같은 날짜는 시간 오름차순
+  // 1차 정렬: 날짜 오름차순(빠른 날짜가 위)
+  // 같은 날짜 안에서는 → createdAt 내림차순(나중에 등록한 묶음이 위)
+  // 같은 묶음(=같은 createdAt) 안에서는 → 시간 오름차순
   list.sort((a, b) => {
     if (a.day !== b.day) return (a.day || '').localeCompare(b.day || '');
+    const ca = a.createdAt || 0, cb = b.createdAt || 0;
+    if (ca !== cb) return cb - ca; // 나중에 등록한 것이 위로
     return (a.time || '').localeCompare(b.time || '');
   });
   // 날짜별 그룹화 (등장 순서 유지 = 빠른 날짜부터)
@@ -2618,16 +2725,21 @@ function renderTakes() {
 
   dayOrder.forEach(day => {
     const dayBundles = byDay[day];
-    // 같은 날짜 안에서는 시간 오름차순으로 정렬
-    dayBundles.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    // dayBundles는 이미 위 정렬에서 createdAt desc, time asc 순으로 들어와 있음
     const dayGroup = makeEl('div', 'take-day-group');
+    const isCollapsed = !!takeDayCollapsed[day];
+    if (isCollapsed) dayGroup.classList.add('collapsed');
     const checkedCnt = dayBundles.filter(b => b.checked).length;
     const dayEl = new Date(day + 'T00:00:00');
     const dows = ['일','월','화','수','목','금','토'];
     const dayLabel = `${fmtDate(day)} (${dows[dayEl.getDay()]})`;
+    const collapsedClass = isCollapsed ? ' collapsed' : '';
     dayGroup.innerHTML = `
       <div class="take-day-header">
-        <span>${dayLabel}</span>
+        <div class="take-day-header-left">
+          <button class="take-day-collapse-btn${collapsedClass}" onclick="toggleTakeDayCollapse('${day}')" title="접기/펴기">▼</button>
+          <span>${dayLabel}</span>
+        </div>
         <div class="take-day-header-right">
           <span class="day-progress">${checkedCnt}/${dayBundles.length}</span>
           <button class="take-day-delete" onclick="deleteTakeDay('${day}')" title="이 날짜 묶음 삭제">✕</button>
@@ -2654,6 +2766,11 @@ function renderTakes() {
     });
     container.appendChild(dayGroup);
   });
+}
+
+function toggleTakeDayCollapse(day) {
+  takeDayCollapsed[day] = !takeDayCollapsed[day];
+  renderTakes();
 }
 
 // 한 날짜의 모든 복약 묶음을 삭제
@@ -2741,6 +2858,8 @@ document.getElementById('alertModal').addEventListener('click', function(e) {
 });
 
 // ── INIT ──
+// 복약 탭의 모든 날짜 그룹은 초기에 접힌 상태로 시작
+takeBundles.forEach(b => { takeDayCollapsed[b.day] = true; });
 renderList();
 renderTakes();
 </script>
