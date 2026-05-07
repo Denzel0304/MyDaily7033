@@ -1147,6 +1147,85 @@
     line-height: 1.7;
   }
 
+  /* ── 투약 묶음: 1일 N회 + 시간 입력 ── */
+  .dose-times-wrap {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  .dose-times-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .dose-times-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--sky-deep);
+    flex-shrink: 0;
+  }
+  .dose-time-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #eef7fc;
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 2px 4px 2px 8px;
+  }
+  .dose-time-chip input[type="time"] {
+    border: none;
+    background: transparent;
+    font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    padding: 2px 0;
+    outline: none;
+    width: 78px;
+  }
+  .dose-time-chip-del {
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .dose-time-chip-del:hover { color: var(--danger); }
+  .dose-time-add {
+    background: white;
+    border: 1.5px dashed var(--border);
+    border-radius: 16px;
+    color: var(--sky-deep);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 3px 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .dose-time-add:hover { background: var(--sky-light); }
+  .dose-times-count {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  /* 등록 완료 상태 버튼 */
+  .btn-to-take.registered {
+    background: #ececec;
+    color: #888;
+    border: 1.5px solid #ccc;
+    cursor: not-allowed;
+  }
+  .btn-to-take.registered:hover {
+    background: #ececec;
+    border-style: solid;
+  }
+
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -1184,7 +1263,7 @@
 
 <!-- MAIN: 복약 탭 -->
 <div class="main-container" id="takeView" style="display:none">
-  <div class="sort-info">📅 날짜순</div>
+  <div class="sort-info">🕒 최신순</div>
   <div class="take-list" id="takeList"></div>
   <div class="empty-state" id="takeEmptyState" style="display:none">
     <div class="emoji">⏰</div>
@@ -1582,6 +1661,11 @@ function openEdit(id) {
     renderEditBody('');
   }
   openModal('editModal');
+  // 스크롤 항상 최상단으로
+  requestAnimationFrame(() => {
+    const body = document.getElementById('editBody');
+    if (body) body.scrollTop = 0;
+  });
 }
 
 function closeEdit() {
@@ -1714,11 +1798,39 @@ function renderSectionBody(sec, sIdx) {
     };
     body.appendChild(addRowBtn);
 
-    // 이 묶음을 복약으로 보내기 버튼
+    // 1일 N회 + 시간들 입력
+    if (!sec.dailyTimes) sec.dailyTimes = ['08:00'];
+    if (!sec.duration) sec.duration = 1;
+    const timesWrap = makeEl('div', 'dose-times-wrap');
+    timesWrap.style.marginTop = '10px';
+    timesWrap.innerHTML = `
+      <div class="dose-times-row" style="margin-bottom:8px">
+        <span class="dose-times-label">⏰ 1일</span>
+        <span class="dose-times-count">${sec.dailyTimes.length}회</span>
+      </div>
+      <div class="dose-times-row" id="timesRow-${sec.id}"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+        <span class="dose-times-label">📆 복용 일수</span>
+        <input type="number" min="1" max="60" value="${sec.duration}" oninput="editSections[${sIdx}].duration=parseInt(this.value)||1"
+               style="width:60px;padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-family:'Noto Sans KR',sans-serif;font-size:0.85rem;outline:none">
+        <span style="font-size:0.78rem;color:var(--text-muted)">일</span>
+      </div>
+    `;
+    body.appendChild(timesWrap);
+    renderDoseTimes(sec, sIdx);
+
+    // 이 묶음을 복약으로 보내기 버튼 (등록 상태면 비활성)
     const toTakeBtn = makeEl('button', 'btn-to-take');
     toTakeBtn.type = 'button';
-    toTakeBtn.innerHTML = '⏰ 이 투약 묶음을 복약에 등록';
-    toTakeBtn.onclick = () => sendSectionToTake(sIdx);
+    if (sec.registered) {
+      toTakeBtn.classList.add('registered');
+      toTakeBtn.innerHTML = '✓ 복약에 등록됨';
+      toTakeBtn.disabled = true;
+      toTakeBtn.onclick = (e) => e.preventDefault();
+    } else {
+      toTakeBtn.innerHTML = '⏰ 이 투약 묶음을 복약에 등록';
+      toTakeBtn.onclick = () => sendSectionToTake(sIdx);
+    }
     body.appendChild(toTakeBtn);
 
     // 포인터 기반 드래그 정렬 등록 (기존 로직 그대로)
@@ -1741,6 +1853,39 @@ function renderSectionBody(sec, sIdx) {
     ta.addEventListener('keydown', e => handleMemoKey(e, ta, sec));
     body.appendChild(ta);
   }
+}
+
+function renderDoseTimes(sec, sIdx) {
+  const row = document.getElementById('timesRow-' + sec.id);
+  if (!row) return;
+  row.innerHTML = '';
+  sec.dailyTimes.forEach((t, i) => {
+    const chip = makeEl('div', 'dose-time-chip');
+    chip.innerHTML = `
+      <input type="time" value="${escHtml(t)}" data-i="${i}">
+      <button class="dose-time-chip-del" title="삭제">✕</button>
+    `;
+    chip.querySelector('input').addEventListener('input', e => {
+      sec.dailyTimes[i] = e.target.value;
+    });
+    chip.querySelector('button').addEventListener('click', () => {
+      if (sec.dailyTimes.length <= 1) {
+        showAlert('알림', '최소 1개의 시간이 필요해요.');
+        return;
+      }
+      sec.dailyTimes.splice(i, 1);
+      renderSectionBody(sec, sIdx);
+    });
+    row.appendChild(chip);
+  });
+  const addBtn = makeEl('button', 'dose-time-add');
+  addBtn.type = 'button';
+  addBtn.textContent = '+ 시간';
+  addBtn.onclick = () => {
+    sec.dailyTimes.push('12:00');
+    renderSectionBody(sec, sIdx);
+  };
+  row.appendChild(addBtn);
 }
 
 function makeMedRow(sec, sIdx, row, rIdx) {
@@ -2003,29 +2148,38 @@ function openTakeEdit(id) {
   editMode = 'take';
   editingId = id;
   if (id) {
+    // 수정: 한 묶음(특정 날짜 + 특정 시간) 만 수정
     const t = takeBundles.find(x => x.id === id);
     document.getElementById('editModalTitle').textContent = '복약 수정';
     takeDraft = {
       day: t.day,
-      dayCount: 1,           // 수정 시에는 그 하나만 수정
-      meds: JSON.parse(JSON.stringify(t.meds || [])),
+      duration: 1,
+      times: [t.time || '08:00'],
+      meds: (t.meds || []).map(m => ({ id: newId(), name: m.name })),
       sourceLabel: '',
+      isEditing: true,
     };
   } else {
     document.getElementById('editModalTitle').textContent = '새 복약';
     takeDraft = {
       day: todayStr(),
-      dayCount: 1,
-      meds: [{ id: newId(), name: '', time: '08:00' }],
+      duration: 1,
+      times: ['08:00'],
+      meds: [{ id: newId(), name: '' }],
       sourceLabel: '',
+      isEditing: false,
     };
   }
   renderTakeEditBody();
   openModal('editModal');
+  requestAnimationFrame(() => {
+    const body = document.getElementById('editBody');
+    if (body) body.scrollTop = 0;
+  });
 }
 
-// 투약 편집 모달 안에서, 특정 sec(투약 묶음)을 복약으로 보냄
-// 현재 편집 중인 dose의 변경분을 먼저 임시 저장 → 복약 편집 모달로 전환
+// 투약 편집 모달 안에서, 특정 sec(투약 묶음)을 복약으로 직접 등록
+// sec.dailyTimes (1일 N회) × sec.duration (일수) 만큼 복약 묶음 생성
 function sendSectionToTake(sIdx) {
   const sec = editSections[sIdx];
   if (!sec || sec.type !== 'sauce') return;
@@ -2034,56 +2188,74 @@ function sendSectionToTake(sIdx) {
     showAlert('약 없음', '먼저 이 투약 묶음에 약 이름을 1개 이상 입력해주세요.');
     return;
   }
+  const times = (sec.dailyTimes || []).filter(t => t);
+  if (times.length === 0) {
+    showAlert('시간 없음', '복용 시간을 1개 이상 설정해주세요.');
+    return;
+  }
+  const duration = Math.max(1, parseInt(sec.duration) || 1);
 
-  // 현재 편집중인 dose 변경사항을 자동 저장 (사용자가 modal 닫으면 잃어버리니까)
+  // 현재 dose 자동 저장 (dose 변경분과 sec.registered 같이 보존)
   const titleEl = document.getElementById('editTitle');
   const title = titleEl ? titleEl.value.trim() : '';
-  if (title) {
-    if (editingId) {
-      const idx = doses.findIndex(r => r.id === editingId);
-      if (idx !== -1) {
-        doses[idx] = { ...doses[idx], title, startDate: editStartDate, sections: editSections };
-      }
-    } else {
-      const newDose = { id: newId(), title, startDate: editStartDate, sections: editSections };
-      doses.push(newDose);
-      editingId = newDose.id;
-    }
-    saveToStorage();
+  if (!title) {
+    showAlert('병명 필요', '먼저 병명을 입력해주세요.');
+    return;
   }
 
-  // 라벨: 병명 + 병원명
-  const dose = editingId ? doses.find(d => d.id === editingId) : null;
-  const doseTitle = dose ? dose.title : title;
-  const hospName = sec.title || '';
-  const sourceLabel = doseTitle + (hospName ? ` · ${hospName}` : '');
+  sec.registered = true; // 등록 완료 표시 (저장 전에 미리 마킹)
 
-  // 복약 모달 prefill 상태로 전환 (editModal은 동일하지만 편집 내용만 갈아끼움)
-  editMode = 'take';
-  editingId = null;
-  document.getElementById('editModalTitle').textContent = '복약 등록';
-  takeDraft = {
-    day: sec.date || todayStr(),
-    dayCount: 1,
-    meds: meds.map(m => ({ id: newId(), name: m.name, time: '08:00' })),
-    sourceLabel,
-  };
-  renderTakeEditBody();
+  if (editingId) {
+    const idx = doses.findIndex(r => r.id === editingId);
+    if (idx !== -1) {
+      doses[idx] = { ...doses[idx], title, startDate: editStartDate, sections: editSections };
+    }
+  } else {
+    const newDose = { id: newId(), title, startDate: editStartDate, sections: editSections };
+    doses.push(newDose);
+    editingId = newDose.id;
+  }
+
+  // 복약 묶음 생성: duration일 × times 시간대
+  const groupId = newId();
+  const startD = new Date((sec.date || todayStr()) + 'T00:00:00');
+  // 라벨: 병명 · 병원
+  const sourceLabel = title + (sec.title ? ` · ${sec.title}` : '');
+
+  for (let i = 0; i < duration; i++) {
+    const d = new Date(startD);
+    d.setDate(startD.getDate() + i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dayStr = `${y}-${m}-${dd}`;
+    times.forEach(t => {
+      takeBundles.push({
+        id: newId(),
+        groupId,
+        sourceLabel,
+        day: dayStr,
+        time: t,
+        meds: meds.map(mm => ({ id: newId(), name: mm.name })),
+        checked: false,
+        createdAt: Date.now(),
+      });
+    });
+  }
+
+  saveToStorage();
+
+  // 등록완료 버튼 갱신 (모달 안에서 즉시 반영)
+  renderSectionBody(sec, sIdx);
+
+  // 안내 후 자동으로 모달 닫고 복약 탭으로 전환
+  showAlert('등록 완료', `${duration}일 × 1일 ${times.length}회 = 총 ${duration * times.length}회 복약이 등록되었습니다.`, 'success');
+  // alert 닫힌 후의 처리는 사용자가 알아서 — 모달은 그대로 두고 등록 상태만 보여줌
 }
 
 function renderTakeEditBody() {
   const body = document.getElementById('editBody');
   body.innerHTML = '';
-
-  // 출처 표시 (투약에서 넘어온 경우)
-  if (takeDraft.sourceLabel) {
-    const src = makeEl('div', 'take-preview');
-    src.innerHTML = `
-      <div class="take-preview-title">📌 출처: 투약 항목</div>
-      <div class="take-preview-list">${escHtml(takeDraft.sourceLabel)}</div>
-    `;
-    body.appendChild(src);
-  }
 
   // 시작일
   const dateGroup = makeEl('div', 'form-group');
@@ -2094,25 +2266,33 @@ function renderTakeEditBody() {
     </button>`;
   body.appendChild(dateGroup);
 
-  // 며칠치 (신규 추가일 때만)
-  if (!editingId) {
+  // 약 목록
+  const medGroup = makeEl('div', 'form-group');
+  medGroup.innerHTML = `<label class="form-label">약 목록 (한 묶음 = 한 번에 체크)</label>
+    <div id="takeMedRows"></div>
+    <button class="btn-add-row" onclick="addTakeMedRow()">+ 약 추가</button>`;
+  body.appendChild(medGroup);
+  renderTakeMedRows();
+
+  // 1일 N회 시간들
+  const timesGroup = makeEl('div', 'form-group');
+  timesGroup.innerHTML = `<label class="form-label">⏰ 1일 ${takeDraft.times.length}회 — 복용 시간</label>
+    <div class="dose-times-wrap" style="background:#fafdff">
+      <div class="dose-times-row" id="takeTimesRow"></div>
+    </div>`;
+  body.appendChild(timesGroup);
+  renderTakeTimes();
+
+  // 복용 일수 (신규일 때만)
+  if (!takeDraft.isEditing) {
     const dayCntGroup = makeEl('div', 'form-group');
-    dayCntGroup.innerHTML = `<label class="form-label">복용 일수</label>
+    dayCntGroup.innerHTML = `<label class="form-label">📆 복용 일수</label>
       <div style="display:flex;align-items:center;gap:8px">
-        <input type="number" min="1" max="60" class="take-day-count" id="takeDayCount" value="${takeDraft.dayCount}" oninput="takeDraft.dayCount=parseInt(this.value)||1">
-        <span style="color:var(--text-muted);font-size:0.85rem">일치 복사</span>
+        <input type="number" min="1" max="60" class="take-day-count" value="${takeDraft.duration}" oninput="takeDraft.duration=parseInt(this.value)||1">
+        <span style="color:var(--text-muted);font-size:0.85rem">일치</span>
       </div>`;
     body.appendChild(dayCntGroup);
   }
-
-  // 약 목록 라벨
-  const medLabel = makeEl('div', 'form-group');
-  medLabel.innerHTML = `<label class="form-label">약 목록 (한 묶음 = 한 번에 체크)</label>
-    <div id="takeMedRows"></div>
-    <button class="btn-add-row" onclick="addTakeMedRow()">+ 약 추가</button>`;
-  body.appendChild(medLabel);
-
-  renderTakeMedRows();
 }
 
 function renderTakeMedRows() {
@@ -2120,17 +2300,15 @@ function renderTakeMedRows() {
   if (!wrap) return;
   wrap.innerHTML = '';
   takeDraft.meds.forEach((med, i) => {
-    const row = makeEl('div', 'sauce-row');
+    const row = makeEl('div', 'sauce-row med-row');
     row.dataset.rIdx = i;
     row.innerHTML = `
       <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
       <input class="sauce-name" type="text" placeholder="약 이름" value="${escHtml(med.name||'')}" oninput="takeDraft.meds[${i}].name=this.value">
-      <input class="take-time-input" type="time" value="${escHtml(med.time||'08:00')}" oninput="takeDraft.meds[${i}].time=this.value">
       <button class="sauce-del" onclick="removeTakeMedRow(${i})" title="삭제">✕</button>
     `;
     wrap.appendChild(row);
   });
-  // 기존 드래그 로직 활용
   setupSortable(wrap, '.sauce-row', '.sauce-drag', (from, to) => {
     const [moved] = takeDraft.meds.splice(from, 1);
     takeDraft.meds.splice(to, 0, moved);
@@ -2138,8 +2316,44 @@ function renderTakeMedRows() {
   });
 }
 
+function renderTakeTimes() {
+  const row = document.getElementById('takeTimesRow');
+  if (!row) return;
+  row.innerHTML = '';
+  takeDraft.times.forEach((t, i) => {
+    const chip = makeEl('div', 'dose-time-chip');
+    chip.innerHTML = `
+      <input type="time" value="${escHtml(t)}" data-i="${i}">
+      <button class="dose-time-chip-del" title="삭제">✕</button>
+    `;
+    chip.querySelector('input').addEventListener('input', e => {
+      takeDraft.times[i] = e.target.value;
+    });
+    chip.querySelector('button').addEventListener('click', () => {
+      if (takeDraft.times.length <= 1) {
+        showAlert('알림', '최소 1개의 시간이 필요해요.');
+        return;
+      }
+      takeDraft.times.splice(i, 1);
+      renderTakeEditBody();
+    });
+    row.appendChild(chip);
+  });
+  // 수정 모드면 시간 추가/삭제는 의미 없으니 +버튼 안 보여줌 (수정은 단일 묶음 단위)
+  if (!takeDraft.isEditing) {
+    const addBtn = makeEl('button', 'dose-time-add');
+    addBtn.type = 'button';
+    addBtn.textContent = '+ 시간';
+    addBtn.onclick = () => {
+      takeDraft.times.push('12:00');
+      renderTakeEditBody();
+    };
+    row.appendChild(addBtn);
+  }
+}
+
 function addTakeMedRow() {
-  takeDraft.meds.push({ id: newId(), name: '', time: '08:00' });
+  takeDraft.meds.push({ id: newId(), name: '' });
   renderTakeMedRows();
 }
 function removeTakeMedRow(i) {
@@ -2148,49 +2362,57 @@ function removeTakeMedRow(i) {
 }
 
 function saveTake() {
-  // 빈 약 이름 제거
   const meds = takeDraft.meds.filter(m => (m.name || '').trim());
   if (meds.length === 0) {
     showAlert('입력 필요', '약 이름을 1개 이상 입력해주세요.');
     return;
   }
-
-  const wasFromDose = !!takeDraft.sourceLabel;
+  const times = takeDraft.times.filter(t => t);
+  if (times.length === 0) {
+    showAlert('시간 필요', '복용 시간을 1개 이상 입력해주세요.');
+    return;
+  }
 
   if (editingId) {
-    // 수정: 해당 bundle만 갱신
+    // 수정: 단일 묶음만 갱신
     const idx = takeBundles.findIndex(x => x.id === editingId);
     if (idx !== -1) {
-      takeBundles[idx] = { ...takeBundles[idx], day: takeDraft.day, meds };
+      takeBundles[idx] = {
+        ...takeBundles[idx],
+        day: takeDraft.day,
+        time: times[0],
+        meds: meds.map(m => ({ id: newId(), name: m.name })),
+      };
     }
   } else {
-    // 신규: dayCount 만큼 복제. 같은 groupId 부여
+    // 신규: duration일 × times회
+    const duration = Math.max(1, parseInt(takeDraft.duration) || 1);
     const groupId = newId();
-    const cnt = Math.max(1, parseInt(takeDraft.dayCount) || 1);
     const startD = new Date(takeDraft.day + 'T00:00:00');
-    for (let i = 0; i < cnt; i++) {
+    for (let i = 0; i < duration; i++) {
       const d = new Date(startD);
       d.setDate(startD.getDate() + i);
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
-      takeBundles.push({
-        id: newId(),
-        groupId,
-        day: `${y}-${m}-${dd}`,
-        meds: JSON.parse(JSON.stringify(meds)),
-        checked: false,
+      const dayStr = `${y}-${m}-${dd}`;
+      times.forEach(t => {
+        takeBundles.push({
+          id: newId(),
+          groupId,
+          sourceLabel: '',
+          day: dayStr,
+          time: t,
+          meds: meds.map(mm => ({ id: newId(), name: mm.name })),
+          checked: false,
+          createdAt: Date.now(),
+        });
       });
     }
   }
   saveToStorage();
   closeEdit();
-  // 투약에서 넘어와 등록한 거면 복약 탭으로 자동 이동
-  if (wasFromDose) {
-    switchTab('take');
-  } else {
-    renderTakes();
-  }
+  renderTakes();
 }
 
 function deleteTake(id) {
@@ -2218,24 +2440,30 @@ function toggleTake(id) {
 
 function renderTakes() {
   const list = [...takeBundles];
-  // 날짜 오름차순
+  // 최신순 (createdAt desc, 없으면 day desc + time desc)
   list.sort((a, b) => {
-    if (a.day !== b.day) return a.day.localeCompare(b.day);
-    // 같은 날짜면 가장 빠른 시간 기준
-    const ta = (a.meds[0]?.time || '00:00');
-    const tb = (b.meds[0]?.time || '00:00');
-    return ta.localeCompare(tb);
+    if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
+      return b.createdAt - a.createdAt;
+    }
+    if (a.day !== b.day) return b.day.localeCompare(a.day);
+    return (b.time || '').localeCompare(a.time || '');
   });
-  // 날짜별 그룹화
+  // 날짜별 그룹화 (등장 순서 유지 = 최신 날짜부터)
   const byDay = {};
-  list.forEach(b => { (byDay[b.day] = byDay[b.day] || []).push(b); });
+  const dayOrder = [];
+  list.forEach(b => {
+    if (!byDay[b.day]) { byDay[b.day] = []; dayOrder.push(b.day); }
+    byDay[b.day].push(b);
+  });
 
   const container = document.getElementById('takeList');
   container.innerHTML = '';
   document.getElementById('takeEmptyState').style.display = list.length === 0 ? 'block' : 'none';
 
-  Object.keys(byDay).sort().forEach(day => {
+  dayOrder.forEach(day => {
     const dayBundles = byDay[day];
+    // 같은 날짜 안에서는 시간 오름차순으로 정렬
+    dayBundles.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const dayGroup = makeEl('div', 'take-day-group');
     const checkedCnt = dayBundles.filter(b => b.checked).length;
     const dayEl = new Date(day + 'T00:00:00');
@@ -2249,13 +2477,18 @@ function renderTakes() {
     `;
     dayBundles.forEach(bundle => {
       const bEl = makeEl('div', 'take-bundle' + (bundle.checked ? ' checked' : ''));
-      const medListHtml = bundle.meds.map(m =>
-        `<div>• ${escHtml(m.name)} <span style="color:var(--sky-deep);font-weight:600;font-size:0.78rem">${escHtml(m.time||'')}</span></div>`
+      const medListHtml = (bundle.meds || []).map(m =>
+        `<div>• ${escHtml(m.name)}</div>`
       ).join('');
+      const srcHtml = bundle.sourceLabel
+        ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">📌 ${escHtml(bundle.sourceLabel)}</div>`
+        : '';
       bEl.innerHTML = `
         <button class="take-check${bundle.checked ? ' checked' : ''}" onclick="toggleTake('${bundle.id}')">${bundle.checked ? '✓' : ''}</button>
         <div class="take-bundle-info" onclick="openTakeEdit('${bundle.id}')" style="cursor:pointer">
+          <div class="take-time">⏰ ${escHtml(bundle.time || '')}</div>
           <div class="take-med-list">${medListHtml}</div>
+          ${srcHtml}
         </div>
         <button class="take-del" onclick="deleteTake('${bundle.id}')" title="삭제">✕</button>
       `;
