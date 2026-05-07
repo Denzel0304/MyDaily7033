@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>건강 지킴이</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #87CEEB;
+    --sky-light: #c8e8f8;
+    --sky-dark: #5ba8d4;
+    --sky-deep: #3a8bbf;
+    --white: #ffffff;
+    --card-bg: rgba(255,255,255,0.92);
+    --text: #1a2e3b;
+    --text-muted: #6b8fa3;
+    --border: #b8d8ec;
+    --accent: #e8732a;
+    --accent-light: #fdeee4;
+    --danger: #e05c5c;
+    --success: #4caf7d;
+    --shadow: 0 4px 20px rgba(58,139,191,0.15);
+    --shadow-lg: 0 8px 40px rgba(58,139,191,0.22);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: linear-gradient(160deg, #b8e4f7 0%, #87CEEB 40%, #a8d8ea 80%, #caeaf7 100%);
+    min-height: 100vh;
+    color: var(--text);
+    padding-bottom: 78px;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.6);
+    padding: 14px 16px 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(58,139,191,0.12);
+  }
+  .header-top {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .app-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .header-data-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 7px;
+  }
+  .btn-data {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 11px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-data:hover { background: var(--sky-light); color: var(--sky-deep); border-color: var(--sky-dark); }
+
+  .search-bar {
+    position: relative;
+  }
+  .search-bar input {
+    width: 100%;
+    padding: 10px 16px 10px 38px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-bar input:focus { border-color: var(--sky-dark); }
+  .search-bar .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: var(--text-muted);
+  }
+
+  /* ── MAIN ── */
+  .main-container { padding: 16px; }
+
+  .sort-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-bottom: 8px;
+  }
+
+  /* ── RECIPE CARD ── */
+  .recipe-list { display: flex; flex-direction: column; gap: 12px; }
+  .recipe-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(255,255,255,0.8);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .recipe-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  .recipe-card.drag-over {
+    border: 2px dashed var(--sky-dark);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 14px 12px;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .card-title-area { flex: 1; min-width: 0; }
+  .card-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-stars { display: flex; gap: 1px; margin-top: 2px; }
+  .star { font-size: 0.9rem; color: #ddd; }
+  .star.filled { color: #f5b842; }
+  .card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .card-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .card-btn:hover { background: var(--sky-light); }
+  .card-btn.delete:hover { background: #fdeaea; }
+
+  /* card-preview removed – click directly opens view */
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
+    color: white;
+    font-size: 1.6rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(58,139,191,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 200;
+  }
+  .fab:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(58,139,191,0.5); }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,50,80,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-overlay.center-modal { align-items: center; }
+
+  /* ── EDIT MODAL (bottom sheet) ── */
+  .edit-sheet {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.28s ease;
+    box-shadow: 0 -8px 40px rgba(20,50,80,0.25);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--sky-light);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .sheet-title {
+    flex: 1;
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sky-deep);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .form-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    outline: none;
+    background: #fafdff;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--sky-dark); background: white; }
+
+  /* ── STAR RATING (edit) ── */
+  .star-rating-edit { display: flex; gap: 6px; padding: 4px 0; }
+  .star-edit {
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: #ddd;
+    transition: color 0.12s, transform 0.12s;
+    user-select: none;
+  }
+  .star-edit.filled { color: #f5b842; }
+  .star-edit:hover { transform: scale(1.2); }
+
+  /* ── SECTION BLOCK (양념장/메모) ── */
+  .section-block {
+    background: #f4f9fd;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section-block.dragging { opacity: 0.5; }
+  .section-block.drag-over-section { border: 2px dashed var(--sky-dark); }
+  .section-block-header {
+    display: flex;
+    align-items: center;
+    background: var(--sky-light);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    /* cursor은 handle에만 적용 */
+  }
+  .section-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    min-width: 38px;
+    align-self: stretch;        /* 헤더 전체 높이만큼 터치 영역 확보 */
+    cursor: grab;
+    touch-action: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    border-right: 1px solid var(--border);
+    background: rgba(0,0,0,0.03);
+    user-select: none;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
+  }
+  .section-drag-handle:hover { background: rgba(91,168,212,0.15); color: var(--sky-deep); }
+  .section-drag-handle:active { cursor: grabbing; }
+  .section-block-header-inner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 9px 10px 9px 0;
+    gap: 8px;
+  }
+  .section-block-title {
+    flex: 1;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+  }
+  .section-block-body { padding: 12px; }
+  .btn-remove-section {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--danger);
+    padding: 2px 6px;
+  }
+
+  /* ── SAUCE ROWS ── */
+  .sauce-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .sauce-row.dragging { opacity: 0.4; }
+  .sauce-row.drag-over-row { border-top: 2px solid var(--sky-dark); }
+  .sauce-drag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 36px;           /* 재료 input과 동일한 높이 */
+    background: #f0f7fd;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    touch-action: none;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    user-select: none;
+    transition: background 0.12s, color 0.12s;
+  }
+  .sauce-drag:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .sauce-drag:active { cursor: grabbing; }
+  .sauce-name {
+    flex: 2;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    min-width: 0;
+  }
+  .sauce-name:focus { border-color: var(--sky-dark); }
+  .sauce-amount {
+    width: 62px;
+    padding: 8px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    text-align: center;
+  }
+  .sauce-amount:focus { border-color: var(--sky-dark); }
+  .sauce-unit-wrap { position: relative; flex-shrink: 0; }
+  .sauce-unit {
+    padding: 8px 22px 8px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .sauce-unit:focus { border-color: var(--sky-dark); }
+  .sauce-unit-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+  .sauce-del {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #ccc;
+    flex-shrink: 0;
+    padding: 2px;
+  }
+  .sauce-del:hover { color: var(--danger); }
+  .btn-add-row {
+    background: none;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    color: var(--sky-dark);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 7px 12px;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .btn-add-row:hover { background: var(--sky-light); }
+
+  /* ── MEMO TEXTAREA ── */
+  .memo-textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+    background: white;
+    line-height: 1.7;
+  }
+  .memo-textarea:focus { border-color: var(--sky-dark); }
+
+  /* ── ADD SECTION BUTTONS ── */
+  .add-section-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .btn-add-section {
+    flex: 1;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sky-deep);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .btn-add-section:hover { background: var(--sky-light); border-color: var(--sky-dark); }
+
+  /* ── SHEET FOOTER ── */
+  .sheet-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--sky-light);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    background: white;
+  }
+  .btn-cancel {
+    flex: 1;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .btn-save {
+    flex: 2;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 4px 14px rgba(58,139,191,0.3);
+  }
+
+  /* ── VIEW MODAL ── */
+  .view-sheet {
+    background: white;
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.28s ease;
+    box-shadow: 0 -8px 40px rgba(20,50,80,0.25);
+  }
+  .view-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .view-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .view-stars { display: flex; gap: 3px; margin-bottom: 20px; }
+  .view-star { font-size: 1.2rem; color: #ddd; }
+  .view-star.filled { color: #f5b842; }
+  .view-section {
+    margin-bottom: 20px;
+  }
+  .view-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--sky-light);
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+  }
+  .view-sauce-table { width: 100%; border-collapse: collapse; }
+  .view-sauce-table td {
+    padding: 6px 8px;
+    font-size: 0.88rem;
+    border-bottom: 1px solid #f0f7fc;
+  }
+  .view-sauce-table td:first-child { color: var(--text); font-weight: 500; }
+  .view-sauce-table td:last-child { color: var(--text-muted); text-align: right; white-space: nowrap; }
+  .view-memo {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    background: #f8fcff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--sky-light);
+  }
+  .view-close {
+    margin: 0 20px 20px;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--sky-light);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    width: calc(100% - 40px);
+    flex-shrink: 0;
+  }
+
+  /* ── CONFIRM MODAL ── */
+  .confirm-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 24px 20px 20px;
+    width: 90%;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .confirm-title {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .confirm-msg { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .btn-no {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-muted);
+  }
+  .btn-yes {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    border: none;
+    background: var(--danger);
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* ── ALERT MODAL ── */
+  .alert-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 24px 20px 20px;
+    width: 90%;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    animation: popIn 0.2s ease;
+  }
+  .alert-icon { font-size: 2rem; margin-bottom: 10px; }
+  .alert-title { font-family: 'Gowun Batang', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--danger); }
+  .alert-msg { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+  .btn-alert-ok {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--sky-dark);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.9rem; line-height: 1.7; }
+
+  /* ── BOTTOM TAB BAR ── */
+  .tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(184,216,236,0.6);
+    display: flex;
+    z-index: 150;
+    box-shadow: 0 -2px 16px rgba(58,139,191,0.10);
+  }
+  .tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 4px 8px;
+    transition: color 0.15s;
+  }
+  .tab-btn .tab-icon { font-size: 1.35rem; line-height: 1; }
+  .tab-btn.active { color: var(--sky-deep); font-weight: 700; }
+  .tab-btn.active .tab-icon { transform: scale(1.05); }
+
+  /* ── DOSE (투약) CARD EXTRAS ── */
+  .card-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+  .card-meta-row .meta-date { color: var(--sky-deep); font-weight: 600; }
+  .card-meta-row .meta-hospital {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #fff7e0;
+    color: #b88820;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.72rem;
+  }
+
+  /* ── DATE INPUT BUTTON (편집 모달) ── */
+  .date-input-btn {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    background: #fafdff;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .date-input-btn:hover { border-color: var(--sky-dark); }
+  .date-input-btn .date-icon { font-size: 1rem; }
+
+  /* ── DOSE GROUP STAR (투약 묶음, 병원 옆 별) ── */
+  .dose-group-star, .dose-hosp-star {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #ddd;
+    padding: 2px 4px;
+    line-height: 1;
+    transition: color 0.15s, transform 0.12s;
+  }
+  .dose-group-star.filled, .dose-hosp-star.filled { color: #f5b842; }
+  .dose-group-star:hover, .dose-hosp-star:hover { transform: scale(1.15); }
+
+  .dose-hosp-input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    min-width: 0;
+  }
+  .dose-hosp-input:focus { border-color: var(--sky-dark); }
+
+  .dose-hosp-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .dose-hosp-row .hosp-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--sky-deep);
+    flex-shrink: 0;
+  }
+
+  /* sauce-name 단독 사용 시 (약 이름 only) - 양념장 row 재활용하나 amount/unit 숨김 */
+  .sauce-row.med-row .sauce-amount,
+  .sauce-row.med-row .sauce-unit-wrap { display: none; }
+  .sauce-row.med-row .sauce-name { flex: 1; }
+
+  /* ── CALENDAR MODAL ── */
+  .calendar-box {
+    background: white;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    animation: popIn 0.2s ease;
+    overflow: hidden;
+  }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--sky-light);
+    border-bottom: 1px solid var(--border);
+  }
+  .cal-nav {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: var(--sky-deep);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+  .cal-nav:hover { background: rgba(255,255,255,0.6); }
+  .cal-title {
+    font-family: 'Gowun Batang', serif;
+    font-weight: 700;
+    color: var(--sky-deep);
+    font-size: 1rem;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 10px;
+    gap: 2px;
+  }
+  .cal-dow {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding: 6px 0;
+  }
+  .cal-dow.sun { color: var(--danger); }
+  .cal-dow.sat { color: var(--sky-deep); }
+  .cal-day {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--text);
+    transition: background 0.12s;
+  }
+  .cal-day:hover { background: var(--sky-light); }
+  .cal-day.other { color: #ccc; }
+  .cal-day.today { font-weight: 700; color: var(--sky-deep); }
+  .cal-day.selected {
+    background: var(--sky-dark);
+    color: white;
+    font-weight: 700;
+  }
+  .cal-day.sun { color: #e88a8a; }
+  .cal-day.sat { color: var(--sky-dark); }
+  .cal-day.selected.sun, .cal-day.selected.sat { color: white; }
+  .cal-footer {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px 14px;
+  }
+  .cal-footer button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--text-muted);
+  }
+  .cal-footer .cal-today-btn { color: var(--sky-deep); }
+  .cal-footer .cal-confirm {
+    background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
+    color: white;
+    border: none;
+  }
+
+  /* ── DOSE EDIT: section sauce row date display ── */
+  .dose-section-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.7);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--sky-deep);
+    font-weight: 600;
+    margin-bottom: 10px;
+    width: 100%;
+    text-align: left;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .dose-section-date:hover { background: var(--sky-light); }
+
+  /* ── 복약 (TAKE) ITEMS ── */
+  .take-list { display: flex; flex-direction: column; gap: 10px; }
+  .take-day-group {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(255,255,255,0.8);
+    overflow: hidden;
+  }
+  .take-day-header {
+    background: var(--sky-light);
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    font-family: 'Gowun Batang', serif;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .take-day-header .day-progress {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .take-bundle {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f7fc;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.15s;
+  }
+  .take-bundle:last-child { border-bottom: none; }
+  .take-bundle.checked {
+    background: #ececec;
+    color: #888;
+  }
+  .take-bundle.checked .take-med-list,
+  .take-bundle.checked .take-time { color: #888; }
+  .take-check {
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--sky-dark);
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    color: white;
+    transition: background 0.12s;
+    padding: 0;
+  }
+  .take-check.checked { background: var(--sky-dark); }
+  .take-bundle-info { flex: 1; min-width: 0; }
+  .take-med-list {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .take-time {
+    font-size: 0.78rem;
+    color: var(--sky-deep);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .take-del {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: #ccc;
+    cursor: pointer;
+    padding: 4px 6px;
+    flex-shrink: 0;
+  }
+  .take-del:hover { color: var(--danger); }
+
+  /* take edit modal */
+  .take-time-input {
+    width: 110px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .take-time-input:focus { border-color: var(--sky-dark); }
+
+  .take-day-count {
+    width: 80px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    background: white;
+    text-align: center;
+  }
+
+  .take-day-count:focus { border-color: var(--sky-dark); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-top">
+    <span class="app-title">💙 건강 지킴이</span>
+  </div>
+  <div class="search-bar" id="searchBar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="병명 / 병원 / 약 검색..." oninput="renderList()">
+  </div>
+  <div class="header-data-row">
+    <button class="btn-data" onclick="exportData()">📤 내보내기</button>
+    <button class="btn-data" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<!-- MAIN: 투약 탭 -->
+<div class="main-container" id="doseView">
+  <div class="sort-info" id="doseSortInfo">🕒 최신순</div>
+  <div class="recipe-list" id="recipeList"></div>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="emoji">💊</div>
+    <p>아직 투약 기록이 없어요.<br>아래 + 버튼을 눌러 추가해보세요!</p>
+  </div>
+</div>
+
+<!-- MAIN: 복약 탭 -->
+<div class="main-container" id="takeView" style="display:none">
+  <div class="sort-info">📅 날짜순</div>
+  <div class="take-list" id="takeList"></div>
+  <div class="empty-state" id="takeEmptyState" style="display:none">
+    <div class="emoji">⏰</div>
+    <p>오늘 복약 일정이 없어요.<br>아래 + 버튼을 눌러 추가해보세요!</p>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" onclick="onFabClick()" title="추가">＋</button>
+
+<!-- BOTTOM TAB BAR -->
+<nav class="tab-bar">
+  <button class="tab-btn active" id="tabDose" onclick="switchTab('dose')">
+    <span class="tab-icon">💊</span>
+    <span>투약</span>
+  </button>
+  <button class="tab-btn" id="tabTake" onclick="switchTab('take')">
+    <span class="tab-icon">⏰</span>
+    <span>복약</span>
+  </button>
+</nav>
+
+<!-- ═══════════ EDIT MODAL (투약 / 복약 공용) ═══════════ -->
+<div class="modal-overlay" id="editModal">
+  <div class="edit-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="editModalTitle">새 항목</span>
+      <button class="card-btn" onclick="closeEdit()" style="font-size:1.2rem">✕</button>
+    </div>
+    <div class="sheet-body" id="editBody">
+      <!-- 동적 생성 -->
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeEdit()">취소</button>
+      <button class="btn-save" onclick="saveCurrent()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ CALENDAR MODAL ═══════════ -->
+<div class="modal-overlay center-modal" id="calendarModal">
+  <div class="calendar-box">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <span class="cal-title" id="calTitle"></span>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="cal-today-btn" onclick="calPickToday()">오늘</button>
+      <button class="cal-confirm" onclick="calConfirm()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ CONFIRM MODAL ═══════════ -->
+<div class="modal-overlay center-modal" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">정말 삭제할까요?</div>
+    <div class="confirm-msg" id="confirmMsg">삭제된 항목은 복구할 수 없어요.</div>
+    <div class="confirm-actions">
+      <button class="btn-no" onclick="closeConfirm(false)">취소</button>
+      <button class="btn-yes" onclick="closeConfirm(true)">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ALERT MODAL ═══════════ -->
+<div class="modal-overlay center-modal" id="alertModal">
+  <div class="alert-box">
+    <div class="alert-icon" id="alertIcon">⚠️</div>
+    <div class="alert-title" id="alertTitle">알림</div>
+    <div class="alert-msg" id="alertMsg"></div>
+    <button class="btn-alert-ok" onclick="closeAlert()">확인</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+const FILE_SIGNATURE = 'HEALTH_APP_V1';
+
+// 기존 recipes 변수명을 doses 로 의미 전환 (구조는 동일하게 sections 활용)
+// dose item: { id, title(병명), startDate(YYYY-MM-DD), sections:[
+//    {id, type:'sauce', title(병원명), starred(bool), hospStarred(bool), date(YYYY-MM-DD),
+//     rows:[{id, name(약), starred(bool)}]}
+//   |{id, type:'memo', title, content}
+// ]}
+let doses = loadDoses();
+let takeBundles = loadTakes();   // 복약: [{id, day(YYYY-MM-DD), time, meds:[{id,name,time}], checked:bool}]
+                                 // 실제 단위는 묶음(bundle) — 같은 묶음의 약들을 한 번에 체크
+let editingId = null;
+let editMode = 'dose';           // 'dose' | 'take'
+let confirmCallback = null;
+let currentTab = 'dose';
+
+// ── MODAL HISTORY MANAGEMENT (기존 로직 유지) ──
+const modalStack = [];
+
+window.addEventListener('popstate', function() {
+  if (modalStack.length > 0) {
+    const id = modalStack.pop();
+    document.getElementById(id).classList.remove('active');
+    if (id === 'confirmModal' && confirmCallback) {
+      confirmCallback(false);
+      confirmCallback = null;
+    }
+  }
+});
+
+function openModal(id) {
+  modalStack.push(id);
+  history.pushState({ modal: id, depth: modalStack.length }, '');
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  if (modalStack.includes(id)) {
+    history.back();
+  } else {
+    document.getElementById(id).classList.remove('active');
+  }
+}
+
+function loadDoses() {
+  try {
+    const raw = localStorage.getItem('health_doses_v1');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch { return []; }
+}
+function loadTakes() {
+  try {
+    const raw = localStorage.getItem('health_takes_v1');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch { return []; }
+}
+function saveToStorage() {
+  localStorage.setItem('health_doses_v1', JSON.stringify(doses));
+  localStorage.setItem('health_takes_v1', JSON.stringify(takeBundles));
+}
+function newId() { return Date.now() + Math.random().toString(36).slice(2); }
+
+// ── DATE UTIL ──
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${y}.${m}.${d}`;
+}
+
+// ══════════════════════════════════════════════
+//  TAB SWITCH
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabDose').classList.toggle('active', tab === 'dose');
+  document.getElementById('tabTake').classList.toggle('active', tab === 'take');
+  document.getElementById('doseView').style.display = tab === 'dose' ? 'block' : 'none';
+  document.getElementById('takeView').style.display = tab === 'take' ? 'block' : 'none';
+  // 검색창은 투약 탭에서만 표시
+  document.getElementById('searchBar').style.display = tab === 'dose' ? 'block' : 'none';
+  if (tab === 'dose') renderList();
+  else renderTakes();
+}
+
+function onFabClick() {
+  if (currentTab === 'dose') openEdit(null);
+  else openTakeEdit(null);
+}
+
+// ══════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ══════════════════════════════════════════════
+function exportData() {
+  const data = { __signature__: FILE_SIGNATURE, doses, takeBundles };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `health_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.__signature__ !== FILE_SIGNATURE) {
+        showAlert('형식 오류', '이 파일은 이 앱에서 내보낸 파일이 아닙니다.\n올바른 파일을 선택해주세요.');
+        return;
+      }
+      doses = data.doses || [];
+      takeBundles = data.takeBundles || [];
+      saveToStorage();
+      if (currentTab === 'dose') renderList(); else renderTakes();
+      showAlert('가져오기 완료', `투약 ${doses.length}건, 복약 ${takeBundles.length}건 불러왔습니다.`, 'success');
+    } catch {
+      showAlert('형식 오류', '파일을 읽을 수 없어요. 손상된 파일이거나 형식이 맞지 않아요.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ══════════════════════════════════════════════
+//  RENDER LIST (투약 탭)
+// ══════════════════════════════════════════════
+function renderList() {
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  let list = [...doses];
+  if (q) {
+    list = list.filter(d => {
+      if ((d.title || '').toLowerCase().includes(q)) return true;
+      // 병원/약 이름까지 검색
+      return (d.sections || []).some(sec => {
+        if (sec.type !== 'sauce') return false;
+        if ((sec.title || '').toLowerCase().includes(q)) return true;
+        return (sec.rows || []).some(r => (r.name || '').toLowerCase().includes(q));
+      });
+    });
+  }
+
+  // 최신순 (startDate desc, 없으면 id 기반)
+  list.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+
+  const container = document.getElementById('recipeList');
+  container.innerHTML = '';
+  document.getElementById('emptyState').style.display = list.length === 0 ? 'block' : 'none';
+
+  list.forEach((dose) => {
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    card.dataset.id = dose.id;
+
+    // 별표한 병원 찾기 (sec.hospStarred true 인 sauce sec 의 title)
+    const starredHosp = (dose.sections || [])
+      .filter(s => s.type === 'sauce' && s.hospStarred && s.title)
+      .map(s => s.title);
+    const hospHtml = starredHosp.length
+      ? starredHosp.map(h => `<span class="meta-hospital">⭐ ${escHtml(h)}</span>`).join('')
+      : '';
+
+    const dateHtml = dose.startDate ? `<span class="meta-date">📅 ${fmtDate(dose.startDate)}</span>` : '';
+
+    card.innerHTML = `
+      <div class="card-header" onclick="openEdit('${dose.id}')">
+        <div class="card-title-area">
+          <div class="card-title">${escHtml(dose.title || '병명 없음')}</div>
+          <div class="card-meta-row">
+            ${dateHtml}
+            ${hospHtml}
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="card-btn delete" title="삭제" onclick="event.stopPropagation(); deleteDose('${dose.id}')">✕</button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  EDIT MODAL
+// ══════════════════════════════════════════════
+let editSections = []; // [{id, type:'sauce'|'memo', rows|content, title, hospStarred, date}]
+let editStartDate = '';
+
+// ── 포인터 기반 드래그 정렬 (터치 + 마우스 통합) ──
+const _drag = { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, oy: 0, cb: null, cntRect: null };
+
+function _dragStart(e) {
+  if (_drag.on) return;                           // 이미 드래그 중이면 무시
+  const cfg = e.currentTarget._sortCfg;
+  if (!cfg) return;
+  const handle = e.target.closest(cfg.handleSel);
+  if (!handle) return;
+  const item = handle.closest(cfg.itemSel);
+  if (!item || !e.currentTarget.contains(item)) return;
+
+  e.preventDefault();
+  e.stopPropagation();                            // 부모 컨테이너로 버블링 차단
+
+  const rect  = item.getBoundingClientRect();
+  const cRect = e.currentTarget.getBoundingClientRect();
+
+  _drag.on      = true;
+  _drag.el      = item;
+  _drag.cnt     = e.currentTarget;
+  _drag.sel     = cfg.itemSel;
+  _drag.from    = [...e.currentTarget.querySelectorAll(cfg.itemSel)].indexOf(item);
+  _drag.oy      = e.clientY - rect.top;
+  _drag.cb      = cfg.onReorder;
+  _drag.cntRect = cRect;                          // 컨테이너 경계 저장
+
+  const g = item.cloneNode(true);
+  g.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;`
+    + `opacity:.88;pointer-events:none;z-index:9999;`
+    + `box-shadow:0 10px 32px rgba(20,50,80,.28);border-radius:10px;transform:scale(1.03);margin:0;`;
+  document.body.appendChild(g);
+  _drag.ghost = g;
+  item.style.opacity = '.25';
+}
+
+document.addEventListener('pointermove', e => {
+  if (!_drag.on) return;
+  e.preventDefault();
+
+  // ghost를 컨테이너 세로 범위 내로 클램프
+  const rawTop  = e.clientY - _drag.oy;
+  const minTop  = _drag.cntRect.top;
+  const maxTop  = _drag.cntRect.bottom - _drag.ghost.offsetHeight;
+  _drag.ghost.style.top = Math.max(minTop, Math.min(maxTop, rawTop)) + 'px';
+
+  _drag.ghost.style.visibility = 'hidden';
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  _drag.ghost.style.visibility = '';
+
+  const target = under?.closest(_drag.sel);
+  // 반드시 같은 컨테이너 내부의 아이템이어야만 이동
+  if (target && target !== _drag.el && _drag.cnt.contains(target)) {
+    const items = [..._drag.cnt.querySelectorAll(_drag.sel)];
+    const ci = items.indexOf(_drag.el), ti = items.indexOf(target);
+    if (ci !== ti) ci < ti ? target.after(_drag.el) : target.before(_drag.el);
+  }
+}, { passive: false });
+
+function _dragEnd() {
+  if (!_drag.on) return;
+  _drag.ghost?.remove();
+  _drag.el.style.opacity = '';
+  const items  = [..._drag.cnt.querySelectorAll(_drag.sel)];
+  const toIdx  = items.indexOf(_drag.el);
+  // toIdx가 유효하고 위치가 실제로 바뀐 경우에만 콜백
+  if (toIdx >= 0 && toIdx !== _drag.from) {
+    _drag.cb(_drag.from, toIdx);
+  }
+  Object.assign(_drag, { on: false, el: null, ghost: null, cnt: null, sel: null, from: -1, cb: null, cntRect: null });
+}
+document.addEventListener('pointerup', _dragEnd);
+document.addEventListener('pointercancel', _dragEnd);
+
+function setupSortable(container, itemSel, handleSel, onReorder) {
+  if (container._sortListener) container.removeEventListener('pointerdown', container._sortListener);
+  container._sortCfg = { itemSel, handleSel, onReorder };
+  container._sortListener = _dragStart;
+  container.addEventListener('pointerdown', _dragStart, { passive: false });
+}
+
+function openEdit(id) {
+  editMode = 'dose';
+  editingId = id;
+  if (id) {
+    const r = doses.find(x => x.id === id);
+    document.getElementById('editModalTitle').textContent = '병명 수정';
+    editStartDate = r.startDate || todayStr();
+    editSections = JSON.parse(JSON.stringify(r.sections || []));
+    renderEditBody(r.title || '');
+  } else {
+    document.getElementById('editModalTitle').textContent = '새 병명';
+    editStartDate = todayStr();
+    editSections = [];
+    renderEditBody('');
+  }
+  openModal('editModal');
+}
+
+function closeEdit() {
+  closeModal('editModal');
+}
+
+function renderEditBody(titleVal) {
+  const body = document.getElementById('editBody');
+  body.innerHTML = '';
+
+  // 병명
+  const titleGroup = makeEl('div', 'form-group');
+  titleGroup.innerHTML = `<label class="form-label">병명</label>
+    <input class="form-input" id="editTitle" type="text" placeholder="예: 감기" value="${escHtml(titleVal)}">`;
+  body.appendChild(titleGroup);
+
+  // 발병일 (startDate)
+  const dateGroup = makeEl('div', 'form-group');
+  dateGroup.innerHTML = `<label class="form-label">발병일</label>
+    <button type="button" class="date-input-btn" id="editStartDateBtn" onclick="openCalendarFor('start', null, null)">
+      <span class="date-icon">📅</span>
+      <span id="editStartDateText">${fmtDate(editStartDate)}</span>
+    </button>`;
+  body.appendChild(dateGroup);
+
+  // Sections
+  const sectionsContainer = makeEl('div', '');
+  sectionsContainer.id = 'sectionsContainer';
+  body.appendChild(sectionsContainer);
+  renderSections();
+
+  // Add section buttons
+  const addRow = makeEl('div', 'add-section-row');
+  addRow.innerHTML = `
+    <button class="btn-add-section" onclick="addSection('sauce')">💊 투약 추가</button>
+    <button class="btn-add-section" onclick="addSection('memo')">📝 메모 추가</button>
+  `;
+  body.appendChild(addRow);
+}
+
+function renderSections() {
+  const container = document.getElementById('sectionsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  editSections.forEach((sec, sIdx) => {
+    const block = makeEl('div', 'section-block');
+    block.dataset.secId = sec.id;
+    block.dataset.secIdx = sIdx;
+
+    if (sec.type === 'sauce') {
+      // 투약 섹션: 헤더에 [드래그] [💊] [병원입력+별] [묶음별] [✕]
+      const hospStarFilled = sec.hospStarred ? ' filled' : '';
+      const groupStarFilled = sec.starred ? ' filled' : '';
+      block.innerHTML = `
+        <div class="section-block-header">
+          <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
+          <div class="section-block-header-inner" style="padding-right:8px">
+            <span style="font-size:1rem">💊</span>
+            <button class="dose-hosp-star${hospStarFilled}" onclick="toggleHospStar(${sIdx})" title="이 병원에 효과">★</button>
+            <input class="dose-hosp-input" placeholder="병원 이름" value="${escHtml(sec.title || '')}" oninput="editSections[${sIdx}].title=this.value">
+            <button class="dose-group-star${groupStarFilled}" onclick="toggleGroupStar(${sIdx})" title="이 투약에 효과">★</button>
+            <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
+          </div>
+        </div>
+        <div class="section-block-body" id="secBody-${sec.id}"></div>
+      `;
+    } else {
+      // 메모 (기존 그대로)
+      const defaultTitle = `메모 ${sIdx+1}`;
+      const displayTitle = sec.title || defaultTitle;
+      block.innerHTML = `
+        <div class="section-block-header">
+          <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
+          <div class="section-block-header-inner">
+            <span style="font-size:1rem">📝</span>
+            <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
+            <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
+          </div>
+        </div>
+        <div class="section-block-body" id="secBody-${sec.id}"></div>
+      `;
+    }
+
+    container.appendChild(block);
+    renderSectionBody(sec, sIdx);
+  });
+
+  // 포인터 기반 드래그 정렬 등록
+  setupSortable(container, '.section-block', '.section-drag-handle', (from, to) => {
+    const [moved] = editSections.splice(from, 1);
+    editSections.splice(to, 0, moved);
+    renderSections();
+  });
+}
+
+function toggleHospStar(sIdx) {
+  editSections[sIdx].hospStarred = !editSections[sIdx].hospStarred;
+  renderSections();
+}
+function toggleGroupStar(sIdx) {
+  editSections[sIdx].starred = !editSections[sIdx].starred;
+  renderSections();
+}
+
+function renderSectionBody(sec, sIdx) {
+  const body = document.getElementById('secBody-' + sec.id);
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (sec.type === 'sauce') {
+    // 처방일 (날짜) 버튼 - 기본은 발병일과 같음
+    if (!sec.date) sec.date = editStartDate || todayStr();
+    const dateBtn = makeEl('button', 'dose-section-date');
+    dateBtn.type = 'button';
+    dateBtn.innerHTML = `📅 처방일: <span data-date>${fmtDate(sec.date)}</span>`;
+    dateBtn.onclick = () => openCalendarFor('section', sIdx, null);
+    body.appendChild(dateBtn);
+
+    // Rows (약 이름만)
+    sec.rows = sec.rows || [];
+    sec.rows.forEach((row, rIdx) => {
+      const rowEl = makeMedRow(sec, sIdx, row, rIdx);
+      body.appendChild(rowEl);
+    });
+    const addRowBtn = makeEl('button', 'btn-add-row');
+    addRowBtn.textContent = '+ 약 추가';
+    addRowBtn.onclick = () => {
+      sec.rows.push({ id: newId(), name: '' });
+      renderSectionBody(sec, sIdx);
+    };
+    body.appendChild(addRowBtn);
+
+    // 포인터 기반 드래그 정렬 등록 (기존 로직 그대로)
+    setupSortable(body, '.sauce-row', '.sauce-drag', (from, to) => {
+      const rows = editSections[sIdx].rows;
+      const [moved] = rows.splice(from, 1);
+      rows.splice(to, 0, moved);
+      renderSectionBody(editSections[sIdx], sIdx);
+    });
+
+  } else {
+    // Memo
+    const ta = makeEl('textarea', 'memo-textarea');
+    ta.value = sec.content || '';
+    ta.placeholder = '예: 1. 증상 메모 (Enter로 자동 번호)';
+    ta.addEventListener('input', () => {
+      renumberMemo(ta);
+      sec.content = ta.value;
+    });
+    ta.addEventListener('keydown', e => handleMemoKey(e, ta, sec));
+    body.appendChild(ta);
+  }
+}
+
+function makeMedRow(sec, sIdx, row, rIdx) {
+  // sauce-row 클래스 + med-row 추가하면 amount/unit 자동 숨김
+  const rowEl = makeEl('div', 'sauce-row med-row');
+  rowEl.dataset.rIdx = rIdx;
+
+  rowEl.innerHTML = `
+    <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
+    <input class="sauce-name" type="text" placeholder="약 이름" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
+    <button class="sauce-del" onclick="removeMedRow(${sIdx},${rIdx})" title="삭제">✕</button>
+  `;
+
+  return rowEl;
+}
+
+function removeMedRow(sIdx, rIdx) {
+  editSections[sIdx].rows.splice(rIdx, 1);
+  renderSectionBody(editSections[sIdx], sIdx);
+}
+
+function removeSection(sIdx) {
+  editSections.splice(sIdx, 1);
+  renderSections();
+}
+
+function addSection(type) {
+  editSections.push({
+    id: newId(),
+    type,
+    title: '',
+    starred: false,
+    hospStarred: false,
+    date: editStartDate || todayStr(),
+    rows: type === 'sauce' ? [{ id: newId(), name: '' }] : undefined,
+    content: type === 'memo' ? '' : undefined,
+  });
+  renderSections();
+  // Scroll to bottom
+  setTimeout(() => {
+    const body = document.getElementById('editBody');
+    body.scrollTop = body.scrollHeight;
+  }, 50);
+}
+
+// ── MEMO AUTO-NUMBERING ──
+
+// 번호 재정렬: 내용 변경 시 번호가 있는 줄을 1부터 순서대로 재부여
+function renumberMemo(ta) {
+  const oldVal = ta.value;
+  const oldPos = ta.selectionStart;
+  let n = 1;
+  let offsetAdjust = 0;
+
+  // 각 줄에서 "숫자. " 패턴을 찾아 순서대로 교체
+  const newVal = oldVal.replace(/^(\d+)(\.\s)/gm, (match, num, dot, offset) => {
+    const newNum = String(n++);
+    // 커서보다 앞쪽에서 숫자 길이가 바뀌면 커서 위치 보정
+    if (offset < oldPos) offsetAdjust += newNum.length - num.length;
+    return newNum + dot;
+  });
+
+  if (newVal === oldVal) return; // 변경 없으면 그대로
+
+  ta.value = newVal;
+  const newPos = Math.max(0, Math.min(oldPos + offsetAdjust, newVal.length));
+  ta.selectionStart = ta.selectionEnd = newPos;
+}
+function handleMemoKey(e, ta, sec) {
+  if (e.key !== 'Enter') return;
+
+  const val = ta.value;
+  const pos = ta.selectionStart;
+  const before = val.substring(0, pos);
+  const after = val.substring(pos);
+  const lastLine = before.split('\n').pop();
+
+  // Check if current line is a numbered list item "N. something"
+  const numMatch = lastLine.match(/^(\d+)\.\s+(.*)/);
+
+  if (numMatch) {
+    const content = numMatch[2];
+    const curNum = parseInt(numMatch[1]);
+
+    e.preventDefault();
+
+    if (content.trim() === '') {
+      // Empty numbered line → remove the number
+      const lines = before.split('\n');
+      lines[lines.length - 1] = '';
+      const newVal = lines.join('\n') + after;
+      ta.value = newVal;
+      const newPos = lines.join('\n').length;
+      ta.selectionStart = ta.selectionEnd = newPos;
+    } else {
+      // Add next number
+      const insert = '\n' + (curNum + 1) + '. ';
+      ta.value = before + insert + after;
+      ta.selectionStart = ta.selectionEnd = pos + insert.length;
+    }
+    sec.content = ta.value;
+  }
+  // If line is just "N. " (number+dot+space, no content)
+  else {
+    const emptyNumMatch = lastLine.match(/^(\d+)\.\s*$/);
+    if (emptyNumMatch) {
+      e.preventDefault();
+      const lines = before.split('\n');
+      lines[lines.length - 1] = '';
+      ta.value = lines.join('\n') + after;
+      ta.selectionStart = ta.selectionEnd = lines.join('\n').length;
+      sec.content = ta.value;
+    }
+  }
+}
+
+// ── SAVE ──
+function saveCurrent() {
+  if (editMode === 'dose') saveDose();
+  else if (editMode === 'take') saveTake();
+}
+
+function saveDose() {
+  const titleEl = document.getElementById('editTitle');
+  const title = titleEl.value.trim();
+  if (!title) {
+    titleEl.focus();
+    titleEl.style.borderColor = var_css('--danger');
+    setTimeout(() => titleEl.style.borderColor = '', 1500);
+    return;
+  }
+
+  if (editingId) {
+    const idx = doses.findIndex(r => r.id === editingId);
+    if (idx !== -1) {
+      doses[idx] = { ...doses[idx], title, startDate: editStartDate, sections: editSections };
+    }
+  } else {
+    doses.push({ id: newId(), title, startDate: editStartDate, sections: editSections });
+  }
+  saveToStorage();
+  closeEdit();
+  renderList();
+}
+
+function var_css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+// ══════════════════════════════════════════════
+//  CALENDAR MODAL
+// ══════════════════════════════════════════════
+// 호출처 식별: 'start'(편집모달의 발병일), 'section'(편집모달 sec.date), 'take'(복약모달 일자)
+const cal = { ctx: null, sIdx: null, year: 0, month: 0, selected: '', initialDate: '' };
+
+function openCalendarFor(ctx, sIdx, _ignore) {
+  cal.ctx = ctx;
+  cal.sIdx = sIdx;
+  let initial;
+  if (ctx === 'start') initial = editStartDate || todayStr();
+  else if (ctx === 'section') initial = editSections[sIdx].date || todayStr();
+  else if (ctx === 'take') initial = takeDraft.day || todayStr();
+  else initial = todayStr();
+  const [y, m, d] = initial.split('-').map(Number);
+  cal.year = y; cal.month = m; cal.selected = initial; cal.initialDate = initial;
+  renderCalendar();
+  openModal('calendarModal');
+}
+
+function calNav(delta) {
+  cal.month += delta;
+  if (cal.month < 1) { cal.month = 12; cal.year--; }
+  else if (cal.month > 12) { cal.month = 1; cal.year++; }
+  renderCalendar();
+}
+
+function calPickToday() {
+  const t = todayStr();
+  const [y, m] = t.split('-').map(Number);
+  cal.year = y; cal.month = m; cal.selected = t;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = `${cal.year}년 ${cal.month}월`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const dows = ['일','월','화','수','목','금','토'];
+  dows.forEach((d, i) => {
+    const el = makeEl('div', 'cal-dow' + (i === 0 ? ' sun' : i === 6 ? ' sat' : ''));
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+  const firstDay = new Date(cal.year, cal.month - 1, 1);
+  const startDow = firstDay.getDay();
+  const daysInMonth = new Date(cal.year, cal.month, 0).getDate();
+  const prevMonthDays = new Date(cal.year, cal.month - 1, 0).getDate();
+  const tStr = todayStr();
+
+  // prev month tail
+  for (let i = startDow - 1; i >= 0; i--) {
+    const dnum = prevMonthDays - i;
+    const el = makeEl('div', 'cal-day other');
+    el.textContent = dnum;
+    grid.appendChild(el);
+  }
+  // current month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dStr = `${cal.year}-${String(cal.month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow = new Date(cal.year, cal.month - 1, day).getDay();
+    let cls = 'cal-day';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (dStr === tStr) cls += ' today';
+    if (dStr === cal.selected) cls += ' selected';
+    const el = makeEl('div', cls);
+    el.textContent = day;
+    el.onclick = () => { cal.selected = dStr; renderCalendar(); };
+    grid.appendChild(el);
+  }
+  // next month head
+  const totalCells = startDow + daysInMonth;
+  const remain = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remain; i++) {
+    const el = makeEl('div', 'cal-day other');
+    el.textContent = i;
+    grid.appendChild(el);
+  }
+}
+
+function calConfirm() {
+  const picked = cal.selected;
+  if (cal.ctx === 'start') {
+    editStartDate = picked;
+    const t = document.getElementById('editStartDateText');
+    if (t) t.textContent = fmtDate(picked);
+    // 섹션 중 발병일과 같았던 것은 따라가게 두지 않고 그대로 유지 (사용자가 명시 변경한 처방일 보존)
+  } else if (cal.ctx === 'section') {
+    editSections[cal.sIdx].date = picked;
+    renderSectionBody(editSections[cal.sIdx], cal.sIdx);
+  } else if (cal.ctx === 'take') {
+    takeDraft.day = picked;
+    const t = document.getElementById('takeDayText');
+    if (t) t.textContent = fmtDate(picked);
+  }
+  closeModal('calendarModal');
+}
+
+// ══════════════════════════════════════════════
+//  복약 (TAKE) — 탭, 모달, 렌더
+// ══════════════════════════════════════════════
+// takeBundles 항목: { id, day:'YYYY-MM-DD', time:'HH:MM', meds:[{name}], checked:bool, groupId }
+// 한 번에 N일 복사하면 같은 groupId를 부여하지만, 체크는 각 날짜별 묶음 단위로 독립
+
+let takeDraft = { day: '', dayCount: 1, meds: [{ name: '', time: '08:00' }] };
+// meds 배열의 한 묶음(=하나의 묶음으로 입력) — 모든 약 + 각 시간 포함
+// 저장 시: dayCount 만큼 복제, 각 day 마다 하나의 bundle 생성 (= 하나의 체크 단위)
+// meds는 시간 정보 보유 (한 묶음 안에서도 약별로 시간 다를 수 있게)
+// 단, 사용자가 지정한 정의: "투약 묶음이 하나로 체크" → 하나의 입력 묶음 = 하나의 체크박스
+
+function openTakeEdit(id) {
+  editMode = 'take';
+  editingId = id;
+  if (id) {
+    const t = takeBundles.find(x => x.id === id);
+    document.getElementById('editModalTitle').textContent = '복약 수정';
+    takeDraft = {
+      day: t.day,
+      dayCount: 1,           // 수정 시에는 그 하나만 수정
+      meds: JSON.parse(JSON.stringify(t.meds || [])),
+    };
+  } else {
+    document.getElementById('editModalTitle').textContent = '새 복약';
+    takeDraft = {
+      day: todayStr(),
+      dayCount: 1,
+      meds: [{ id: newId(), name: '', time: '08:00' }],
+    };
+  }
+  renderTakeEditBody();
+  openModal('editModal');
+}
+
+function renderTakeEditBody() {
+  const body = document.getElementById('editBody');
+  body.innerHTML = '';
+
+  // 시작일
+  const dateGroup = makeEl('div', 'form-group');
+  dateGroup.innerHTML = `<label class="form-label">시작일</label>
+    <button type="button" class="date-input-btn" onclick="openCalendarFor('take', null, null)">
+      <span class="date-icon">📅</span>
+      <span id="takeDayText">${fmtDate(takeDraft.day)}</span>
+    </button>`;
+  body.appendChild(dateGroup);
+
+  // 며칠치 (신규 추가일 때만)
+  if (!editingId) {
+    const dayCntGroup = makeEl('div', 'form-group');
+    dayCntGroup.innerHTML = `<label class="form-label">복용 일수</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" min="1" max="60" class="take-day-count" id="takeDayCount" value="${takeDraft.dayCount}" oninput="takeDraft.dayCount=parseInt(this.value)||1">
+        <span style="color:var(--text-muted);font-size:0.85rem">일치 복사</span>
+      </div>`;
+    body.appendChild(dayCntGroup);
+  }
+
+  // 약 목록 라벨
+  const medLabel = makeEl('div', 'form-group');
+  medLabel.innerHTML = `<label class="form-label">약 목록 (한 묶음 = 한 번에 체크)</label>
+    <div id="takeMedRows"></div>
+    <button class="btn-add-row" onclick="addTakeMedRow()">+ 약 추가</button>`;
+  body.appendChild(medLabel);
+
+  renderTakeMedRows();
+}
+
+function renderTakeMedRows() {
+  const wrap = document.getElementById('takeMedRows');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  takeDraft.meds.forEach((med, i) => {
+    const row = makeEl('div', 'sauce-row');
+    row.dataset.rIdx = i;
+    row.innerHTML = `
+      <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
+      <input class="sauce-name" type="text" placeholder="약 이름" value="${escHtml(med.name||'')}" oninput="takeDraft.meds[${i}].name=this.value">
+      <input class="take-time-input" type="time" value="${escHtml(med.time||'08:00')}" oninput="takeDraft.meds[${i}].time=this.value">
+      <button class="sauce-del" onclick="removeTakeMedRow(${i})" title="삭제">✕</button>
+    `;
+    wrap.appendChild(row);
+  });
+  // 기존 드래그 로직 활용
+  setupSortable(wrap, '.sauce-row', '.sauce-drag', (from, to) => {
+    const [moved] = takeDraft.meds.splice(from, 1);
+    takeDraft.meds.splice(to, 0, moved);
+    renderTakeMedRows();
+  });
+}
+
+function addTakeMedRow() {
+  takeDraft.meds.push({ id: newId(), name: '', time: '08:00' });
+  renderTakeMedRows();
+}
+function removeTakeMedRow(i) {
+  takeDraft.meds.splice(i, 1);
+  renderTakeMedRows();
+}
+
+function saveTake() {
+  // 빈 약 이름 제거
+  const meds = takeDraft.meds.filter(m => (m.name || '').trim());
+  if (meds.length === 0) {
+    showAlert('입력 필요', '약 이름을 1개 이상 입력해주세요.');
+    return;
+  }
+
+  if (editingId) {
+    // 수정: 해당 bundle만 갱신
+    const idx = takeBundles.findIndex(x => x.id === editingId);
+    if (idx !== -1) {
+      takeBundles[idx] = { ...takeBundles[idx], day: takeDraft.day, meds };
+    }
+  } else {
+    // 신규: dayCount 만큼 복제. 같은 groupId 부여
+    const groupId = newId();
+    const cnt = Math.max(1, parseInt(takeDraft.dayCount) || 1);
+    const startD = new Date(takeDraft.day + 'T00:00:00');
+    for (let i = 0; i < cnt; i++) {
+      const d = new Date(startD);
+      d.setDate(startD.getDate() + i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      takeBundles.push({
+        id: newId(),
+        groupId,
+        day: `${y}-${m}-${dd}`,
+        meds: JSON.parse(JSON.stringify(meds)),
+        checked: false,
+      });
+    }
+  }
+  saveToStorage();
+  closeEdit();
+  renderTakes();
+}
+
+function deleteTake(id) {
+  const idx = takeBundles.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  document.getElementById('confirmTitle').textContent = '복약 항목 삭제';
+  document.getElementById('confirmMsg').textContent = '이 복약 묶음을 삭제할까요?\n삭제 후 복구할 수 없어요.';
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      takeBundles = takeBundles.filter(x => x.id !== id);
+      saveToStorage();
+      renderTakes();
+    }
+  };
+}
+
+function toggleTake(id) {
+  const t = takeBundles.find(x => x.id === id);
+  if (!t) return;
+  t.checked = !t.checked;
+  saveToStorage();
+  renderTakes();
+}
+
+function renderTakes() {
+  const list = [...takeBundles];
+  // 날짜 오름차순
+  list.sort((a, b) => {
+    if (a.day !== b.day) return a.day.localeCompare(b.day);
+    // 같은 날짜면 가장 빠른 시간 기준
+    const ta = (a.meds[0]?.time || '00:00');
+    const tb = (b.meds[0]?.time || '00:00');
+    return ta.localeCompare(tb);
+  });
+  // 날짜별 그룹화
+  const byDay = {};
+  list.forEach(b => { (byDay[b.day] = byDay[b.day] || []).push(b); });
+
+  const container = document.getElementById('takeList');
+  container.innerHTML = '';
+  document.getElementById('takeEmptyState').style.display = list.length === 0 ? 'block' : 'none';
+
+  Object.keys(byDay).sort().forEach(day => {
+    const dayBundles = byDay[day];
+    const dayGroup = makeEl('div', 'take-day-group');
+    const checkedCnt = dayBundles.filter(b => b.checked).length;
+    const dayEl = new Date(day + 'T00:00:00');
+    const dows = ['일','월','화','수','목','금','토'];
+    const dayLabel = `${fmtDate(day)} (${dows[dayEl.getDay()]})`;
+    dayGroup.innerHTML = `
+      <div class="take-day-header">
+        <span>${dayLabel}</span>
+        <span class="day-progress">${checkedCnt}/${dayBundles.length}</span>
+      </div>
+    `;
+    dayBundles.forEach(bundle => {
+      const bEl = makeEl('div', 'take-bundle' + (bundle.checked ? ' checked' : ''));
+      const medListHtml = bundle.meds.map(m =>
+        `<div>• ${escHtml(m.name)} <span style="color:var(--sky-deep);font-weight:600;font-size:0.78rem">${escHtml(m.time||'')}</span></div>`
+      ).join('');
+      bEl.innerHTML = `
+        <button class="take-check${bundle.checked ? ' checked' : ''}" onclick="toggleTake('${bundle.id}')">${bundle.checked ? '✓' : ''}</button>
+        <div class="take-bundle-info" onclick="openTakeEdit('${bundle.id}')" style="cursor:pointer">
+          <div class="take-med-list">${medListHtml}</div>
+        </div>
+        <button class="take-del" onclick="deleteTake('${bundle.id}')" title="삭제">✕</button>
+      `;
+      dayGroup.appendChild(bEl);
+    });
+    container.appendChild(dayGroup);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════
+function deleteDose(id) {
+  const r = doses.find(x => x.id === id);
+  document.getElementById('confirmTitle').textContent = '투약 항목 삭제';
+  document.getElementById('confirmMsg').textContent = `"${r ? r.title : ''}" 항목을 삭제할까요?\n삭제 후 복구할 수 없어요.`;
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      doses = doses.filter(x => x.id !== id);
+      saveToStorage();
+      renderList();
+    }
+  };
+}
+function closeConfirm(yes) {
+  if (yes && confirmCallback) {
+    const cb = confirmCallback;
+    confirmCallback = null;
+    cb(true);
+  } else {
+    confirmCallback = null;
+  }
+  closeModal('confirmModal');
+}
+
+// ══════════════════════════════════════════════
+//  ALERT
+// ══════════════════════════════════════════════
+function showAlert(title, msg, type) {
+  document.getElementById('alertTitle').textContent = title;
+  document.getElementById('alertMsg').textContent = msg;
+  const isSuccess = type === 'success';
+  document.getElementById('alertTitle').style.color = isSuccess ? 'var(--success)' : 'var(--danger)';
+  document.getElementById('alertIcon').textContent = isSuccess ? '✅' : '⚠️';
+  openModal('alertModal');
+}
+function closeAlert() {
+  closeModal('alertModal');
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function makeEl(tag, cls) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  return el;
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Close modals on overlay click
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+document.getElementById('calendarModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('calendarModal');
+});
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+  if (e.target === this) closeConfirm(false);
+});
+document.getElementById('alertModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAlert();
+});
+
+// ── INIT ──
+renderList();
+renderTakes();
+</script>
+</body>
+</html>
