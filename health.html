@@ -1076,6 +1076,24 @@
   .take-day-group.all-done {
     border-color: #f0d68a;
   }
+  /* 오늘 날짜 그룹 강조 (밝은 빨강) - all-done 보다 우선 */
+  .take-day-group.is-today .take-day-header {
+    background: linear-gradient(135deg, #ffe5e5, #ffd0d0);
+    color: #b94747;
+    border-bottom-color: #f5b8b8;
+  }
+  .take-day-group.is-today .take-day-header .day-progress {
+    color: #c84545;
+    background: rgba(255,255,255,0.6);
+  }
+  .take-day-group.is-today {
+    border-color: #f5b8b8;
+  }
+  /* 오늘 + 모두 완료 → 오늘이 우선이지만 부드럽게 살짝 금기를 섞음 */
+  .take-day-group.is-today.all-done .take-day-header {
+    background: linear-gradient(135deg, #ffe9d4, #ffd9bc);
+    color: #a85a30;
+  }
   .take-day-collapse-btn {
     background: none;
     border: none;
@@ -2021,17 +2039,15 @@ function renderSections() {
       `;
     } else {
       memoNum++;
-      // 메모: [드래그] [▼/▶ 토글] [📝 제목] [✕]
-      const defaultTitle = `메모 ${memoNum}`;
-      const displayTitle = sec.title || defaultTitle;
+      // 메모: [드래그] [▼/▶ 토글] [📝 메모 N] [✕]
+      // 자동 넘버링이므로 편집 불가 (투약 N과 동일한 패턴)
       const collapsedClass = sec.collapsed ? ' collapsed' : '';
       block.innerHTML = `
         <div class="section-block-header">
           <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
           <button class="section-collapse-btn${collapsedClass}" onclick="toggleSectionCollapse(${sIdx})" title="접기/펴기">▼</button>
           <div class="section-block-header-inner" style="padding-left:0">
-            <span style="font-size:1rem">📝</span>
-            <input class="section-title-input" style="flex:1;min-width:0;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
+            <span style="flex:1;font-size:0.78rem;font-weight:700;color:var(--sky-deep);white-space:nowrap;padding:9px 0">📝 메모 ${memoNum}</span>
             <button class="btn-remove-section" onclick="removeMemoSection(${sIdx})" title="삭제">✕</button>
           </div>
         </div>
@@ -2083,7 +2099,7 @@ function toggleSectionCollapse(sIdx) {
 function removeMemoSection(sIdx) {
   const sec = editSections[sIdx];
   if (!sec) return;
-  const hasContent = (sec.content || '').trim().length > 0 || (sec.title || '').trim().length > 0;
+  const hasContent = (sec.content || '').trim().length > 0;
   if (!hasContent) {
     editSections.splice(sIdx, 1);
     renderSections();
@@ -2913,6 +2929,7 @@ function buildTakeDayGroup(day, dayBundles, allDone) {
   const isCollapsed = !!takeDayCollapsed[day];
   if (isCollapsed) dayGroup.classList.add('collapsed');
   if (allDone) dayGroup.classList.add('all-done');
+  if (day === todayStr()) dayGroup.classList.add('is-today');
 
   const checkedCnt = dayBundles.filter(b => b.checked).length;
   const dayEl = new Date(day + 'T00:00:00');
