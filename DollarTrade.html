@@ -166,6 +166,17 @@
   /* Import warning */
   .warn-confirm { flex: 1; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
 
+  /* ── EXCHANGE RATE BANNER ── */
+  .rate-banner { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 7px 12px; margin: 0 0 10px; backdrop-filter: blur(4px); }
+  .rate-info { display: flex; align-items: center; gap: 8px; }
+  .rate-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); letter-spacing: 0.3px; }
+  .rate-value { font-size: 16px; font-weight: 700; color: #fff; font-family: 'DM Mono', monospace; letter-spacing: 0.5px; }
+  .rate-sub { font-size: 10px; color: rgba(255,255,255,0.65); }
+  .rate-refresh-btn { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+  .rate-refresh-btn:active { background: rgba(255,255,255,0.35); transform: rotate(180deg); }
+  .rate-refresh-btn.spinning { animation: spin 0.7s linear; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
   @media (prefers-color-scheme: dark) {
     /* keep light mode intentionally */
   }
@@ -188,6 +199,19 @@
         <button class="icon-btn" style="display:none">hidden</button>
         <input type="file" id="importFile" accept=".dtrade" style="display:none">
       </div>
+    </div>
+    <!-- EXCHANGE RATE BANNER -->
+    <div class="rate-banner" id="rateBanner">
+      <div class="rate-info">
+        <div>
+          <div class="rate-label">💱 현재 환율 (USD/KRW)</div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-top:2px;">
+            <span class="rate-value" id="rateValue">—</span>
+            <span class="rate-sub" id="rateSub">버튼을 눌러 조회</span>
+          </div>
+        </div>
+      </div>
+      <button class="rate-refresh-btn" id="rateRefreshBtn" title="환율 새로고침">🔄</button>
     </div>
     <div class="tabs">
       <div class="tab active" data-tab="buy">매수 <span class="tab-badge" id="buyBadge">0</span></div>
@@ -845,6 +869,38 @@ document.getElementById('importFile').addEventListener('change', (e) => {
   };
   reader.readAsText(file);
 });
+
+// ═══════════════════════════════════════════════
+// EXCHANGE RATE
+// ═══════════════════════════════════════════════
+const rateRefreshBtn = document.getElementById('rateRefreshBtn');
+const rateValue = document.getElementById('rateValue');
+const rateSub = document.getElementById('rateSub');
+
+async function fetchExchangeRate() {
+  rateRefreshBtn.classList.add('spinning');
+  rateValue.textContent = '조회 중…';
+  rateSub.textContent = '';
+  try {
+    // frankfurter.app: 무료·CORS OK
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=KRW');
+    if (!res.ok) throw new Error('network');
+    const data = await res.json();
+    const krw = Math.round(data.rates.KRW);
+    rateValue.textContent = krw.toLocaleString('ko-KR') + ' 원';
+    const now = new Date();
+    const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    rateSub.textContent = `${hm} 기준`;
+    showToast(`현재 환율: $1 = ${krw.toLocaleString('ko-KR')}원`);
+  } catch {
+    rateValue.textContent = '조회 실패';
+    rateSub.textContent = '네트워크 확인 후 재시도';
+  } finally {
+    rateRefreshBtn.classList.remove('spinning');
+  }
+}
+
+rateRefreshBtn.addEventListener('click', fetchExchangeRate);
 
 // ═══════════════════════════════════════════════
 // INIT
