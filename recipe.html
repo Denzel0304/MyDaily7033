@@ -586,11 +586,30 @@
     font-size: 0.9rem;
     line-height: 1.8;
     color: var(--text);
-    white-space: pre-wrap;
     background: #f8fcff;
     border-radius: 10px;
     padding: 12px 14px;
     border: 1px solid var(--sky-light);
+  }
+  .view-memo-line {
+    display: flex;
+    align-items: flex-start;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .view-memo-num {
+    flex-shrink: 0;
+    margin-right: 0;
+  }
+  .view-memo-text {
+    flex: 1;
+    min-width: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .view-memo-plain {
+    white-space: pre-wrap;
+    word-break: break-word;
   }
   .view-close {
     margin: 0 20px 20px;
@@ -1310,9 +1329,16 @@ function openView(id) {
     } else {
       const content = (sec.content || '').trim();
       if (!content) return;
+      const memoHtml = content.split('\n').map(line => {
+        const m = line.match(/^(\d+\.\s)([\s\S]*)$/);
+        if (m) {
+          return `<div class="view-memo-line"><span class="view-memo-num">${escHtml(m[1])}</span><span class="view-memo-text">${escHtml(m[2])}</span></div>`;
+        }
+        return `<div class="view-memo-plain">${escHtml(line) || '&nbsp;'}</div>`;
+      }).join('');
       sectionsHtml += `<div class="view-section">
         <div class="view-section-title">📝 ${escHtml(title)}</div>
-        <div class="view-memo">${escHtml(content)}</div>
+        <div class="view-memo">${memoHtml}</div>
       </div>`;
     }
   });
