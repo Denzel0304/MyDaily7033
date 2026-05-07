@@ -1153,13 +1153,12 @@
     white-space: nowrap;
   }
   .take-bundle {
-    padding: 22px 14px;
+    padding: 10px 14px;
     border-bottom: 1px solid #f0f7fc;
     display: flex;
     align-items: center;
     gap: 12px;
     transition: background 0.15s;
-    min-height: 80px;
   }
   .take-bundle:last-child { border-bottom: none; }
   .take-bundle.checked {
@@ -1186,31 +1185,39 @@
   }
   .take-check.checked { background: var(--sky-dark); }
   .take-bundle-info { flex: 1; min-width: 0; }
-  .take-med-list {
-    font-size: 1.02rem;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.5;
-    word-break: break-word;
-  }
-  .take-med-row {
+  /* 시간 + 약 목록 가로 배치 (약이 많으면 자동 줄바꿈) */
+  .take-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 2px 0;
+    flex-wrap: wrap;
+    gap: 6px 10px;
   }
-  .take-med-row .med-name {
+  .take-med-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
     flex: 1;
     min-width: 0;
+  }
+  .take-med-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .take-med-row .med-name {
     word-break: break-word;
   }
   .take-med-del {
     background: none;
     border: none;
     color: #c8c8c8;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    padding: 2px 8px;
+    padding: 1px 6px;
     border-radius: 6px;
     flex-shrink: 0;
     line-height: 1;
@@ -1221,10 +1228,15 @@
     background: #fdeaea;
   }
   .take-time {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     color: var(--sky-deep);
     font-weight: 700;
-    margin-top: 4px;
+    flex-shrink: 0;
+    cursor: pointer;
+    padding: 2px 8px;
+    background: rgba(135,206,235,0.15);
+    border-radius: 8px;
+    white-space: nowrap;
   }
   .take-del {
     background: none;
@@ -2927,19 +2939,21 @@ function buildTakeDayGroup(day, dayBundles, allDone) {
   dayBundles.forEach(bundle => {
     const bEl = makeEl('div', 'take-bundle' + (bundle.checked ? ' checked' : ''));
     const medListHtml = (bundle.meds || []).map(m =>
-      `<div class="take-med-row">
-         <span class="med-name">• ${escHtml(m.name)}</span>
+      `<span class="take-med-row">
+         <span class="med-name">${escHtml(m.name)}</span>
          <button class="take-med-del" onclick="event.stopPropagation(); deleteTakeMed('${bundle.id}','${m.id}')" title="이 약만 삭제">✕</button>
-       </div>`
+       </span>`
     ).join('');
     const srcHtml = bundle.sourceLabel
-      ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:5px">📌 ${escHtml(bundle.sourceLabel)}</div>`
+      ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">📌 ${escHtml(bundle.sourceLabel)}</div>`
       : '';
     bEl.innerHTML = `
       <button class="take-check${bundle.checked ? ' checked' : ''}" onclick="toggleTake('${bundle.id}')">${bundle.checked ? '✓' : ''}</button>
       <div class="take-bundle-info">
-        <div class="take-time" onclick="openTakeEdit('${bundle.id}')" style="cursor:pointer">⏰ ${escHtml(bundle.time || '')}</div>
-        <div class="take-med-list">${medListHtml}</div>
+        <div class="take-row">
+          <span class="take-time" onclick="openTakeEdit('${bundle.id}')">⏰ ${escHtml(bundle.time || '')}</span>
+          <div class="take-med-list">${medListHtml}</div>
+        </div>
         ${srcHtml}
       </div>
     `;
