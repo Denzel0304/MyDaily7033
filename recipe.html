@@ -7,21 +7,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --sky: #87CEEB;
-    --sky-light: #c8e8f8;
-    --sky-dark: #5ba8d4;
-    --sky-deep: #3a8bbf;
+    --sky: #F4A460;
+    --sky-light: #fde8d0;
+    --sky-dark: #e07830;
+    --sky-deep: #c45e18;
     --white: #ffffff;
     --card-bg: rgba(255,255,255,0.92);
-    --text: #1a2e3b;
-    --text-muted: #6b8fa3;
-    --border: #b8d8ec;
+    --text: #2e1a0e;
+    --text-muted: #9a6b4b;
+    --border: #f0c8a0;
     --accent: #e8732a;
     --accent-light: #fdeee4;
     --danger: #e05c5c;
     --success: #4caf7d;
-    --shadow: 0 4px 20px rgba(58,139,191,0.15);
-    --shadow-lg: 0 8px 40px rgba(58,139,191,0.22);
+    --shadow: 0 4px 20px rgba(196,94,24,0.15);
+    --shadow-lg: 0 8px 40px rgba(196,94,24,0.22);
     --radius: 16px;
     --radius-sm: 10px;
   }
@@ -30,7 +30,7 @@
 
   body {
     font-family: 'Noto Sans KR', sans-serif;
-    background: linear-gradient(160deg, #b8e4f7 0%, #87CEEB 40%, #a8d8ea 80%, #caeaf7 100%);
+    background: linear-gradient(160deg, #fde8d0 0%, #f4c090 40%, #f0a86a 80%, #fde0c0 100%);
     min-height: 100vh;
     color: var(--text);
     padding-bottom: 80px;
@@ -46,7 +46,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 16px rgba(58,139,191,0.12);
+    box-shadow: 0 2px 16px rgba(196,94,24,0.12);
   }
   .header-top {
     text-align: center;
@@ -188,14 +188,14 @@
     font-size: 1.6rem;
     border: none;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(58,139,191,0.4);
+    box-shadow: 0 6px 20px rgba(196,94,24,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.15s, box-shadow 0.15s;
     z-index: 200;
   }
-  .fab:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(58,139,191,0.5); }
+  .fab:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(196,94,24,0.5); }
 
   /* ── MODAL OVERLAY ── */
   .modal-overlay {
@@ -530,7 +530,7 @@
     font-weight: 700;
     cursor: pointer;
     font-family: 'Noto Sans KR', sans-serif;
-    box-shadow: 0 4px 14px rgba(58,139,191,0.3);
+    box-shadow: 0 4px 14px rgba(196,94,24,0.3);
   }
 
   /* ── VIEW MODAL ── */
@@ -1092,7 +1092,7 @@ function renderSections() {
         <span class="section-drag-handle" title="드래그로 순서 변경">☰</span>
         <div class="section-block-header-inner">
           <span style="font-size:1rem">${icon}</span>
-          <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;" value="${escHtml(displayTitle)}" placeholder="${defaultTitle}" oninput="editSections[${sIdx}].title=this.value">
+          <input class="section-title-input" style="flex:1;background:none;border:none;outline:none;font-size:0.8rem;font-weight:700;color:var(--sky-deep);font-family:'Noto Sans KR',sans-serif;cursor:default;pointer-events:none;user-select:none;" readonly value="${escHtml(displayTitle)}" tabindex="-1">
           <button class="btn-remove-section" onclick="removeSection(${sIdx})" title="삭제">✕</button>
         </div>
       </div>
