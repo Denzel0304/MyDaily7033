@@ -19,21 +19,90 @@
   --accent-light: #FDE8D8;
   --accent-mid: #F9A870;
   --accent-btn: #C8623C;
+  --header-bg: #BFE0F5;
 }
 html, body { height: 100%; overflow: hidden; background: var(--sky); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); }
 #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 480px; margin: 0 auto; background: var(--sky); }
-.app-header { height: 52px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.app-title { font-size: 18px; font-weight: 700; color: var(--text); }
+
+/* HEADER */
+.app-header {
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  background: var(--header-bg);
+  border-bottom: 1.5px solid rgba(44,74,90,0.13);
+  padding: 0 16px 0 18px;
+  box-shadow: 0 2px 8px rgba(44,74,90,0.07);
+}
+.header-left { display: flex; align-items: center; gap: 8px; }
+.app-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+.header-icon { font-size: 26px; line-height: 1; }
+.gear-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: background 0.15s;
+  position: relative;
+}
+.gear-btn:active { background: rgba(44,74,90,0.1); }
+
+/* GEAR DROPDOWN */
+.gear-dropdown {
+  position: absolute;
+  top: 54px; right: 12px;
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-mid);
+  box-shadow: 0 6px 24px rgba(44,74,90,0.18);
+  z-index: 200;
+  min-width: 150px;
+  overflow: hidden;
+  animation: dropIn 0.15s ease;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.gear-dropdown.hidden { display: none; }
+.gear-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px;
+  font-size: 14px; font-weight: 500; color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s;
+  border: none; background: transparent; width: 100%; text-align: left;
+}
+.gear-menu-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+.gear-menu-item:active { background: var(--accent-light); }
+.gear-menu-item .mi-icon { font-size: 16px; }
+.dropdown-backdrop {
+  position: fixed; inset: 0; z-index: 199;
+  background: transparent;
+}
+.dropdown-backdrop.hidden { display: none; }
+
 .tab-content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 
 /* PANEL */
 .panel { padding: 0 12px 20px; }
-.panel-hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 10px; }
-.panel-title { font-size: 16px; font-weight: 700; color: var(--text); }
-.add-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-mid); color: white; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.io-btn { height: 34px; padding: 0 12px; border-radius: 17px; background: var(--white); color: var(--accent-btn); border: 1.5px solid var(--accent-mid); font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
-.io-btn-label { font-size: 11px; font-weight: 600; color: var(--accent-btn); }
-.panel-hd-right { display: flex; align-items: center; gap: 10px; }
+.panel-hd { display: flex; align-items: center; justify-content: flex-end; padding: 14px 4px 10px; }
+.add-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent-mid);
+  color: white; border: none;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(232,132,90,0.3);
+  margin-right: 4px;
+}
 
 /* ITEM LIST */
 .item-list { display: flex; flex-direction: column; gap: 8px; }
@@ -49,7 +118,7 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
 .dday-today { background: #E6FFE6; color: #1A6B1A; }
 .empty-msg { text-align: center; padding: 32px 0; color: var(--text-light); font-size: 13px; }
 
-/* MODAL */
+/* MODAL (add/edit) */
 .modal-overlay { position: fixed; inset: 0; background: rgba(44,74,90,0.45); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
 .modal-overlay.hidden { display: none; }
 .modal-box { background: var(--white); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; padding: 20px 20px 36px; max-height: 85vh; overflow-y: auto; }
@@ -64,25 +133,51 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
 .modal-acts { display: flex; gap: 8px; margin-top: 18px; }
 .btn-cancel { flex: 1; padding: 13px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-mid); background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-save { flex: 2; padding: 13px; border-radius: var(--radius-sm); border: none; background: var(--accent-btn); color: white; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+/* DELETE CONFIRM MODAL */
+.confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(44,74,90,0.52);
+  z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.confirm-overlay.hidden { display: none; }
+.confirm-box {
+  background: var(--white);
+  border-radius: 18px;
+  width: 100%; max-width: 320px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 8px 40px rgba(44,74,90,0.22);
+  animation: popIn 0.18s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to { opacity: 1; transform: scale(1); }
+}
+.confirm-icon { font-size: 36px; text-align: center; margin-bottom: 12px; }
+.confirm-title { font-size: 16px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 6px; }
+.confirm-desc { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 22px; line-height: 1.5; }
+.confirm-acts { display: flex; gap: 8px; }
+.btn-confirm-cancel { flex: 1; padding: 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border-mid); background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-confirm-del { flex: 1.4; padding: 12px; border-radius: var(--radius-sm); border: none; background: #D94040; color: white; font-size: 14px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
 <div id="app">
   <div class="app-header">
-    <span style="display:flex;align-items:center;gap:7px;">
-      <span style="font-size:22px;line-height:1">⏳</span>
+    <div class="header-left">
+      <span class="header-icon">⏳</span>
       <span class="app-title">디데이</span>
-    </span>
+    </div>
+    <div style="position:relative">
+      <button class="gear-btn" id="gear-btn" aria-label="설정">⚙️</button>
+    </div>
   </div>
   <div class="tab-content">
     <div class="panel" id="panel-dday">
       <div class="panel-hd">
-        <span class="panel-title">디데이</span>
-        <div class="panel-hd-right">
-          <button class="io-btn" id="import-dd">📥<span class="io-btn-label">불러오기</span></button>
-          <button class="io-btn" id="export-dd">📤<span class="io-btn-label">내보내기</span></button>
-          <button class="add-btn" id="add-dd">+</button>
-        </div>
+        <button class="add-btn" id="add-dd" aria-label="추가">+</button>
       </div>
       <div class="item-list" id="dd-list"></div>
     </div>
@@ -90,6 +185,16 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
   </div>
 </div>
 
+<!-- 기어 드롭다운 배경 -->
+<div class="dropdown-backdrop hidden" id="dropdown-backdrop"></div>
+
+<!-- 기어 드롭다운 메뉴 -->
+<div class="gear-dropdown hidden" id="gear-dropdown">
+  <button class="gear-menu-item" id="menu-import"><span class="mi-icon">📥</span> 불러오기</button>
+  <button class="gear-menu-item" id="menu-export"><span class="mi-icon">📤</span> 내보내기</button>
+</div>
+
+<!-- 추가/수정 모달 -->
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-box">
     <div class="modal-title" id="m-title">디데이 추가</div>
@@ -119,8 +224,24 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
   </div>
 </div>
 
+<!-- 삭제 확인 모달 -->
+<div class="confirm-overlay hidden" id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">삭제할까요?</div>
+    <div class="confirm-desc" id="confirm-desc">이 디데이를 삭제하면<br>다시 복구할 수 없어요.</div>
+    <div class="confirm-acts">
+      <button class="btn-confirm-cancel" id="confirm-cancel">취소</button>
+      <button class="btn-confirm-del" id="confirm-ok">삭제</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const $ = id => document.getElementById(id);
+
+// ── FILE SIGNATURE ────────────────────────────────────────────────────
+const FILE_SIG = 'soso_dday_v1';
 
 // ── UTILS ─────────────────────────────────────────────────────────────
 function today0() { const d = new Date(); d.setHours(0,0,0,0); return d; }
@@ -135,11 +256,141 @@ function save() {
   localStorage.setItem('ss_dd', JSON.stringify(S.dd));
 }
 
+// ── HISTORY STACK MANAGER ─────────────────────────────────────────────
+// 현재 열려있는 레이어를 추적 (최대 1개만 유지)
+// 'gear' | 'modal' | 'confirm' | null
+let activeLayer = null;
+
+function pushLayer(name) {
+  // 새 레이어 열 때 항상 새 히스토리 엔트리 1개만 추가
+  history.pushState({ layer: name }, '');
+  activeLayer = name;
+}
+
+function closeLayer(name) {
+  if (activeLayer !== name) return;
+  activeLayer = null;
+  // closeLayer는 직접 UI만 닫음 (popstate에서 호출 시 history 조작 불필요)
+}
+
+window.addEventListener('popstate', e => {
+  const layer = e.state && e.state.layer;
+  if (layer === 'gear') {
+    hideGear(false);
+  } else if (layer === 'modal') {
+    hideModal(false);
+  } else if (layer === 'confirm') {
+    hideConfirm(false);
+  } else {
+    // 아무 레이어도 없는 상태에서 뒤로가기 → 정상 종료
+    // 이미 activeLayer가 null이면 브라우저 기본 동작
+  }
+});
+
+// ── GEAR DROPDOWN ─────────────────────────────────────────────────────
+function showGear() {
+  $('gear-dropdown').classList.remove('hidden');
+  $('dropdown-backdrop').classList.remove('hidden');
+  pushLayer('gear');
+}
+function hideGear(goBack = true) {
+  $('gear-dropdown').classList.add('hidden');
+  $('dropdown-backdrop').classList.add('hidden');
+  closeLayer('gear');
+  if (goBack) history.back();
+}
+
+$('gear-btn').onclick = () => showGear();
+$('dropdown-backdrop').onclick = () => hideGear(true);
+$('menu-import').onclick = () => {
+  hideGear(true);
+  $('file-import-dd').click();
+};
+$('menu-export').onclick = () => {
+  hideGear(true);
+  exportData();
+};
+
+// ── ADD/EDIT MODAL ────────────────────────────────────────────────────
+let mCtx = { item: null, idx: null };
+
+function showModal() {
+  $('modal').classList.remove('hidden');
+  pushLayer('modal');
+}
+function hideModal(goBack = true) {
+  $('modal').classList.add('hidden');
+  closeLayer('modal');
+  if (goBack) history.back();
+}
+
+function openModal(item, idx) {
+  mCtx = { item, idx };
+  const isE = item !== null;
+  $('m-title').textContent = isE ? '수정' : '디데이 추가';
+  $('f-name').value = isE ? item.name : '';
+  $('f-memo').value = isE ? (item.memo || '') : '';
+  if (isE && item.date) {
+    const [y, m, d] = item.date.split('-');
+    $('f-y').value = +y; $('f-mo').value = +m; $('f-d').value = +d;
+  } else {
+    $('f-y').value = ''; $('f-mo').value = ''; $('f-d').value = '';
+  }
+  showModal();
+  // 수정 시 포커스 없음 (요청 6번)
+}
+
+$('m-cancel').onclick = () => hideModal(true);
+$('modal').onclick = e => { if (e.target === $('modal')) hideModal(true); };
+
+$('m-save').onclick = () => {
+  const name = $('f-name').value.trim();
+  if (!name) { $('f-name').focus(); return; }
+  if (!$('f-y').value || !$('f-mo').value || !$('f-d').value) { alert('날짜를 입력해주세요'); return; }
+  const { item, idx } = mCtx;
+  const y = String($('f-y').value).padStart(4, '0');
+  const m = String($('f-mo').value).padStart(2, '0');
+  const d = String($('f-d').value).padStart(2, '0');
+  const obj = { id: item?.id || Date.now(), name, memo: $('f-memo').value.trim(), date: `${y}-${m}-${d}` };
+  if (idx !== null && idx >= 0) S.dd[idx] = obj;
+  else S.dd.push(obj);
+  save();
+  renderDd();
+  hideModal(true);
+};
+
+// ── DELETE CONFIRM MODAL ───────────────────────────────────────────────
+let pendingDeleteId = null;
+
+function showConfirm(id, name) {
+  pendingDeleteId = id;
+  $('confirm-desc').innerHTML = `<b>${name}</b>을(를) 삭제하면<br>다시 복구할 수 없어요.`;
+  $('confirm-modal').classList.remove('hidden');
+  pushLayer('confirm');
+}
+function hideConfirm(goBack = true) {
+  $('confirm-modal').classList.add('hidden');
+  pendingDeleteId = null;
+  closeLayer('confirm');
+  if (goBack) history.back();
+}
+
+$('confirm-cancel').onclick = () => hideConfirm(true);
+$('confirm-ok').onclick = () => {
+  if (pendingDeleteId !== null) {
+    S.dd = S.dd.filter(x => x.id !== pendingDeleteId);
+    save();
+    renderDd();
+  }
+  hideConfirm(true);
+};
+$('confirm-modal').onclick = e => { if (e.target === $('confirm-modal')) hideConfirm(true); };
+
 // ── RENDER ────────────────────────────────────────────────────────────
 function renderDd() {
   const list = $('dd-list');
   list.innerHTML = '';
-  // 날짜 기준 내림차순: 미래(먼 날짜)가 상단, 오래된 과거가 하단
+  // 미래(먼 날짜)가 상단, 오래된 과거가 하단 (내림차순)
   const sorted = [...S.dd].sort((a, b) => b.date.localeCompare(a.date));
   if (!sorted.length) { list.innerHTML = '<div class="empty-msg">디데이를 추가해보세요</div>'; return; }
   sorted.forEach(it => list.appendChild(makeCard(it)));
@@ -196,7 +447,7 @@ function makeCard(it) {
   const db = document.createElement('button');
   db.className = 'del-btn';
   db.textContent = '✕';
-  db.onclick = () => delItem(it.id);
+  db.onclick = () => showConfirm(it.id, it.name);
 
   acts.appendChild(eb);
   acts.appendChild(db);
@@ -205,57 +456,13 @@ function makeCard(it) {
   return card;
 }
 
-// ── MODAL ─────────────────────────────────────────────────────────────
-let mCtx = { item: null, idx: null };
-
-function openModal(item, idx) {
-  mCtx = { item, idx };
-  const isE = item !== null;
-  $('m-title').textContent = isE ? '수정' : '디데이 추가';
-  $('f-name').value = isE ? item.name : '';
-  $('f-memo').value = isE ? (item.memo || '') : '';
-  if (isE && item.date) {
-    const [y, m, d] = item.date.split('-');
-    $('f-y').value = +y; $('f-mo').value = +m; $('f-d').value = +d;
-  } else {
-    $('f-y').value = ''; $('f-mo').value = ''; $('f-d').value = '';
-  }
-  $('modal').classList.remove('hidden');
-  setTimeout(() => $('f-name').focus(), 100);
-}
-
-$('m-cancel').onclick = () => $('modal').classList.add('hidden');
-$('modal').onclick = e => { if (e.target === $('modal')) $('modal').classList.add('hidden'); };
-
-$('m-save').onclick = () => {
-  const name = $('f-name').value.trim();
-  if (!name) { $('f-name').focus(); return; }
-  if (!$('f-y').value || !$('f-mo').value || !$('f-d').value) { alert('날짜를 입력해주세요'); return; }
-  const { item, idx } = mCtx;
-  const y = String($('f-y').value).padStart(4, '0');
-  const m = String($('f-mo').value).padStart(2, '0');
-  const d = String($('f-d').value).padStart(2, '0');
-  const obj = { id: item?.id || Date.now(), name, memo: $('f-memo').value.trim(), date: `${y}-${m}-${d}` };
-  if (idx !== null && idx >= 0) S.dd[idx] = obj;
-  else S.dd.push(obj);
-  save();
-  renderDd();
-  $('modal').classList.add('hidden');
-};
-
-function delItem(id) {
-  if (!confirm('삭제할까요?')) return;
-  S.dd = S.dd.filter(x => x.id !== id);
-  save();
-  renderDd();
-}
-
 // ── 내보내기 / 불러오기 ───────────────────────────────────────────────
 function exportData() {
   const date = new Date();
   const ds = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
   const filename = `soso_dday_${ds}.json`;
-  const blob = new Blob([JSON.stringify({ _sig: 'soso_dday_v1', data: S.dd }, null, 2)], { type: 'application/json' });
+  const payload = { _sig: FILE_SIG, data: S.dd };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename;
@@ -270,8 +477,15 @@ function importData(file) {
   reader.onload = e => {
     try {
       const parsed = JSON.parse(e.target.result);
-      if (!parsed || parsed._sig !== 'soso_dday_v1' || !Array.isArray(parsed.data)) { alert('올바른 파일이 아니에요.'); return; }
+
+      // 시그니처 검증
+      if (!parsed._sig || parsed._sig !== FILE_SIG) {
+        alert('이 앱에서 내보낸 디데이 파일이 아니에요.\n올바른 파일을 선택해주세요.');
+        return;
+      }
       const data = parsed.data;
+      if (!Array.isArray(data)) { alert('파일 형식이 올바르지 않아요.'); return; }
+
       if (confirm(`디데이 ${data.length}개를 불러올까요?\n기존 데이터는 덮어씌워져요.`)) {
         S.dd = data;
         save();
@@ -286,12 +500,13 @@ function importData(file) {
 }
 
 $('add-dd').onclick = () => openModal(null, null);
-$('export-dd').onclick = () => exportData();
-$('import-dd').onclick = () => $('file-import-dd').click();
 $('file-import-dd').onchange = e => { importData(e.target.files[0]); e.target.value = ''; };
 
+// ── INIT ──────────────────────────────────────────────────────────────
 load();
 renderDd();
+// 초기 히스토리 상태 (레이어 없음)
+history.replaceState({ layer: null }, '');
 </script>
 </body>
 </html>
