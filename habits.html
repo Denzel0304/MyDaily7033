@@ -29,7 +29,7 @@
       position: relative; z-index: 1; width: 100%; max-width: 420px;
       padding: 0 18px 100px; display: flex; flex-direction: column;
     }
-    header { padding: 30px 4px 20px; animation: fadeUp 0.4s ease both; }
+    header { padding: 16px 4px 10px; animation: fadeUp 0.4s ease both; }
     .header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
     .back-btn {
       display: inline-flex; align-items: center; gap: 5px;
@@ -49,7 +49,7 @@
     }
     .page-title span { color: var(--purple-mid); }
     .page-subtitle { font-size: 13px; color: var(--text-light); margin-top: 4px; text-align: center; }
-    .view-tabs { display: flex; gap: 8px; margin-top: 20px; animation: fadeUp 0.4s 0.08s ease both; padding-bottom: 14px; }
+    .view-tabs { display: flex; gap: 8px; margin-top: 10px; animation: fadeUp 0.4s 0.08s ease both; padding-bottom: 12px; }
     .tab-btn {
       flex: 1; padding: 10px; border: none; border-radius: 50px;
       font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
@@ -419,6 +419,7 @@ function openModal() {
   document.getElementById('daily-days-row').style.display='none'; document.getElementById('goal-days-per-week').value='';
   document.getElementById('goal-days-error').style.display='none';
   document.getElementById('modal').classList.add('open');
+  history.pushState({modal: true}, '');
   setTimeout(() => document.getElementById('habit-name-input').focus(), 300);
 }
 function openEditModal(habitId) {
@@ -446,9 +447,18 @@ function openEditModal(habitId) {
     dailyDaysRow.style.display='block'; document.getElementById('goal-days-per-week').value=h.days_per_week||7;
   }
   document.getElementById('modal').classList.add('open');
+  history.pushState({modal: true}, '');
 }
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  const modal = document.getElementById('modal');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  if (history.state && history.state.modal) history.back();
+}
 function handleOverlayClick(e) { if (e.target.id === 'modal') closeModal(); }
+window.addEventListener('popstate', function(e) {
+  const modal = document.getElementById('modal');
+  if (modal.classList.contains('open')) { modal.classList.remove('open'); }
+});
 function saveHabit() {
   const name = document.getElementById('habit-name-input').value.trim();
   if (!name) { alert('습관 이름을 입력해주세요.'); return; }
