@@ -49,7 +49,7 @@
     }
     .page-title span { color: var(--purple-mid); }
     .page-subtitle { font-size: 13px; color: var(--text-light); margin-top: 4px; text-align: center; }
-    .view-tabs { display: flex; gap: 8px; margin-top: 20px; animation: fadeUp 0.4s 0.08s ease both; }
+    .view-tabs { display: flex; gap: 8px; margin-top: 20px; animation: fadeUp 0.4s 0.08s ease both; padding-bottom: 14px; }
     .tab-btn {
       flex: 1; padding: 10px; border: none; border-radius: 50px;
       font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
@@ -238,6 +238,16 @@
       display: flex; align-items: center; justify-content: center;
     }
     .month-nav-label { font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-mid); }
+    .sticky-header {
+      position: sticky; top: 0; z-index: 50;
+      margin: 0 -18px;
+      padding: 0 18px;
+      background: rgba(232,246,253,0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 2px 16px rgba(79,174,224,0.10);
+      border-bottom: 1.5px solid rgba(176,210,235,0.4);
+    }
     @media (max-width: 400px) { .icon-picker-grid { grid-template-columns: repeat(7, 1fr); } }
   </style>
 </head>
@@ -247,6 +257,7 @@
 <div class="bg-blob bg-blob-3"></div>
 
 <div class="container">
+  <div class="sticky-header">
   <header>
     <div class="header-top">
       <div class="header-title-wrap">
@@ -259,6 +270,7 @@
   <div class="view-tabs">
     <button class="tab-btn active" id="tab-week" onclick="switchTab('week')">📅 이번 주</button>
     <button class="tab-btn" id="tab-month" onclick="switchTab('month')">📆 이번 달</button>
+  </div>
   </div>
 
   <!-- 주간 뷰 -->
