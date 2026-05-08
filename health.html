@@ -1751,11 +1751,23 @@ function importData(e) {
         showAlert('형식 오류', '이 파일은 이 앱에서 내보낸 파일이 아닙니다.\n올바른 파일을 선택해주세요.');
         return;
       }
-      doses = data.doses || [];
-      takeBundles = data.takeBundles || [];
+      const existingDoseIds = new Set(doses.map(d => d.id));
+      const existingTakeIds = new Set(takeBundles.map(b => b.id));
+
+      const addedDoses = (data.doses || []).filter(d => !existingDoseIds.has(d.id));
+      const addedTakes = (data.takeBundles || []).filter(b => !existingTakeIds.has(b.id));
+      const skippedDoses = (data.doses || []).length - addedDoses.length;
+      const skippedTakes = (data.takeBundles || []).length - addedTakes.length;
+
+      doses = [...doses, ...addedDoses];
+      takeBundles = [...takeBundles, ...addedTakes];
       saveToStorage();
       if (currentTab === 'dose') renderList(); else renderTakes();
-      showAlert('가져오기 완료', `투약 ${doses.length}건, 복약 ${takeBundles.length}건 불러왔습니다.`, 'success');
+
+      const skipMsg = (skippedDoses + skippedTakes) > 0
+        ? `\n중복 스킵: 투약 ${skippedDoses}건, 복약 ${skippedTakes}건`
+        : '';
+      showAlert('가져오기 완료', `추가됨: 투약 ${addedDoses.length}건, 복약 ${addedTakes.length}건${skipMsg}`, 'success');
     } catch {
       showAlert('형식 오류', '파일을 읽을 수 없어요. 손상된 파일이거나 형식이 맞지 않아요.');
     }
