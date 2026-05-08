@@ -242,7 +242,7 @@
       position: sticky; top: 0; z-index: 50;
       margin: 0 -18px;
       padding: 0 18px;
-      background: rgba(232,246,253,0.88);
+      background: rgba(232,246,253,0.92);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       box-shadow: 0 2px 16px rgba(79,174,224,0.10);
@@ -449,6 +449,7 @@ function openEditModal(habitId) {
   document.getElementById('modal').classList.add('open');
   history.pushState({modal: true}, '');
 }
+function closeModal() {
   const modal = document.getElementById('modal');
   if (!modal.classList.contains('open')) return;
   modal.classList.remove('open');
@@ -457,7 +458,7 @@ function openEditModal(habitId) {
 function handleOverlayClick(e) { if (e.target.id === 'modal') closeModal(); }
 window.addEventListener('popstate', function(e) {
   const modal = document.getElementById('modal');
-  if (modal.classList.contains('open')) { modal.classList.remove('open'); }
+  if (modal.classList.contains('open')) modal.classList.remove('open');
 });
 function saveHabit() {
   const name = document.getElementById('habit-name-input').value.trim();
