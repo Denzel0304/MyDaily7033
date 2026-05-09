@@ -516,20 +516,6 @@ input { font-family: inherit; }
   border: 1px solid var(--border);
   background: #f8f9fa;
 }
-.pill-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-.pill-grid .card { margin: 0; }
-.pill-grid .pill-thumb {
-  width: 100%;
-  aspect-ratio: 1.6;
-  background: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  object-fit: contain;
-}
 
 /* TOAST */
 .toast {
@@ -686,10 +672,6 @@ input { font-family: inherit; }
 
     <!-- 약정보 탭 -->
     <section class="tab-panel" id="tab-drug">
-      <div class="segmented" id="drugSeg">
-        <button class="active" data-sub="name">이름으로</button>
-        <button data-sub="shape">모양으로</button>
-      </div>
       <div id="drugContent"></div>
     </section>
   </main>
@@ -746,8 +728,6 @@ const API_KEYS = {
   hospital:  '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25',
   // ④ 의약품 제품 허가정보 (전문+일반 전체) - data.go.kr/data/15095677
   drugPrmsn: '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25',
-  // ⑤ 의약품 낱알식별 - data.go.kr/data/15057639
-  drugPill:  '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25'
 };
 
 /* ============================================
@@ -758,7 +738,6 @@ const App = {
   state: {
     activeTab: 'hospital',
     activeEmerSub: 'er',
-    activeDrugSub: 'name',
     pharmacyFilter: 'open',
     location: null,        // {lat, lon, label, sido, sigungu}
     modalStack: [],        // 열린 모달 스택
@@ -842,14 +821,6 @@ const App = {
         btn.classList.add('active');
         this.state.activeEmerSub = btn.dataset.sub;
         this.renderEmergency();
-      });
-    });
-    document.querySelectorAll('#drugSeg button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#drugSeg button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.state.activeDrugSub = btn.dataset.sub;
-        this.renderDrug();
       });
     });
   },
@@ -1993,76 +1964,15 @@ App._openHospitalDetail = function(item) {
    ============================================ */
 App.renderDrug = function() {
   const c = document.getElementById('drugContent');
-  const sub = this.state.activeDrugSub;
-  if (sub === 'name') {
-    c.innerHTML = `
-      <div class="searchbar" id="drugNameSearch" style="margin-top:12px;">
-        <span class="icon">🔍</span>
-        <input type="text" placeholder="약 이름 또는 제조사 입력" id="drugNameInput" />
-        <button class="clear">×</button>
-      </div>
-      <div id="drugNameResults"><div class="state-msg"><div class="ico">💊</div>약 이름을 검색해보세요<div class="sub">예) 타이레놀, 게보린, 후시딘</div></div></div>
-    `;
-    this._bindDrugNameSearch();
-  } else if (sub === 'shape') {
-    c.innerHTML = `
-      <div style="padding:12px 16px;">
-        <div class="filter-row">
-          <div class="group">
-            <label>모양</label>
-            <select id="pillShape">
-              <option value="">전체</option>
-              <option value="원형">원형</option>
-              <option value="타원형">타원형</option>
-              <option value="장방형">장방형</option>
-              <option value="삼각형">삼각형</option>
-              <option value="사각형">사각형</option>
-              <option value="마름모형">마름모형</option>
-              <option value="오각형">오각형</option>
-              <option value="육각형">육각형</option>
-              <option value="팔각형">팔각형</option>
-              <option value="반원형">반원형</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
-          <div class="group">
-            <label>색상</label>
-            <select id="pillColor">
-              <option value="">전체</option>
-              <option value="하양">하양</option>
-              <option value="노랑">노랑</option>
-              <option value="주황">주황</option>
-              <option value="분홍">분홍</option>
-              <option value="빨강">빨강</option>
-              <option value="갈색">갈색</option>
-              <option value="연두">연두</option>
-              <option value="초록">초록</option>
-              <option value="청록">청록</option>
-              <option value="파랑">파랑</option>
-              <option value="남색">남색</option>
-              <option value="자주">자주</option>
-              <option value="보라">보라</option>
-              <option value="회색">회색</option>
-              <option value="검정">검정</option>
-              <option value="투명">투명</option>
-            </select>
-          </div>
-        </div>
-        <div class="filter-row">
-          <div class="group">
-            <label>식별표기 (앞면)</label>
-            <input type="text" id="pillFront" placeholder="예: T1" />
-          </div>
-          <div class="group">
-            <label>식별표기 (뒷면)</label>
-            <input type="text" id="pillBack" placeholder="예: 100" />
-          </div>
-        </div>
-        <button class="filter-submit" onclick="App._searchPills()">🔍 알약 검색</button>
-      </div>
-      <div id="pillResults"></div>
-    `;
-  }
+  c.innerHTML = `
+    <div class="searchbar" id="drugNameSearch" style="margin-top:12px;">
+      <span class="icon">🔍</span>
+      <input type="text" placeholder="약 이름 또는 제조사 입력" id="drugNameInput" />
+      <button class="clear">×</button>
+    </div>
+    <div id="drugNameResults"><div class="state-msg"><div class="ico">💊</div>약 이름을 검색해보세요<div class="sub">예) 타이레놀, 게보린, 바이투스정</div></div></div>
+  `;
+  this._bindDrugNameSearch();
 };
 
 App._bindDrugNameSearch = function() {
@@ -2179,84 +2089,6 @@ App._openDrugDetail = function(item) {
       <div class="info-row"><div class="lbl">품목코드</div><div class="val">${this._escape(item.itemSeq || '-')}</div></div>
       ${sectionsHtml}
     </div>
-  `;
-  this.openModal({ title: name, body });
-};
-
-App._searchPills = async function() {
-  const c = document.getElementById('pillResults');
-  if (API_KEYS.drugPill === 'YOUR_API_KEY_HERE' || !API_KEYS.drugPill) {
-    c.innerHTML = this.apiWarningHtml();
-    return;
-  }
-  const shape = document.getElementById('pillShape').value;
-  const color = document.getElementById('pillColor').value;
-  const front = document.getElementById('pillFront').value.trim();
-  const back  = document.getElementById('pillBack').value.trim();
-
-  if (!shape && !color && !front && !back) {
-    this.toast('최소 하나의 조건을 입력해주세요');
-    return;
-  }
-  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>검색 중...</div>`;
-
-  const params = new URLSearchParams({
-    serviceKey: API_KEYS.drugPill,
-    pageNo: '1',
-    numOfRows: '50',
-    type: 'json'
-  });
-  if (shape) params.set('DRUG_SHAPE', shape);
-  if (color) params.set('COLOR_CLASS1', color);
-  if (front) params.set('PRINT_FRONT', front);
-  if (back)  params.set('PRINT_BACK', back);
-
-  const url = `https://apis.data.go.kr/1471000/MdcinGrnIdntfcInfoService02/getMdcinGrnIdntfcInfoList02?${params.toString()}`;
-  let items = [];
-  try {
-    const data = await this.apiCall(url);
-    items = this.extractItems(data);
-  } catch(e) {
-    c.innerHTML = this._errorHtml(e.message);
-    return;
-  }
-
-  if (items.length === 0) {
-    c.innerHTML = this._emptyHtml('일치하는 알약을 찾지 못했습니다');
-    return;
-  }
-
-  c.innerHTML = `<div class="list-wrap"><div class="pill-grid">` + items.map((it, i) => {
-    const img = it.ITEM_IMAGE || '';
-    return `<div class="card" data-idx="${i}">
-      ${img ? `<img class="pill-thumb" src="${img}" onerror="this.style.display='none'">` : '<div class="pill-thumb"></div>'}
-      <div class="card-name" style="font-size:13px;">${this._escape(it.ITEM_NAME || '')}</div>
-      <div class="card-meta"><span>${this._escape(it.ENTP_NAME || '')}</span></div>
-    </div>`;
-  }).join('') + `</div></div>`;
-
-  c.querySelectorAll('.card').forEach((el, i) => {
-    el.addEventListener('click', () => this._openPillDetail(items[i]));
-  });
-};
-
-App._openPillDetail = function(item) {
-  const name = item.ITEM_NAME || '의약품';
-  const img = item.ITEM_IMAGE || '';
-  const body = `
-    ${img ? `<img class="pill-image" src="${img}" onerror="this.style.display='none'">` : ''}
-    <div class="section">
-      <div class="section-h">알약 정보</div>
-      <div class="info-row"><div class="lbl">제조사</div><div class="val">${this._escape(item.ENTP_NAME || '-')}</div></div>
-      <div class="info-row"><div class="lbl">모양</div><div class="val">${this._escape(item.DRUG_SHAPE || '-')}</div></div>
-      <div class="info-row"><div class="lbl">색상</div><div class="val">${this._escape(item.COLOR_CLASS1 || '-')}${item.COLOR_CLASS2 ? ' / '+this._escape(item.COLOR_CLASS2) : ''}</div></div>
-      <div class="info-row"><div class="lbl">앞면 표기</div><div class="val">${this._escape(item.PRINT_FRONT || '-')}</div></div>
-      <div class="info-row"><div class="lbl">뒷면 표기</div><div class="val">${this._escape(item.PRINT_BACK || '-')}</div></div>
-      ${item.LINE_FRONT || item.LINE_BACK ? `<div class="info-row"><div class="lbl">분할선</div><div class="val">${this._escape((item.LINE_FRONT||'-')+' / '+(item.LINE_BACK||'-'))}</div></div>` : ''}
-      <div class="info-row"><div class="lbl">크기(장축/단축/두께)</div><div class="val">${this._escape((item.LENG_LONG||'-')+' / '+(item.LENG_SHORT||'-')+' / '+(item.THICK||'-'))} mm</div></div>
-      <div class="info-row"><div class="lbl">품목코드</div><div class="val">${this._escape(item.ITEM_SEQ || '-')}</div></div>
-    </div>
-    ${item.CHART ? `<div class="section"><div class="section-h">성상</div><div class="section-c">${this._escape(item.CHART)}</div></div>` : ''}
   `;
   this.openModal({ title: name, body });
 };
