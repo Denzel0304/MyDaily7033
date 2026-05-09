@@ -38,8 +38,13 @@
   }
 
   .header {
-    background: var(--sky);
+    background: linear-gradient(135deg, #bddff2 0%, #cce8f4 100%);
     padding: 30px 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1.5px solid rgba(168, 212, 232, 0.7);
+    box-shadow: 0 2px 12px rgba(168, 212, 232, 0.35);
   }
   .header-top {
     display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
@@ -400,6 +405,51 @@
   }
   .ex-edit-btn:hover { background: #d0e8f7; }
 
+  /* ── 톱니바퀴 버튼 ── */
+  .gear-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,0.75);
+    font-size: 20px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(168,212,232,0.3);
+    transition: background .2s, transform .2s;
+  }
+  .gear-btn:hover { background: white; }
+  .gear-btn:active { transform: scale(.9); }
+
+  /* ── 설정 메뉴 드롭다운 ── */
+  .settings-menu-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+  }
+  .settings-menu-overlay.open { display: block; }
+  .settings-menu {
+    display: none; position: fixed; top: 80px; right: 16px;
+    background: white; border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    z-index: 501; min-width: 220px; overflow: hidden;
+    animation: menuPop .18s cubic-bezier(.34,1.56,.64,1);
+  }
+  .settings-menu.open { display: block; }
+  @keyframes menuPop {
+    from { opacity:0; transform: scale(.92) translateY(-8px); }
+    to   { opacity:1; transform: scale(1) translateY(0); }
+  }
+  .settings-menu-title {
+    font-size: 11px; font-weight: 800; color: var(--gray-400);
+    padding: 12px 16px 8px; letter-spacing: .5px; text-transform: uppercase;
+    font-family: 'Nunito', sans-serif;
+  }
+  .settings-menu-item {
+    width: 100%; border: none; background: transparent; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    text-align: left; transition: background .15s;
+  }
+  .settings-menu-item:hover { background: var(--gray-100); }
+  .settings-menu-item:last-child { border-bottom: none; }
+  .settings-menu-icon { font-size: 22px; flex-shrink: 0; }
+  .settings-menu-label { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+  .settings-menu-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+
   /* ── 삭제 확인 모달 ── */
   .confirm-modal-overlay {
     display: none;
@@ -457,7 +507,29 @@
 <div class="header">
   <div class="header-top">
     <div class="header-title">💪 운동 기록</div>
+    <button class="gear-btn" id="gearBtn" onclick="openSettingsMenu()" title="데이터 관리">⚙️</button>
   </div>
+</div>
+
+<!-- ── 설정 메뉴 (가져오기/내보내기) ── -->
+<div class="settings-menu-overlay" id="settingsMenuOverlay" onclick="closeSettingsMenu()"></div>
+<div class="settings-menu" id="settingsMenu">
+  <div class="settings-menu-title">데이터 관리</div>
+  <button class="settings-menu-item" onclick="exportData()">
+    <span class="settings-menu-icon">📤</span>
+    <div>
+      <div class="settings-menu-label">내보내기</div>
+      <div class="settings-menu-sub">모든 데이터를 파일로 저장</div>
+    </div>
+  </button>
+  <button class="settings-menu-item" onclick="triggerImport()">
+    <span class="settings-menu-icon">📥</span>
+    <div>
+      <div class="settings-menu-label">가져오기</div>
+      <div class="settings-menu-sub">백업 파일에서 복원</div>
+    </div>
+  </button>
+  <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importData(event)" />
 </div>
 
 <div class="main">
@@ -571,6 +643,19 @@
     <div class="confirm-modal-btns">
       <button class="confirm-modal-cancel" onclick="closeDeleteInbodyModal()">취소</button>
       <button class="confirm-modal-confirm" onclick="confirmDeleteInbody()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 운동 삭제 확인 모달 ── -->
+<div class="confirm-modal-overlay" id="deleteExerciseModal">
+  <div class="confirm-modal">
+    <div class="confirm-modal-icon">🗑️</div>
+    <div class="confirm-modal-title">운동을 삭제할까요?</div>
+    <div class="confirm-modal-desc">삭제된 운동은<br>복구할 수 없어요.</div>
+    <div class="confirm-modal-btns">
+      <button class="confirm-modal-cancel" onclick="closeDeleteExerciseModal()">취소</button>
+      <button class="confirm-modal-confirm" onclick="confirmDeleteExercise()">삭제</button>
     </div>
   </div>
 </div>
@@ -989,9 +1074,36 @@ function reorderExercise(fromIdx, toIdx) {
 }
 
 function deleteExercise(idx) {
-  const schedule = loadSchedule(); schedule[activeSettingDay].splice(idx, 1);
-  saveScheduleLS(schedule); renderSettingList();
-  if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
+  showDeleteExerciseModal(idx);
+}
+
+/* ── 운동 삭제 확인 모달 ── */
+let pendingDeleteExIdx = null;
+let confirmingExDelete = false;
+
+function showDeleteExerciseModal(idx) {
+  pendingDeleteExIdx = idx;
+  document.getElementById('deleteExerciseModal').classList.add('open');
+  history.pushState({ modal: 'deleteExercise' }, '');
+}
+
+function closeDeleteExerciseModal() {
+  document.getElementById('deleteExerciseModal').classList.remove('open');
+  pendingDeleteExIdx = null;
+}
+
+function confirmDeleteExercise() {
+  const idx = pendingDeleteExIdx;
+  confirmingExDelete = true;
+  closeDeleteExerciseModal();
+  history.back();
+  if (idx !== null) {
+    const schedule = loadSchedule();
+    schedule[activeSettingDay].splice(idx, 1);
+    saveScheduleLS(schedule);
+    renderSettingList();
+    if (activeSettingDay === DAYS_EN[todayDow()]) buildTodayList();
+  }
 }
 
 function switchTab(tabName) {
@@ -1027,15 +1139,106 @@ function confirmDeleteInbody() {
   const idx = pendingDeleteIdx;
   confirmingInbodyDelete = true;
   closeDeleteInbodyModal();
-  history.back(); /* 푸시한 state 제거 */
+  history.back();
   if (idx !== null) deleteInbody(idx);
 }
 
-window.addEventListener('popstate', function() {
-  const modal = document.getElementById('deleteInbodyModal');
-  if (modal.classList.contains('open')) {
+/* ── 설정 메뉴 (톱니바퀴) ── */
+let settingsMenuOpen = false;
+let confirmingSettingsClose = false;
+
+function openSettingsMenu() {
+  settingsMenuOpen = true;
+  document.getElementById('settingsMenuOverlay').classList.add('open');
+  document.getElementById('settingsMenu').classList.add('open');
+  history.pushState({ modal: 'settingsMenu' }, '');
+}
+
+function closeSettingsMenu() {
+  settingsMenuOpen = false;
+  document.getElementById('settingsMenuOverlay').classList.remove('open');
+  document.getElementById('settingsMenu').classList.remove('open');
+}
+
+/* ── 내보내기 ── */
+const EXPORT_SIGNATURE = 'MYDAILY7_WORKOUT_BACKUP_V1';
+
+function exportData() {
+  closeSettingsMenu();
+  history.back();
+  const data = {
+    signature: EXPORT_SIGNATURE,
+    exportedAt: new Date().toISOString(),
+    schedule: loadSchedule(),
+    inbody: loadInbodyLS(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url; a.download = `mydaily7_backup_${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📤 내보내기 완료!');
+}
+
+/* ── 가져오기 ── */
+function triggerImport() {
+  closeSettingsMenu();
+  history.back();
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importFileInput').click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.signature !== EXPORT_SIGNATURE) {
+        showToast('❗ 올바른 백업 파일이 아니에요');
+        return;
+      }
+      if (data.schedule) saveScheduleLS(data.schedule);
+      if (data.inbody)   saveInbodyLS(data.inbody);
+      buildTodayList();
+      buildSettingDayTabs();
+      renderSettingList();
+      loadInbodyData();
+      renderInbodyList();
+      if (graphOpen) renderInbodyChart();
+      showToast('📥 가져오기 완료!');
+    } catch {
+      showToast('❗ 파일을 읽을 수 없어요');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ── popstate 통합 처리 ── */
+window.addEventListener('popstate', function(e) {
+  /* 인바디 삭제 모달 */
+  const inbodyModal = document.getElementById('deleteInbodyModal');
+  if (inbodyModal.classList.contains('open')) {
     if (!confirmingInbodyDelete) closeDeleteInbodyModal();
     confirmingInbodyDelete = false;
+    return;
+  }
+
+  /* 운동 삭제 모달 */
+  const exModal = document.getElementById('deleteExerciseModal');
+  if (exModal.classList.contains('open')) {
+    if (!confirmingExDelete) closeDeleteExerciseModal();
+    confirmingExDelete = false;
+    return;
+  }
+
+  /* 설정 메뉴 */
+  if (settingsMenuOpen) {
+    closeSettingsMenu();
+    return;
   }
 });
 </script>
