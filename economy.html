@@ -815,6 +815,7 @@
       btn.classList.add('active');
       currentTab = btn.dataset.tab;
       render();
+      window.scrollTo({top: 0, behavior: 'instant'});
     });
   });
 
