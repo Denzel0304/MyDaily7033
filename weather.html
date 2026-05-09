@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7BD3F7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="날씨">
+<title>오늘 날씨</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(160deg, #E8F7FF 0%, #F4FBF6 50%, #FFF7E8 100%);
+    color: #2C3E50;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-x: hidden;
+    line-height: 1.5;
+  }
+  /* 배경 부드러운 원형 장식 */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -100px; right: -100px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(255, 213, 79, 0.35), transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -150px; left: -100px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(123, 211, 247, 0.25), transparent 70%);
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+  }
+
+  /* ---------- 헤더 ---------- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 14px;
+  }
+  .loc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2C3E50;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 2px 10px rgba(123, 211, 247, 0.15);
+  }
+  .loc-btn:active { transform: scale(0.97); }
+  .loc-btn .pin { font-size: 14px; }
+  .loc-btn .arrow { font-size: 11px; opacity: 0.6; margin-left: 2px; }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #7E8B96;
+  }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #2C3E50;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 10px rgba(123, 211, 247, 0.15);
+  }
+  .icon-btn:active { transform: scale(0.92); }
+  .icon-btn.spinning { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- 현재 날씨 카드 ---------- */
+  .now {
+    text-align: center;
+    padding: 18px 10px 10px;
+    margin-bottom: 16px;
+  }
+  .now .emoji {
+    font-size: 76px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 14px rgba(255, 200, 100, 0.35));
+    margin-bottom: 8px;
+    display: inline-block;
+    animation: float 3.5s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .now .temp {
+    font-family: 'Outfit', 'Pretendard', sans-serif;
+    font-weight: 300;
+    font-size: 84px;
+    line-height: 1;
+    color: #2C3E50;
+    letter-spacing: -3px;
+  }
+  .now .temp .deg { font-size: 56px; opacity: 0.55; vertical-align: top; margin-left: 4px; }
+  .now .sky-text {
+    font-size: 17px;
+    color: #5A6B7A;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .now .sub {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 13.5px;
+    color: #7E8B96;
+    flex-wrap: wrap;
+  }
+  .now .sub span { display: inline-flex; gap: 4px; align-items: center; }
+  .now .sub b { color: #2C3E50; font-weight: 600; }
+
+  /* ---------- 카드 공통 ---------- */
+  .card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 22px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 20px rgba(123, 211, 247, 0.12), 0 1px 3px rgba(0,0,0,0.02);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7E8B96;
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ---------- 챙길 것 (1순위) ---------- */
+  .pack-card { background: linear-gradient(135deg, rgba(255,232,168,0.6), rgba(255,255,255,0.85)); }
+  .pack-list { display: flex; flex-direction: column; gap: 10px; }
+  .pack-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+  }
+  .pack-item.muted { opacity: 0.55; background: rgba(255,255,255,0.4); }
+  .pack-item .ico { font-size: 28px; flex-shrink: 0; }
+  .pack-item .text { flex: 1; }
+  .pack-item .text .main { font-size: 16px; font-weight: 600; color: #2C3E50; }
+  .pack-item .text .sub { font-size: 12.5px; color: #7E8B96; margin-top: 2px; }
+  .pack-item .badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge-need { background: #FFE0A8; color: #B86F00; }
+  .badge-skip { background: #E0F0E5; color: #4A8568; }
+
+  /* ---------- 환기 (2순위) ---------- */
+  .vent-card { padding: 22px 18px; }
+  .vent-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .vent-circle {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .vent-circle.ok { background: radial-gradient(circle, #C6F2D6, #8FE0AB); box-shadow: 0 0 0 8px rgba(143, 224, 171, 0.18); }
+  .vent-circle.no { background: radial-gradient(circle, #FFD0CB, #FF9A95); box-shadow: 0 0 0 8px rgba(255, 154, 149, 0.18); }
+  .vent-circle.maybe { background: radial-gradient(circle, #FFE89C, #FFD460); box-shadow: 0 0 0 8px rgba(255, 212, 96, 0.18); }
+  .vent-text .head { font-size: 19px; font-weight: 700; color: #2C3E50; }
+  .vent-text .desc { font-size: 13px; color: #7E8B96; margin-top: 4px; }
+
+  /* ---------- 시간별 (3순위) ---------- */
+  .hourly-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 0 -18px;
+    padding: 4px 18px 6px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .hourly-scroll::-webkit-scrollbar { display: none; }
+  .hour-cell {
+    flex: 0 0 auto;
+    width: 60px;
+    text-align: center;
+    padding: 12px 4px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 16px;
+    scroll-snap-align: start;
+    border: 1px solid rgba(255,255,255,0.85);
+  }
+  .hour-cell.now-cell {
+    background: linear-gradient(160deg, #FFE89C, #FFB75E);
+    color: #4A2F00;
+    border-color: rgba(255,200,100,0.6);
+    box-shadow: 0 4px 12px rgba(255, 183, 94, 0.25);
+  }
+  .hour-cell .h-time { font-size: 12px; font-weight: 600; color: #7E8B96; }
+  .hour-cell.now-cell .h-time { color: #6B4500; }
+  .hour-cell .h-emoji { font-size: 22px; margin: 6px 0 4px; line-height: 1; }
+  .hour-cell .h-temp { font-size: 14px; font-weight: 700; color: #2C3E50; font-family: 'Outfit', sans-serif; }
+  .hour-cell.now-cell .h-temp { color: #4A2F00; }
+  .hour-cell .h-pop { font-size: 10.5px; color: #4A90E2; margin-top: 3px; font-weight: 600; min-height: 14px; }
+  .hour-cell.now-cell .h-pop { color: #2A6BC4; }
+
+  /* ---------- 대기질 ---------- */
+  .air-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .air-tile {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 14px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.9);
+  }
+  .air-tile .label { font-size: 11.5px; color: #7E8B96; font-weight: 600; }
+  .air-tile .val {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin-top: 2px;
+    line-height: 1.1;
+  }
+  .air-tile .grade {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .grade-1 { background: #D5F0E2; color: #2D7A4F; }
+  .grade-2 { background: #D6EAFB; color: #2566A8; }
+  .grade-3 { background: #FFE2B0; color: #A36400; }
+  .grade-4 { background: #FFCFCB; color: #B83A33; }
+
+  /* ---------- 점수 (4순위) ---------- */
+  .score-card { padding: 16px 18px; }
+  .score-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .score-num {
+    font-family: 'Outfit', sans-serif;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1;
+    color: #2C3E50;
+  }
+  .score-num small { font-size: 18px; opacity: 0.4; font-weight: 400; }
+  .score-bar {
+    flex: 1;
+    height: 8px;
+    background: #EEF2F5;
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .score-bar .fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    background: linear-gradient(90deg, #FFB75E, #8FE0AB);
+  }
+  .score-label { font-size: 12px; color: #7E8B96; margin-top: 8px; }
+
+  /* ---------- 모달 (도시 선택) ---------- */
+  .modal-back {
+    position: fixed; inset: 0;
+    background: rgba(30, 50, 70, 0.35);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-back.show { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal h3 { font-size: 16px; margin-bottom: 14px; color: #2C3E50; }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: #DDE3E8;
+    border-radius: 999px;
+    margin: 0 auto 14px;
+  }
+  .gps-btn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #E8F7FF, #F4FBF6);
+    border: 1px solid #D4ECFF;
+    border-radius: 14px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2C3E50;
+  }
+  .gps-btn:active { transform: scale(0.98); }
+  .city-section h4 {
+    font-size: 12px;
+    color: #7E8B96;
+    font-weight: 600;
+    margin: 8px 4px 8px;
+    letter-spacing: 0.3px;
+  }
+  .city-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .city-chip {
+    padding: 12px 6px;
+    background: #F4F7FA;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #2C3E50;
+    cursor: pointer;
+    text-align: center;
+  }
+  .city-chip.active { background: #FFE89C; border-color: #FFB75E; color: #4A2F00; font-weight: 700; }
+  .city-chip:active { transform: scale(0.96); }
+
+  /* ---------- 로딩/에러 ---------- */
+  .loading, .err-box {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7E8B96;
+    font-size: 14px;
+  }
+  .loading .dots { display: inline-block; margin-left: 4px; }
+  .loading .dots::after {
+    content: '';
+    animation: dots 1.4s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; }
+  }
+  .err-box .err-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+  .err-box button {
+    margin-top: 14px;
+    padding: 10px 24px;
+    background: #2C3E50;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .hidden { display: none !important; }
+
+  /* 로드 시 카드 부드럽게 등장 */
+  .card, .now {
+    animation: rise 0.5s ease backwards;
+  }
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.10s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.20s; }
+  .card:nth-child(5) { animation-delay: 0.25s; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <button class="loc-btn" id="locBtn">
+      <span class="pin">📍</span>
+      <span id="locName">위치 선택</span>
+      <span class="arrow">▼</span>
+    </button>
+    <div class="header-right">
+      <span id="updTime"></span>
+      <button class="icon-btn" id="refreshBtn" title="새로고침">↻</button>
+    </div>
+  </div>
+
+  <!-- 메인 컨텐츠 -->
+  <div id="content">
+    <div class="loading">
+      <div style="font-size:42px; margin-bottom:10px;">🌤</div>
+      날씨 정보를 불러오는 중<span class="dots"></span>
+    </div>
+  </div>
+
+</div>
+
+<!-- 도시 선택 모달 -->
+<div class="modal-back" id="modal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <h3>위치 선택</h3>
+    <button class="gps-btn" id="gpsBtn">
+      <span style="font-size:20px;">🎯</span>
+      <span>현재 위치 (GPS)</span>
+    </button>
+    <div class="city-section">
+      <h4>주요 도시</h4>
+      <div class="city-grid" id="cityGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   날씨/대기질 모바일 웹앱
+   - 기상청 단기예보 API
+   - 에어코리아 측정소/대기질 API
+   ============================================================ */
+
+const SERVICE_KEY = '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25';
+const KMA_BASE = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
+const AIR_BASE = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
+const STN_BASE = 'https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc';
+
+// 캐시 키
+const LS_LOC = 'weather_loc_v1';        // 현재 선택된 위치
+const LS_WX_PREFIX = 'weather_wx_';      // 날씨 캐시 (위치별)
+const LS_AIR_PREFIX = 'weather_air_';    // 대기질 캐시 (시도별)
+const LS_STN_PREFIX = 'weather_stn_';    // 측정소 캐시 (시군구별)
+
+const WX_CACHE_MS = 30 * 60 * 1000;      // 30분
+const AIR_CACHE_MS = 30 * 60 * 1000;     // 30분
+const STN_CACHE_MS = 30 * 24 * 60 * 60 * 1000; // 30일 (측정소 위치는 거의 안 바뀜)
+
+/* ---------- 도시 프리셋 (시도/시군구) ----------
+   기상청 격자 좌표(nx, ny)와 에어코리아 시도명 포함 */
+const CITIES = [
+  { name: '서울',     sido: '서울', sgg: '중구',     nx: 60, ny: 127 },
+  { name: '인천',     sido: '인천', sgg: '중구',     nx: 55, ny: 124 },
+  { name: '수원',     sido: '경기', sgg: '수원',     nx: 60, ny: 121 },
+  { name: '대전',     sido: '대전', sgg: '중구',     nx: 67, ny: 100 },
+  { name: '대구',     sido: '대구', sgg: '중구',     nx: 89, ny: 90  },
+  { name: '광주',     sido: '광주', sgg: '동구',     nx: 58, ny: 74  },
+  { name: '부산',     sido: '부산', sgg: '중구',     nx: 98, ny: 76  },
+  { name: '울산',     sido: '울산', sgg: '중구',     nx: 102, ny: 84 },
+  { name: '제주',     sido: '제주', sgg: '제주',     nx: 52, ny: 38  },
+  { name: '춘천',     sido: '강원', sgg: '춘천',     nx: 73, ny: 134 },
+  { name: '강릉',     sido: '강원', sgg: '강릉',     nx: 92, ny: 131 },
+  { name: '청주',     sido: '충북', sgg: '청주',     nx: 69, ny: 106 },
+];
+
+/* ============================================================
+   유틸: 위경도 → 기상청 격자 (LCC DFS 변환식)
+   기상청 공식 변환 알고리즘
+   ============================================================ */
+function dfsXyConv(lat, lon) {
+  const RE = 6371.00877;
+  const GRID = 5.0;
+  const SLAT1 = 30.0, SLAT2 = 60.0;
+  const OLON = 126.0, OLAT = 38.0;
+  const XO = 43, YO = 136;
+  const DEGRAD = Math.PI / 180.0;
+
+  const re = RE / GRID;
+  const slat1 = SLAT1 * DEGRAD;
+  const slat2 = SLAT2 * DEGRAD;
+  const olon = OLON * DEGRAD;
+  const olat = OLAT * DEGRAD;
+
+  let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
+  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+  sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn;
+  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
+  ro = (re * sf) / Math.pow(ro, sn);
+
+  let ra = Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5);
+  ra = (re * sf) / Math.pow(ra, sn);
+  let theta = lon * DEGRAD - olon;
+  if (theta > Math.PI) theta -= 2.0 * Math.PI;
+  if (theta < -Math.PI) theta += 2.0 * Math.PI;
+  theta *= sn;
+
+  const nx = Math.floor(ra * Math.sin(theta) + XO + 0.5);
+  const ny = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
+  return { nx, ny };
+}
+
+/* ============================================================
+   날짜/시각 헬퍼
+   ============================================================ */
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function fmtKstNow() {
+  const now = new Date();
+  return {
+    yyyymmdd: now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()),
+    hh: pad(now.getHours()),
+    mm: pad(now.getMinutes()),
+    obj: now
+  };
+}
+
+// 단기예보 base_time: 02, 05, 08, 11, 14, 17, 20, 23 (발표 후 약 10분 지난 시점부터 가용)
+function vilageFcstBase() {
+  const now = new Date();
+  // 안전마진 위해 base 시각보다 30분 이상 지난 가장 최근 발표시각 사용
+  const candidates = [2, 5, 8, 11, 14, 17, 20, 23];
+  const cutoff = new Date(now.getTime() - 30 * 60 * 1000);
+  const cy = cutoff.getFullYear();
+  const cmo = cutoff.getMonth();
+  const cd = cutoff.getDate();
+  const ch = cutoff.getHours();
+  let base = null;
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    if (ch >= candidates[i]) {
+      base = new Date(cy, cmo, cd, candidates[i], 0, 0);
+      break;
+    }
+  }
+  if (!base) {
+    // 새벽 02시 이전 → 어제 23시 발표
+    const yest = new Date(cy, cmo, cd - 1, 23, 0, 0);
+    base = yest;
+  }
+  return {
+    base_date: base.getFullYear() + pad(base.getMonth()+1) + pad(base.getDate()),
+    base_time: pad(base.getHours()) + '00'
+  };
+}
+
+// 초단기실황 base_time: 매시 40분 이후부터 해당 시각 사용 가능
+function ultraNcstBase() {
+  const now = new Date();
+  const safe = new Date(now.getTime() - 40 * 60 * 1000);
+  return {
+    base_date: safe.getFullYear() + pad(safe.getMonth()+1) + pad(safe.getDate()),
+    base_time: pad(safe.getHours()) + '00'
+  };
+}
+
+/* ============================================================
+   API 호출 (모두 fetch JSON)
+   ============================================================ */
+async function fetchKmaUltraNcst(nx, ny) {
+  const { base_date, base_time } = ultraNcstBase();
+  const url = `${KMA_BASE}/getUltraSrtNcst?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('초단기실황 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('초단기실황: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items.item;
+}
+
+async function fetchKmaVilageFcst(nx, ny) {
+  const { base_date, base_time } = vilageFcstBase();
+  const url = `${KMA_BASE}/getVilageFcst?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('단기예보 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('단기예보: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items.item;
+}
+
+// 시도별 실시간 측정값 → 측정소 이름으로 필터
+async function fetchAirBySido(sidoName) {
+  const url = `${AIR_BASE}/getCtprvnRltmMesureDnsty?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=200&pageNo=1&sidoName=${encodeURIComponent(sidoName)}&ver=1.0`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('대기질 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('대기질: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items;
+}
+
+// TM 좌표 변환 (주소 → TM)
+async function fetchTmCoord(umdName) {
+  const url = `${STN_BASE}/getTMStdrCrdnt?serviceKey=${SERVICE_KEY}&returnType=json&numOfRows=10&pageNo=1&umdName=${encodeURIComponent(umdName)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('TM좌표 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('TM좌표: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items;
+}
+
+// 근접 측정소
+async function fetchNearbyStation(tmX, tmY) {
+  const url = `${STN_BASE}/getNearbyMsrstnList?serviceKey=${SERVICE_KEY}&returnType=json&tmX=${tmX}&tmY=${tmY}&ver=1.1`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('근접측정소 HTTP ' + r.status);
+  const j = await r.json();
+  if (j.response?.header?.resultCode !== '00') throw new Error('근접측정소: ' + (j.response?.header?.resultMsg || 'fail'));
+  return j.response.body.items;
+}
+
+/* ============================================================
+   캐시 헬퍼
+   ============================================================ */
+function getCache(key, maxAge) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (Date.now() - o.t > maxAge) return null;
+    return o.v;
+  } catch { return null; }
+}
+function setCache(key, value) {
+  try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v: value })); } catch {}
+}
+
+/* ============================================================
+   데이터 정규화
+   ============================================================ */
+function parseKmaItems(ncstItems, fcstItems) {
+  // 현재값 (실황)
+  const now = {};
+  ncstItems.forEach(it => { now[it.category] = parseFloat(it.obsrValue); });
+  // T1H 기온, REH 습도, RN1 강수량, PTY 강수형태, WSD 풍속
+
+  // 예보 (시간별)
+  // SKY: 1맑음 3구름많음 4흐림 / PTY: 0없음 1비 2비/눈 3눈 4소나기
+  // POP: 강수확률 / TMP: 1시간 기온
+  const fcstByTime = {};
+  fcstItems.forEach(it => {
+    const k = it.fcstDate + it.fcstTime; // YYYYMMDDHHMM
+    if (!fcstByTime[k]) fcstByTime[k] = { fcstDate: it.fcstDate, fcstTime: it.fcstTime };
+    fcstByTime[k][it.category] = it.fcstValue;
+  });
+  const hourly = Object.keys(fcstByTime).sort().map(k => fcstByTime[k]);
+
+  return { now, hourly };
+}
+
+function parseAirForStation(items, stationName) {
+  if (!items || !items.length) return null;
+  const found = items.find(it => it.stationName === stationName);
+  if (found) return normalizeAir(found);
+  // fallback: 첫번째 측정소 (시도 평균 못 잡으면)
+  return normalizeAir(items[0]);
+}
+
+function normalizeAir(it) {
+  const num = (v) => {
+    const n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  };
+  return {
+    stationName: it.stationName,
+    dataTime: it.dataTime,
+    pm10: num(it.pm10Value),
+    pm25: num(it.pm25Value),
+    o3: num(it.o3Value),
+    no2: num(it.no2Value),
+    co: num(it.coValue),
+    so2: num(it.so2Value),
+    pm10Grade: it.pm10Grade ? parseInt(it.pm10Grade) : null,
+    pm25Grade: it.pm25Grade ? parseInt(it.pm25Grade) : null,
+    khaiValue: num(it.khaiValue),
+    khaiGrade: it.khaiGrade ? parseInt(it.khaiGrade) : null
+  };
+}
+
+/* ============================================================
+   판단 로직
+   ============================================================ */
+const SKY_MAP = { 1: '맑음', 3: '구름많음', 4: '흐림' };
+const PTY_MAP = { 0: '없음', 1: '비', 2: '비/눈', 3: '눈', 4: '소나기', 5: '빗방울', 6: '빗방울눈날림', 7: '눈날림' };
+
+function emojiFor(sky, pty) {
+  const ptyN = parseInt(pty || 0);
+  const skyN = parseInt(sky || 1);
+  if (ptyN === 1 || ptyN === 4 || ptyN === 5) return '🌧️';
+  if (ptyN === 2 || ptyN === 6) return '🌨️';
+  if (ptyN === 3 || ptyN === 7) return '❄️';
+  if (skyN === 1) {
+    const h = new Date().getHours();
+    if (h < 6 || h >= 19) return '🌙';
+    return '☀️';
+  }
+  if (skyN === 3) return '⛅';
+  if (skyN === 4) return '☁️';
+  return '🌤';
+}
+
+function gradeText(g) {
+  return ['', '좋음', '보통', '나쁨', '매우나쁨'][g] || '-';
+}
+
+// 향후 N시간 예보 슬라이스
+function nextHours(hourly, n = 12) {
+  const now = new Date();
+  const nowKey = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + pad(now.getHours()) + '00';
+  return hourly.filter(h => (h.fcstDate + h.fcstTime) >= nowKey).slice(0, n);
+}
+
+// "챙길 것" 판단
+function decidePack(hourly, air) {
+  const next12 = nextHours(hourly, 12);
+  // 우산: 향후 12시간 중 강수확률 50% 이상 OR 강수형태 발생 OR 강수량 발생
+  let umbrella = false;
+  let umbrellaReason = '';
+  let maxPop = 0;
+  for (const h of next12) {
+    const pop = parseInt(h.POP || 0);
+    const pty = parseInt(h.PTY || 0);
+    if (pop > maxPop) maxPop = pop;
+    if (pop >= 50 || pty > 0) {
+      umbrella = true;
+    }
+  }
+  if (umbrella) {
+    umbrellaReason = `오늘 비 가능성 (최대 ${maxPop}%)`;
+  } else if (maxPop > 0) {
+    umbrellaReason = `오늘 강수확률 낮음 (최대 ${maxPop}%)`;
+  } else {
+    umbrellaReason = '오늘 비 예보 없음';
+  }
+
+  // 마스크: PM2.5 ≥ 36(나쁨) OR PM10 ≥ 81(나쁨)
+  let mask = false;
+  let maskReason = '';
+  if (air) {
+    const bad25 = (air.pm25 != null && air.pm25 >= 36) || air.pm25Grade >= 3;
+    const bad10 = (air.pm10 != null && air.pm10 >= 81) || air.pm10Grade >= 3;
+    if (bad25 || bad10) {
+      mask = true;
+      maskReason = `PM2.5 ${air.pm25 ?? '-'}, PM10 ${air.pm10 ?? '-'}`;
+    } else {
+      maskReason = `PM2.5 ${air.pm25 ?? '-'} (${gradeText(air.pm25Grade)})`;
+    }
+  } else {
+    maskReason = '대기질 정보 없음';
+  }
+
+  return { umbrella, umbrellaReason, mask, maskReason };
+}
+
+// 환기 판단
+function decideVent(hourly, air) {
+  const next3 = nextHours(hourly, 3);
+  const willRain = next3.some(h => parseInt(h.PTY || 0) > 0);
+  const highPop = next3.some(h => parseInt(h.POP || 0) >= 50);
+
+  if (!air) return { state: 'maybe', head: '판단 어려움', desc: '대기질 정보 없음' };
+
+  const pm25Bad = (air.pm25 != null && air.pm25 > 35) || air.pm25Grade >= 3;
+  const pm10Bad = (air.pm10 != null && air.pm10 > 80) || air.pm10Grade >= 3;
+
+  if (pm25Bad || pm10Bad) {
+    return {
+      state: 'no',
+      head: '환기 비추천',
+      desc: `미세먼지 나쁨 (PM2.5 ${air.pm25 ?? '-'}, PM10 ${air.pm10 ?? '-'})`
+    };
+  }
+  if (willRain) {
+    return { state: 'maybe', head: '곧 비 예보', desc: '비 오기 전에 잠깐만 환기' };
+  }
+  if (highPop) {
+    return { state: 'maybe', head: '비 가능성', desc: '짧게 환기' };
+  }
+  return {
+    state: 'ok',
+    head: '환기 좋아요',
+    desc: `PM2.5 ${air.pm25 ?? '-'} · 비 없음`
+  };
+}
+
+// 외출 점수 (100 만점)
+function calcScore(now, hourly, air) {
+  let score = 100;
+  // 미세먼지 페널티 (최대 -40)
+  if (air?.pm25 != null) {
+    if (air.pm25 > 75) score -= 40;
+    else if (air.pm25 > 35) score -= 20;
+    else if (air.pm25 > 15) score -= 8;
+  }
+  // 기온 페널티 (체감 -)
+  const t = parseFloat(now.T1H);
+  if (!isNaN(t)) {
+    if (t < -5 || t > 33) score -= 25;
+    else if (t < 0 || t > 30) score -= 12;
+    else if (t < 5 || t > 28) score -= 5;
+  }
+  // 강수 페널티
+  const next6 = nextHours(hourly, 6);
+  const willRain = next6.some(h => parseInt(h.PTY || 0) > 0 || parseInt(h.POP || 0) >= 50);
+  if (willRain) score -= 15;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function scoreLabel(s) {
+  if (s >= 80) return '아주 좋아요';
+  if (s >= 60) return '괜찮아요';
+  if (s >= 40) return '주의';
+  return '안 좋음';
+}
+
+/* ============================================================
+   렌더
+   ============================================================ */
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render(loc, weather, air) {
+  const { now, hourly } = weather;
+
+  const t1h = parseFloat(now.T1H);
+  const reh = parseFloat(now.REH);
+  const wsd = parseFloat(now.WSD);
+  const pty = now.PTY;
+
+  // 현재 SKY는 실황엔 없고 예보에서 가까운 시각 SKY 가져옴
+  const sortedHourly = hourly;
+  const nowDate = new Date();
+  const nowKey = nowDate.getFullYear() + pad(nowDate.getMonth()+1) + pad(nowDate.getDate()) + pad(nowDate.getHours()) + '00';
+  const closestFcst = sortedHourly.find(h => (h.fcstDate + h.fcstTime) >= nowKey) || sortedHourly[0] || {};
+  const sky = closestFcst.SKY || 1;
+  const nowEmoji = emojiFor(sky, pty);
+  const skyText = parseInt(pty) > 0 ? PTY_MAP[parseInt(pty)] : SKY_MAP[parseInt(sky)] || '';
+
+  const pack = decidePack(hourly, air);
+  const vent = decideVent(hourly, air);
+  const score = calcScore(now, hourly, air);
+
+  // 시간별 12시간
+  const hourCells = nextHours(hourly, 12).map((h, i) => {
+    const hh = parseInt(h.fcstTime.substring(0, 2));
+    const isFirst = i === 0;
+    const emo = emojiFor(h.SKY, h.PTY);
+    const tmp = h.TMP != null ? Math.round(parseFloat(h.TMP)) : '-';
+    const pop = parseInt(h.POP || 0);
+    return `
+      <div class="hour-cell ${isFirst ? 'now-cell' : ''}">
+        <div class="h-time">${isFirst ? '지금' : hh + '시'}</div>
+        <div class="h-emoji">${emo}</div>
+        <div class="h-temp">${tmp}°</div>
+        <div class="h-pop">${pop >= 30 ? '💧' + pop + '%' : ''}</div>
+      </div>`;
+  }).join('');
+
+  const updTime = `${pad(nowDate.getHours())}:${pad(nowDate.getMinutes())} 기준`;
+  document.getElementById('updTime').textContent = updTime;
+  document.getElementById('locName').textContent = loc.name;
+
+  document.getElementById('content').innerHTML = `
+    <!-- 현재 -->
+    <div class="now">
+      <div class="emoji">${nowEmoji}</div>
+      <div class="temp">${isNaN(t1h) ? '-' : Math.round(t1h)}<span class="deg">°</span></div>
+      <div class="sky-text">${skyText}</div>
+      <div class="sub">
+        <span>💧 습도 <b>${isNaN(reh) ? '-' : Math.round(reh)}%</b></span>
+        <span>💨 바람 <b>${isNaN(wsd) ? '-' : wsd.toFixed(1)}m/s</b></span>
+      </div>
+    </div>
+
+    <!-- 챙길 것 -->
+    <div class="card pack-card">
+      <div class="card-title">🎒 챙기세요</div>
+      <div class="pack-list">
+        <div class="pack-item ${pack.umbrella ? '' : 'muted'}">
+          <div class="ico">☂️</div>
+          <div class="text">
+            <div class="main">${pack.umbrella ? '우산 챙기세요' : '우산 불필요'}</div>
+            <div class="sub">${escapeHtml(pack.umbrellaReason)}</div>
+          </div>
+          <div class="badge ${pack.umbrella ? 'badge-need' : 'badge-skip'}">${pack.umbrella ? '필요' : 'OK'}</div>
+        </div>
+        <div class="pack-item ${pack.mask ? '' : 'muted'}">
+          <div class="ico">😷</div>
+          <div class="text">
+            <div class="main">${pack.mask ? '마스크 챙기세요' : '마스크 불필요'}</div>
+            <div class="sub">${escapeHtml(pack.maskReason)}</div>
+          </div>
+          <div class="badge ${pack.mask ? 'badge-need' : 'badge-skip'}">${pack.mask ? '필요' : 'OK'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 환기 -->
+    <div class="card vent-card">
+      <div class="card-title">💨 환기</div>
+      <div class="vent-main">
+        <div class="vent-circle ${vent.state}">${vent.state === 'ok' ? '✓' : vent.state === 'no' ? '✕' : '~'}</div>
+        <div class="vent-text">
+          <div class="head">${escapeHtml(vent.head)}</div>
+          <div class="desc">${escapeHtml(vent.desc)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시간별 -->
+    <div class="card">
+      <div class="card-title">⏰ 시간별 예보</div>
+      <div class="hourly-scroll">${hourCells}</div>
+    </div>
+
+    <!-- 대기질 -->
+    <div class="card">
+      <div class="card-title">🌫 대기질 ${air ? '· ' + escapeHtml(air.stationName) : ''}</div>
+      ${air ? `
+      <div class="air-grid">
+        <div class="air-tile">
+          <div class="label">초미세먼지 PM2.5</div>
+          <div class="val">${air.pm25 ?? '-'}</div>
+          <span class="grade grade-${air.pm25Grade || 0}">${gradeText(air.pm25Grade)}</span>
+        </div>
+        <div class="air-tile">
+          <div class="label">미세먼지 PM10</div>
+          <div class="val">${air.pm10 ?? '-'}</div>
+          <span class="grade grade-${air.pm10Grade || 0}">${gradeText(air.pm10Grade)}</span>
+        </div>
+        <div class="air-tile">
+          <div class="label">통합대기지수</div>
+          <div class="val">${air.khaiValue ?? '-'}</div>
+          <span class="grade grade-${air.khaiGrade || 0}">${gradeText(air.khaiGrade)}</span>
+        </div>
+        <div class="air-tile">
+          <div class="label">오존 O₃</div>
+          <div class="val">${air.o3 != null ? air.o3.toFixed(3) : '-'}</div>
+          <span class="grade grade-1">ppm</span>
+        </div>
+      </div>
+      ` : `<div style="color:#7E8B96; font-size:13px;">대기질 정보를 불러올 수 없어요.</div>`}
+    </div>
+
+    <!-- 점수 -->
+    <div class="card score-card">
+      <div class="card-title">📊 외출 점수</div>
+      <div class="score-row">
+        <div class="score-num">${score}<small>/100</small></div>
+        <div class="score-bar"><div class="fill" style="width:${score}%;"></div></div>
+      </div>
+      <div class="score-label">${scoreLabel(score)}</div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   메인 흐름
+   ============================================================ */
+async function loadAndRender(loc, force = false) {
+  document.getElementById('content').innerHTML = `
+    <div class="loading">
+      <div style="font-size:42px; margin-bottom:10px;">🌤</div>
+      ${escapeHtml(loc.name)} 정보를 불러오는 중<span class="dots"></span>
+    </div>`;
+
+  document.getElementById('locName').textContent = loc.name;
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.classList.add('spinning');
+
+  try {
+    // 캐시 키
+    const wxKey = LS_WX_PREFIX + loc.nx + '_' + loc.ny;
+    const airKey = LS_AIR_PREFIX + loc.sido + '_' + (loc.sgg || '');
+
+    // 날씨
+    let weather;
+    if (!force) weather = getCache(wxKey, WX_CACHE_MS);
+    if (!weather) {
+      const [ncstItems, fcstItems] = await Promise.all([
+        fetchKmaUltraNcst(loc.nx, loc.ny),
+        fetchKmaVilageFcst(loc.nx, loc.ny)
+      ]);
+      weather = parseKmaItems(ncstItems, fcstItems);
+      setCache(wxKey, weather);
+    }
+
+    // 대기질 (시도별 호출 후 측정소 매칭)
+    let air = null;
+    let airList;
+    if (!force) airList = getCache(airKey, AIR_CACHE_MS);
+    if (!airList) {
+      try {
+        airList = await fetchAirBySido(loc.sido);
+        setCache(airKey, airList);
+      } catch (e) {
+        console.warn('대기질 로드 실패', e);
+      }
+    }
+    if (airList) {
+      // 측정소 이름 매칭: sgg와 같은 이름 우선 → 포함 → 첫번째
+      let target = airList.find(it => it.stationName === loc.sgg);
+      if (!target) target = airList.find(it => it.stationName && loc.sgg && it.stationName.includes(loc.sgg));
+      if (!target) target = airList.find(it => parseFloat(it.pm10Value) >= 0); // 유효값 있는 첫번째
+      if (target) air = normalizeAir(target);
+    }
+
+    render(loc, weather, air);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('content').innerHTML = `
+      <div class="err-box">
+        <span class="err-emoji">😢</span>
+        <div>날씨를 불러오지 못했어요.</div>
+        <div style="font-size:12px; color:#A0AEB8; margin-top:6px;">${escapeHtml(e.message || 'unknown')}</div>
+        <button onclick="window.__retry()">다시 시도</button>
+      </div>`;
+    window.__retry = () => loadAndRender(loc, true);
+  } finally {
+    refreshBtn.classList.remove('spinning');
+  }
+}
+
+/* ============================================================
+   GPS → 위치 변환
+   ============================================================ */
+async function resolveByGps() {
+  if (!navigator.geolocation) throw new Error('GPS 미지원 브라우저');
+  const pos = await new Promise((res, rej) => {
+    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000, maximumAge: 5*60*1000 });
+  });
+  const { latitude, longitude } = pos.coords;
+  const { nx, ny } = dfsXyConv(latitude, longitude);
+
+  // 가까운 도시 추정 (시도 매칭용)
+  let nearest = CITIES[0];
+  let bestD = Infinity;
+  for (const c of CITIES) {
+    const d = Math.pow(c.nx - nx, 2) + Math.pow(c.ny - ny, 2);
+    if (d < bestD) { bestD = d; nearest = c; }
+  }
+
+  return {
+    name: '현재 위치',
+    nx, ny,
+    sido: nearest.sido,
+    sgg: nearest.sgg,
+    isGps: true
+  };
+}
+
+/* ============================================================
+   UI 핸들러
+   ============================================================ */
+function showModal() { document.getElementById('modal').classList.add('show'); }
+function hideModal() { document.getElementById('modal').classList.remove('show'); }
+
+function buildCityChips() {
+  const cur = getSavedLoc();
+  document.getElementById('cityGrid').innerHTML = CITIES.map(c => `
+    <div class="city-chip ${cur && cur.name === c.name ? 'active' : ''}" data-name="${c.name}">${c.name}</div>
+  `).join('');
+  document.querySelectorAll('.city-chip').forEach(el => {
+    el.addEventListener('click', () => {
+      const c = CITIES.find(x => x.name === el.dataset.name);
+      saveLoc(c);
+      hideModal();
+      loadAndRender(c);
+    });
+  });
+}
+
+function getSavedLoc() {
+  try { return JSON.parse(localStorage.getItem(LS_LOC) || 'null'); } catch { return null; }
+}
+function saveLoc(loc) { localStorage.setItem(LS_LOC, JSON.stringify(loc)); }
+
+document.getElementById('locBtn').addEventListener('click', () => {
+  buildCityChips();
+  showModal();
+});
+document.getElementById('modal').addEventListener('click', hideModal);
+
+document.getElementById('gpsBtn').addEventListener('click', async () => {
+  hideModal();
+  document.getElementById('locName').textContent = 'GPS 찾는 중…';
+  document.getElementById('content').innerHTML = `
+    <div class="loading">
+      <div style="font-size:42px; margin-bottom:10px;">🎯</div>
+      현재 위치 확인 중<span class="dots"></span>
+    </div>`;
+  try {
+    const loc = await resolveByGps();
+    saveLoc(loc);
+    loadAndRender(loc);
+  } catch (e) {
+    document.getElementById('content').innerHTML = `
+      <div class="err-box">
+        <span class="err-emoji">📍</span>
+        <div>위치를 가져올 수 없어요.</div>
+        <div style="font-size:12px; color:#A0AEB8; margin-top:6px;">${escapeHtml(e.message || '')}</div>
+        <button onclick="document.getElementById('locBtn').click()">도시 선택</button>
+      </div>`;
+  }
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  const loc = getSavedLoc();
+  if (loc) loadAndRender(loc, true);
+});
+
+/* ============================================================
+   시작
+   ============================================================ */
+(function init() {
+  const saved = getSavedLoc();
+  if (saved) {
+    loadAndRender(saved);
+  } else {
+    // 첫 진입: 서울 기본
+    saveLoc(CITIES[0]);
+    loadAndRender(CITIES[0]);
+  }
+})();
+</script>
+</body>
+</html>
