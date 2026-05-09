@@ -93,6 +93,10 @@ input { font-family: inherit; }
   white-space: nowrap;
 }
 .app-header .location-btn:active { background: #e7eaee; }
+#debugBtn {
+  padding: 6px 8px !important;
+  font-size: 14px !important;
+}
 .app-header .location-btn .dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--text-3);
@@ -635,6 +639,7 @@ input { font-family: inherit; }
   <!-- 헤더 -->
   <header class="app-header">
     <div class="title">의료 정보</div>
+    <button class="location-btn" id="debugBtn" onclick="App.showDebugPanel()" style="margin-left:auto;margin-right:6px;background:#f1f3f5;" title="디버그">🔧</button>
     <button class="location-btn" id="locationBtn" onclick="App.openLocationSheet()">
       <span class="dot"></span>
       <span id="locationLabel">위치 설정</span>
@@ -1149,19 +1154,71 @@ const App = {
   // 공공데이터 API 호출 (XML/JSON 자동 처리)
   async apiCall(url) {
     try {
+      this.state.lastRequestUrl = url;
       const res = await fetch(url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) {
+        const errText = await res.text().catch(()=>'');
+        this.state.lastError = `HTTP ${res.status}\n${errText.substring(0, 500)}`;
+        throw new Error('HTTP ' + res.status);
+      }
       const text = await res.text();
+      this.state.lastRawResponse = text.substring(0, 3000);
       // JSON 우선 시도
-      try { return JSON.parse(text); }
+      let parsed;
+      try { 
+        parsed = JSON.parse(text);
+      }
       catch(e) {
         // XML 파싱
-        return this.parseXml(text);
+        parsed = this.parseXml(text);
       }
+      this.state.lastParsedResponse = parsed;
+      // 에러 응답 감지 (공공데이터포털 표준 에러 형식)
+      const errCode = parsed?.response?.header?.resultCode 
+                   || parsed?.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode
+                   || parsed?.cmmMsgHeader?.returnReasonCode;
+      const errMsg = parsed?.response?.header?.resultMsg
+                  || parsed?.OpenAPI_ServiceResponse?.cmmMsgHeader?.errMsg
+                  || parsed?.cmmMsgHeader?.errMsg;
+      if (errCode && errCode !== '00' && errCode !== '0') {
+        this.state.lastError = `API Error ${errCode}: ${errMsg || ''}`;
+        throw new Error(`${errMsg || 'API 오류'} (${errCode})`);
+      }
+      return parsed;
     } catch(e) {
       console.error('API error:', e);
+      console.error('URL:', url);
+      console.error('Last raw response:', this.state.lastRawResponse);
       throw e;
     }
+  },
+
+  // 디버그 패널 토글
+  showDebugPanel() {
+    const url = this.state.lastRequestUrl || '(없음)';
+    const raw = this.state.lastRawResponse || '(없음)';
+    const err = this.state.lastError || '(없음)';
+    const parsed = this.state.lastParsedResponse;
+    const parsedStr = parsed ? JSON.stringify(parsed, null, 2).substring(0, 2000) : '(없음)';
+    const body = `
+      <div class="section">
+        <div class="section-h">최근 에러</div>
+        <div class="section-c" style="font-size:12px; background:#fdecec; padding:8px; border-radius:6px; word-break:break-all;">${this._escape(err)}</div>
+      </div>
+      <div class="section">
+        <div class="section-h">요청 URL</div>
+        <div class="section-c" style="font-size:11px; background:#f1f3f5; padding:8px; border-radius:6px; word-break:break-all;">${this._escape(url)}</div>
+      </div>
+      <div class="section">
+        <div class="section-h">원본 응답 (앞 3000자)</div>
+        <pre style="font-size:11px; background:#f1f3f5; padding:8px; border-radius:6px; white-space:pre-wrap; word-break:break-all; max-height:240px; overflow:auto;">${this._escape(raw)}</pre>
+      </div>
+      <div class="section">
+        <div class="section-h">파싱된 객체 구조 (앞 2000자)</div>
+        <pre style="font-size:11px; background:#f1f3f5; padding:8px; border-radius:6px; white-space:pre-wrap; word-break:break-all; max-height:240px; overflow:auto;">${this._escape(parsedStr)}</pre>
+      </div>
+    `;
+    this.openModal({ title: '🔧 디버그 정보', body });
   },
 
   // XML → JSON 변환 (공공데이터 표준 형식)
@@ -1189,19 +1246,28 @@ const App = {
     return childTags;
   },
 
-  // API 응답에서 items 배열 추출 (공공데이터 표준 응답 패턴)
+  // API 응답에서 items 배열 추출 (공공데이터 표준 응답 패턴 - 다양한 형태 대응)
   extractItems(data) {
     if (!data) return [];
-    // response.body.items.item 또는 response.body.items 형태
-    let body = data?.response?.body;
-    if (!body) return [];
-    let items = body.items;
+    // 가능한 경로들을 모두 시도
+    // 1) response.body.items.item (가장 일반)
+    // 2) response.body.items (배열인 경우)
+    // 3) body.items.item
+    // 4) items.item
+    // 5) 최상위에 item 배열
+    let candidates = [
+      data?.response?.body?.items?.item,
+      data?.response?.body?.items,
+      data?.body?.items?.item,
+      data?.body?.items,
+      data?.items?.item,
+      data?.items,
+      data?.item
+    ];
+    let items = candidates.find(c => c !== undefined && c !== null && c !== '');
     if (!items) return [];
-    // items가 객체이고 안에 item이 있는 경우
-    if (typeof items === 'object' && items.item !== undefined) {
-      items = items.item;
-    }
-    if (!items) return [];
+    // 문자열로 비어있는 케이스 (XML 빈 노드)
+    if (typeof items === 'string') return [];
     if (!Array.isArray(items)) items = [items];
     return items;
   }
