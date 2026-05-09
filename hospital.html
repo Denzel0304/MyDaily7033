@@ -2097,13 +2097,17 @@ App._searchDrugByName = async function(query) {
   const key = encodeURIComponent(API_KEYS.drugInfo);
   const q   = encodeURIComponent(query);
 
-  // ① 쉬운설명(일반약) + ② 의약품 허가정보(전문/처방약) 동시 호출
+  // ① 쉬운설명(일반약)
   const url1 = `https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList?serviceKey=${key}&pageNo=1&numOfRows=30&itemName=${q}&type=json`;
-  const url2 = `https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService05/getDrugPrdtPrmsnDtlInq05?serviceKey=${key}&pageNo=1&numOfRows=50&item_name=${q}&type=json`;
+  // ② 의약품 허가정보 (파라미터 대문자 ITEM_NAME으로 수정)
+  const url2 = `https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService05/getDrugPrdtPrmsnDtlInq05?serviceKey=${key}&pageNo=1&numOfRows=50&ITEM_NAME=${q}&type=json`;
+  // ③ DUR 품목정보 (처방약 포함 가장 광범위한 DB)
+  const url3 = `https://apis.data.go.kr/1471000/DURPrdlstInfoService03/getUdfsInq03?serviceKey=${key}&pageNo=1&numOfRows=50&itemName=${q}&type=json`;
 
-  const [res1, res2] = await Promise.allSettled([
+  const [res1, res2, res3] = await Promise.allSettled([
     this.apiCall(url1).then(d => this.extractItems(d)),
-    this.apiCall(url2).then(d => this.extractItems(d))
+    this.apiCall(url2).then(d => this.extractItems(d)),
+    this.apiCall(url3).then(d => this.extractItems(d))
   ]);
 
   // 쉬운설명 결과: _source = 'easy' 표시
@@ -2127,18 +2131,35 @@ App._searchDrugByName = async function(query) {
       _raw:           it
     }));
 
+  // ③ DUR 품목정보 결과 정규화
+  const durItems = (res3.status === 'fulfilled' ? res3.value : [])
+    .map(it => ({
+      _source:        'prms',
+      itemName:       it.ITEM_NAME     || it.itemName     || '',
+      entpName:       it.ENTP_NAME     || it.entpName     || '',
+      itemSeq:        it.ITEM_SEQ      || it.itemSeq      || '',
+      efcyQesitm:     '',
+      useMethodQesitm:'',
+      atpnQesitm:     '',
+      itemImage:      it.ITEM_IMAGE    || '',
+      _classNo:       it.CLASS_NAME    || it.className    || '',
+      _storageMethod: '',
+      _validTerm:     '',
+      _raw:           it
+    }));
+
   // 중복 제거 (itemSeq 기준, 없으면 itemName 기준)
   const seen = new Set();
-  const items = [...easyItems, ...prmsItems].filter(it => {
+  const items = [...easyItems, ...prmsItems, ...durItems].filter(it => {
     const key = it.itemSeq || it.itemName;
-    if (seen.has(key)) return false;
+    if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 
   if (items.length === 0) {
-    const bothFailed = res1.status === 'rejected' && res2.status === 'rejected';
-    if (bothFailed) {
+    const allFailed = res1.status === 'rejected' && res2.status === 'rejected' && res3.status === 'rejected';
+    if (allFailed) {
       c.innerHTML = this._errorHtml(res1.reason?.message || '네트워크 오류');
     } else {
       c.innerHTML = this._emptyHtml('해당 약을 찾지 못했습니다');
