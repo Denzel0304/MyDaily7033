@@ -348,6 +348,14 @@ function pushState(level) {
 }
 
 window.addEventListener('popstate', (e) => {
+  if (e.state?.level === 'gear') {
+    closeGearMenu();
+    return;
+  }
+  if (gearMenuOpen) {
+    closeGearMenu();
+    return;
+  }
   const level = e.state?.level ?? 0;
   handleBack(level);
 });
@@ -778,17 +786,40 @@ function showToast(msg, duration=2800) {
 const gearBtn = document.getElementById('gearBtn');
 const gearMenu = document.getElementById('gearMenu');
 
+let gearMenuOpen = false;
+
+function openGearMenu() {
+  if (gearMenuOpen) return;
+  gearMenuOpen = true;
+  gearMenu.classList.add('open');
+  history.pushState({ level: 'gear' }, '');
+}
+
+function closeGearMenu() {
+  if (!gearMenuOpen) return;
+  gearMenuOpen = false;
+  gearMenu.classList.remove('open');
+}
+
 gearBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  gearMenu.classList.toggle('open');
+  if (gearMenuOpen) {
+    history.back();
+  } else {
+    openGearMenu();
+  }
 });
-document.addEventListener('click', () => gearMenu.classList.remove('open'));
+document.addEventListener('click', (e) => {
+  if (gearMenuOpen && !gearBtn.contains(e.target) && !gearMenu.contains(e.target)) {
+    history.back();
+  }
+});
 
 // ═══════════════════════════════════════════════
 // EXPORT / IMPORT
 // ═══════════════════════════════════════════════
 document.getElementById('exportBtn').addEventListener('click', () => {
-  gearMenu.classList.remove('open');
+  if (gearMenuOpen) history.back();
   const payload = { sig: FILE_SIG, version: 1, exportedAt: new Date().toISOString(), trades };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -801,7 +832,7 @@ document.getElementById('exportBtn').addEventListener('click', () => {
 });
 
 document.getElementById('importBtn').addEventListener('click', () => {
-  gearMenu.classList.remove('open');
+  if (gearMenuOpen) history.back();
   document.getElementById('importFile').value = '';
   document.getElementById('importFile').click();
 });
