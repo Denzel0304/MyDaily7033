@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>의료 정보</title>
+<style>
+/* ============================================
+   RESET & BASE
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #f7f8fa;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; }
+input { font-family: inherit; }
+:root {
+  --primary: #d83838;       /* 응급 레드 */
+  --primary-dark: #b02828;
+  --secondary: #2e7dd9;     /* 약국/병의원 블루 */
+  --accent: #e89923;        /* 알림 */
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #1a1a1a;
+  --text-2: #6b7280;
+  --text-3: #9ca3af;
+  --success: #16a34a;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.16);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tabbar-h: 60px;
+  --header-h: 52px;
+}
+
+/* ============================================
+   APP LAYOUT
+   ============================================ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg);
+  position: relative;
+}
+
+/* HEADER */
+.app-header {
+  flex-shrink: 0;
+  height: calc(var(--header-h) + var(--safe-top));
+  padding-top: var(--safe-top);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  padding-right: 16px;
+  z-index: 10;
+}
+.app-header .title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.app-header .location-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #f1f3f5;
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--text-2);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-header .location-btn:active { background: #e7eaee; }
+.app-header .location-btn .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-3);
+  flex-shrink: 0;
+}
+.app-header .location-btn.active .dot { background: var(--success); }
+
+/* CONTENT */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 8px);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* TABBAR */
+.app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  height: calc(var(--tabbar-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 10;
+}
+.app-tabbar button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 500;
+  position: relative;
+}
+.app-tabbar button .ico { font-size: 22px; line-height: 1; }
+.app-tabbar button.active { color: var(--primary); }
+.app-tabbar button.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 3px 3px;
+}
+
+/* ============================================
+   COMMON UI
+   ============================================ */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 16px 16px 8px;
+}
+
+/* SEGMENT (탭 안의 세그먼트) */
+.segmented {
+  display: flex;
+  background: #ebedf0;
+  border-radius: 10px;
+  padding: 3px;
+  margin: 12px 16px;
+  gap: 2px;
+}
+.segmented button {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+}
+.segmented button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* CHIP FILTER */
+.chip-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.chip.active {
+  background: var(--text);
+  color: var(--surface);
+  border-color: var(--text);
+}
+
+/* SEARCH BAR */
+.searchbar {
+  margin: 12px 16px;
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0 12px;
+  height: 40px;
+}
+.searchbar .icon { margin-right: 8px; color: var(--text-3); font-size: 16px; }
+.searchbar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+}
+.searchbar .clear {
+  display: none;
+  color: var(--text-3);
+  font-size: 18px;
+  padding: 0 4px;
+}
+.searchbar.has-value .clear { display: block; }
+
+/* CARD LIST */
+.list-wrap { padding: 4px 12px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 6px 0;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.card:active { transform: scale(0.985); }
+.card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  word-break: keep-all;
+}
+.card-distance {
+  font-size: 12px;
+  color: var(--secondary);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.card-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.card-badges {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #f1f3f5;
+  color: var(--text-2);
+}
+.badge.open { background: #e6f7ee; color: var(--success); }
+.badge.closed { background: #fdecec; color: var(--primary); }
+.badge.warn { background: #fff5e0; color: #b3700d; }
+.card-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  gap: 8px;
+}
+.card-action-btn {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: #f1f3f5;
+  color: var(--text);
+}
+.card-action-btn.call { background: #e6f7ee; color: var(--success); }
+.card-action-btn.map { background: #e7f0fb; color: var(--secondary); }
+
+/* BED COUNTS (응급실용) */
+.bed-counts {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.bed-cell {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: center;
+}
+.bed-cell .lbl {
+  font-size: 10px;
+  color: var(--text-3);
+  display: block;
+}
+.bed-cell .val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+  margin-top: 2px;
+}
+.bed-cell.full .val { color: var(--primary); }
+.bed-cell.ok .val { color: var(--success); }
+
+/* EMPTY/LOADING/ERROR */
+.state-msg {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 14px;
+}
+.state-msg .ico { font-size: 36px; display: block; margin-bottom: 12px; }
+.state-msg .sub { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+.state-msg .retry {
+  margin-top: 16px;
+  padding: 10px 18px;
+  background: var(--text);
+  color: var(--surface);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================
+   MODAL
+   ============================================ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  width: calc(100% - 24px);
+  max-width: 560px;
+  max-height: calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom));
+  background: var(--surface);
+  border-radius: 16px;
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  overflow: hidden;
+}
+.modal.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+/* 모달 헤더 (고정) */
+.modal-header {
+  flex-shrink: 0;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.modal-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  word-break: keep-all;
+}
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #f1f3f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+/* 모달 본문 (스크롤) */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+.modal-body .section {
+  margin-bottom: 18px;
+}
+.modal-body .section-h {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.modal-body .section-c {
+  font-size: 14px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: keep-all;
+  line-height: 1.6;
+}
+.modal-body .info-row {
+  display: flex;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  gap: 12px;
+}
+.modal-body .info-row:last-child { border-bottom: none; }
+.modal-body .info-row .lbl {
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.modal-body .info-row .val {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+.modal-actions {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+.modal-actions button {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.modal-actions .btn-call {
+  background: var(--success);
+  color: white;
+}
+.modal-actions .btn-map {
+  background: var(--secondary);
+  color: white;
+}
+
+/* PILL IMAGE */
+.pill-image {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  display: block;
+  margin: 0 auto 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #f8f9fa;
+}
+.pill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.pill-grid .card { margin: 0; }
+.pill-grid .pill-thumb {
+  width: 100%;
+  aspect-ratio: 1.6;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  object-fit: contain;
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(20,20,20,0.92);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 24px;
+  font-size: 13px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  max-width: 88%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* LOCATION SHEET */
+.location-sheet-content { padding: 8px 0; }
+.region-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.region-list button {
+  padding: 12px 4px;
+  background: #f1f3f5;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.region-list button.active {
+  background: var(--primary);
+  color: white;
+}
+.gps-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.gps-btn:disabled { opacity: 0.5; }
+
+/* PILL FILTER FORM */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.filter-row label {
+  font-size: 12px;
+  color: var(--text-2);
+  display: block;
+  margin-bottom: 4px;
+}
+.filter-row .group { flex: 1; min-width: 120px; }
+.filter-row select, .filter-row input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface);
+}
+.filter-submit {
+  width: 100%;
+  padding: 12px;
+  background: var(--text);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* API KEY WARNING */
+.api-warning {
+  margin: 12px 16px;
+  padding: 12px 14px;
+  background: #fff5e0;
+  border: 1px solid #f0c97c;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #7a4a00;
+  line-height: 1.5;
+}
+.api-warning strong { color: #5c3700; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 헤더 -->
+  <header class="app-header">
+    <div class="title">의료 정보</div>
+    <button class="location-btn" id="locationBtn" onclick="App.openLocationSheet()">
+      <span class="dot"></span>
+      <span id="locationLabel">위치 설정</span>
+    </button>
+  </header>
+
+  <!-- 콘텐츠 -->
+  <main class="app-content" id="appContent">
+    <!-- 응급 탭 -->
+    <section class="tab-panel active" id="tab-emergency">
+      <div class="segmented" id="emerSeg">
+        <button class="active" data-sub="er">응급실</button>
+        <button data-sub="severe">중증질환</button>
+        <button data-sub="trauma">외상센터</button>
+      </div>
+      <div id="emerContent"></div>
+    </section>
+
+    <!-- 약국 탭 -->
+    <section class="tab-panel" id="tab-pharmacy">
+      <div class="chip-row" id="pharmacyChips">
+        <button class="chip active" data-filter="open">지금 운영중</button>
+        <button class="chip" data-filter="24h">24시간</button>
+        <button class="chip" data-filter="night">야간(~22시)</button>
+        <button class="chip" data-filter="all">전체</button>
+      </div>
+      <div class="searchbar" id="pharmacySearch">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="약국명 검색" />
+        <button class="clear">×</button>
+      </div>
+      <div id="pharmacyContent"></div>
+    </section>
+
+    <!-- 병의원 탭 -->
+    <section class="tab-panel" id="tab-hospital">
+      <div class="searchbar" id="hospitalSearch">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="병원명 검색" />
+        <button class="clear">×</button>
+      </div>
+      <div class="chip-row" id="hospitalChips">
+        <button class="chip active" data-dept="">전체</button>
+        <button class="chip" data-dept="01">내과</button>
+        <button class="chip" data-dept="02">신경과</button>
+        <button class="chip" data-dept="03">정신건강의학과</button>
+        <button class="chip" data-dept="04">외과</button>
+        <button class="chip" data-dept="05">정형외과</button>
+        <button class="chip" data-dept="06">신경외과</button>
+        <button class="chip" data-dept="08">흉부외과</button>
+        <button class="chip" data-dept="10">소아청소년과</button>
+        <button class="chip" data-dept="11">이비인후과</button>
+        <button class="chip" data-dept="12">피부과</button>
+        <button class="chip" data-dept="14">산부인과</button>
+        <button class="chip" data-dept="16">치과</button>
+        <button class="chip" data-dept="20">한의원</button>
+      </div>
+      <div id="hospitalContent"></div>
+    </section>
+
+    <!-- 약정보 탭 -->
+    <section class="tab-panel" id="tab-drug">
+      <div class="segmented" id="drugSeg">
+        <button class="active" data-sub="name">이름으로</button>
+        <button data-sub="shape">모양으로</button>
+      </div>
+      <div id="drugContent"></div>
+    </section>
+  </main>
+
+  <!-- 탭바 -->
+  <nav class="app-tabbar">
+    <button class="active" data-tab="emergency"><span class="ico">🚑</span>응급</button>
+    <button data-tab="pharmacy"><span class="ico">💊</span>약국</button>
+    <button data-tab="hospital"><span class="ico">🏥</span>병의원</button>
+    <button data-tab="drug"><span class="ico">💉</span>약정보</button>
+  </nav>
+</div>
+
+<!-- 모달 시스템 -->
+<div class="modal-backdrop" id="modalBackdrop"></div>
+<div class="modal" id="modal">
+  <div class="modal-header">
+    <div class="modal-title" id="modalTitle">제목</div>
+    <button class="modal-close" onclick="App.closeModal()">×</button>
+  </div>
+  <div class="modal-body" id="modalBody"></div>
+  <div class="modal-actions" id="modalActions" style="display:none;"></div>
+</div>
+
+<!-- 위치 설정 모달 -->
+<div class="modal-backdrop" id="locModalBackdrop"></div>
+<div class="modal" id="locModal">
+  <div class="modal-header">
+    <div class="modal-title">위치 설정</div>
+    <button class="modal-close" onclick="App.closeLocationSheet()">×</button>
+  </div>
+  <div class="modal-body">
+    <button class="gps-btn" id="gpsBtn" onclick="App.requestGps()">📍 현재 위치 사용</button>
+    <div class="section-h" style="margin-bottom:8px;">또는 시·도 선택</div>
+    <div class="region-list" id="regionList"></div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================
+   API KEY 자리표시자
+   - 공공데이터포털에서 발급받은 인증키(Encoding 버전)를 붙여넣으세요
+   - 5개 다 같은 계정이면 같은 키를 써도 됩니다
+   ============================================ */
+const API_KEYS = {
+  // ① 응급의료/외상센터 - data.go.kr/data/15000563
+  emergency: 'YOUR_API_KEY_HERE',
+  // ② 약국 - data.go.kr/data/15000576
+  pharmacy:  'YOUR_API_KEY_HERE',
+  // ③ 병의원 - data.go.kr/data/15000736
+  hospital:  'YOUR_API_KEY_HERE',
+  // ④ 의약품개요 - data.go.kr/data/15075057
+  drugInfo:  'YOUR_API_KEY_HERE',
+  // ⑤ 의약품 낱알식별 - data.go.kr/data/15057639
+  drugPill:  'YOUR_API_KEY_HERE'
+};
+
+/* ============================================
+   APP CORE
+   ============================================ */
+const App = {
+  // 상태
+  state: {
+    activeTab: 'emergency',
+    activeEmerSub: 'er',
+    activeDrugSub: 'name',
+    pharmacyFilter: 'open',
+    hospitalDept: '',
+    location: null,        // {lat, lon, label, sido, sigungu}
+    modalStack: [],        // 열린 모달 스택
+    cache: {}              // API 캐시
+  },
+
+  // ============ INIT ============
+  init() {
+    this.initTabs();
+    this.initSegments();
+    this.initChips();
+    this.initSearchBars();
+    this.initHistory();
+    this.initRegionList();
+    this.loadSavedLocation();
+    this.renderEmergency();
+    this.checkApiKeys();
+  },
+
+  checkApiKeys() {
+    const placeholder = 'YOUR_API_KEY_HERE';
+    const missing = Object.entries(API_KEYS).filter(([k,v]) => !v || v === placeholder);
+    if (missing.length === 5) {
+      // 모든 키 미입력 - 안내 표시
+      this.state.allKeysMissing = true;
+    }
+  },
+
+  apiWarningHtml() {
+    return `<div class="api-warning">
+      <strong>⚠️ API 키 미입력</strong><br>
+      코드 상단의 <code>API_KEYS</code>에 공공데이터포털 인증키를 입력해주세요.<br>
+      자세한 안내는 README.md 참고.
+    </div>`;
+  },
+
+  // ============ 탭 전환 (history 안 쌓음) ============
+  initTabs() {
+    document.querySelectorAll('.app-tabbar button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        this.switchTab(tab);
+      });
+    });
+  },
+
+  switchTab(tab) {
+    if (this.state.activeTab === tab) return;
+    // 모달이 열려있으면 먼저 닫기
+    if (this.state.modalStack.length > 0) {
+      // 스택에 쌓인 모든 모달을 닫기 (history도 그만큼 뒤로)
+      const stackLen = this.state.modalStack.length;
+      for (let i = 0; i < stackLen; i++) {
+        const top = this.state.modalStack.pop();
+        this._closeModalImpl(top);
+      }
+      // history 정리: 모달 만큼 push했으므로 같은 양만큼 replaceState로 정리
+      // (back을 여러 번 부르면 비동기로 처리되어 꼬일 수 있음 → 단순화)
+      try { history.replaceState({ type: 'base' }, ''); } catch(e) {}
+    }
+    this.state.activeTab = tab;
+    document.querySelectorAll('.app-tabbar button').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.toggle('active', p.id === `tab-${tab}`);
+    });
+    document.getElementById('appContent').scrollTop = 0;
+    // 첫 진입 시 렌더
+    if (tab === 'emergency') this.renderEmergency();
+    else if (tab === 'pharmacy') this.renderPharmacy();
+    else if (tab === 'hospital') this.renderHospital();
+    else if (tab === 'drug') this.renderDrug();
+  },
+
+  // ============ 세그먼트 ============
+  initSegments() {
+    document.querySelectorAll('#emerSeg button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#emerSeg button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.state.activeEmerSub = btn.dataset.sub;
+        this.renderEmergency();
+      });
+    });
+    document.querySelectorAll('#drugSeg button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#drugSeg button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.state.activeDrugSub = btn.dataset.sub;
+        this.renderDrug();
+      });
+    });
+  },
+
+  // ============ 칩 필터 ============
+  initChips() {
+    document.querySelectorAll('#pharmacyChips .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#pharmacyChips .chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        this.state.pharmacyFilter = c.dataset.filter;
+        this.renderPharmacy();
+      });
+    });
+    document.querySelectorAll('#hospitalChips .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#hospitalChips .chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        this.state.hospitalDept = c.dataset.dept;
+        this.renderHospital();
+      });
+    });
+  },
+
+  // ============ 검색바 ============
+  initSearchBars() {
+    document.querySelectorAll('.searchbar').forEach(bar => {
+      const input = bar.querySelector('input');
+      const clear = bar.querySelector('.clear');
+      input.addEventListener('input', () => {
+        bar.classList.toggle('has-value', !!input.value);
+      });
+      clear.addEventListener('click', () => {
+        input.value = '';
+        bar.classList.remove('has-value');
+        input.dispatchEvent(new Event('search'));
+      });
+      // 검색 실행 (debounce)
+      let timer;
+      input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          if (bar.id === 'pharmacySearch') this.renderPharmacy();
+          else if (bar.id === 'hospitalSearch') this.renderHospital();
+        }, 350);
+      });
+    });
+  },
+
+  // ============ HISTORY API (뒤로가기 처리) ============
+  initHistory() {
+    // 페이지 로드시 베이스 상태 push
+    history.replaceState({ type: 'base' }, '');
+
+    window.addEventListener('popstate', (e) => {
+      // 모달 스택이 있으면 모달부터 닫음
+      if (this.state.modalStack.length > 0) {
+        const top = this.state.modalStack.pop();
+        this._closeModalImpl(top);
+        // popstate 이벤트로 인해 history는 이미 한 단계 뒤로 갔음
+        // 추가 처리 불필요
+      }
+      // 모달 없을 때 popstate 발생 = 사용자가 진짜 뒤로가기 = 사이트 종료
+      // (브라우저가 자연스럽게 처리)
+    });
+  },
+
+  // ============ 모달 ============
+  openModal({ title, body, actions }) {
+    const modal = document.getElementById('modal');
+    const backdrop = document.getElementById('modalBackdrop');
+    document.getElementById('modalTitle').textContent = title || '';
+    document.getElementById('modalBody').innerHTML = body || '';
+    const actionsEl = document.getElementById('modalActions');
+    if (actions && actions.length > 0) {
+      actionsEl.innerHTML = '';
+      actions.forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = a.className || '';
+        btn.textContent = a.label;
+        btn.onclick = a.onClick;
+        actionsEl.appendChild(btn);
+      });
+      actionsEl.style.display = 'flex';
+    } else {
+      actionsEl.style.display = 'none';
+    }
+    modal.classList.add('active');
+    backdrop.classList.add('active');
+    backdrop.onclick = () => this.closeModal();
+
+    // history 스택 push (뒤로가기로 닫기 위해)
+    this.state.modalStack.push('main');
+    history.pushState({ type: 'modal' }, '');
+
+    // 본문 스크롤 맨 위로
+    document.getElementById('modalBody').scrollTop = 0;
+  },
+
+  closeModal() {
+    if (this.state.modalStack.length === 0) return;
+    // history.back() 트리거 -> popstate 핸들러가 닫음
+    history.back();
+  },
+
+  _closeModalImpl(which) {
+    if (which === 'main') {
+      document.getElementById('modal').classList.remove('active');
+      document.getElementById('modalBackdrop').classList.remove('active');
+    } else if (which === 'location') {
+      document.getElementById('locModal').classList.remove('active');
+      document.getElementById('locModalBackdrop').classList.remove('active');
+    }
+  },
+
+  openLocationSheet() {
+    document.getElementById('locModal').classList.add('active');
+    document.getElementById('locModalBackdrop').classList.add('active');
+    document.getElementById('locModalBackdrop').onclick = () => this.closeLocationSheet();
+    this.state.modalStack.push('location');
+    history.pushState({ type: 'modal' }, '');
+  },
+
+  closeLocationSheet() {
+    if (this.state.modalStack[this.state.modalStack.length-1] === 'location') {
+      history.back();
+    }
+  },
+
+  // ============ 위치 ============
+  loadSavedLocation() {
+    try {
+      const saved = localStorage.getItem('medi_location');
+      if (saved) {
+        this.state.location = JSON.parse(saved);
+        this.updateLocationLabel();
+      }
+    } catch(e) {}
+  },
+
+  saveLocation() {
+    try {
+      localStorage.setItem('medi_location', JSON.stringify(this.state.location));
+    } catch(e) {}
+  },
+
+  updateLocationLabel() {
+    const label = document.getElementById('locationLabel');
+    const btn = document.getElementById('locationBtn');
+    if (this.state.location) {
+      label.textContent = this.state.location.label || '위치 설정됨';
+      btn.classList.add('active');
+    } else {
+      label.textContent = '위치 설정';
+      btn.classList.remove('active');
+    }
+  },
+
+  initRegionList() {
+    const sidos = [
+      ['서울','서울특별시'], ['부산','부산광역시'], ['대구','대구광역시'],
+      ['인천','인천광역시'], ['광주','광주광역시'], ['대전','대전광역시'],
+      ['울산','울산광역시'], ['세종','세종특별자치시'], ['경기','경기도'],
+      ['강원','강원특별자치도'], ['충북','충청북도'], ['충남','충청남도'],
+      ['전북','전북특별자치도'], ['전남','전라남도'], ['경북','경상북도'],
+      ['경남','경상남도'], ['제주','제주특별자치도']
+    ];
+    const list = document.getElementById('regionList');
+    list.innerHTML = sidos.map(([s, full]) => 
+      `<button data-sido="${full}" data-short="${s}">${s}</button>`
+    ).join('');
+    list.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        const sido = b.dataset.sido;
+        const short = b.dataset.short;
+        this.state.location = {
+          lat: null, lon: null,
+          sido: sido,
+          sigungu: '',
+          label: short,
+          mode: 'manual'
+        };
+        this.saveLocation();
+        this.updateLocationLabel();
+        this.toast(`${short}(으)로 설정되었습니다`);
+        this.closeLocationSheet();
+        // 현재 탭 다시 렌더
+        this.refreshCurrentTab();
+      });
+    });
+  },
+
+  requestGps() {
+    if (!navigator.geolocation) {
+      this.toast('이 브라우저는 위치 서비스를 지원하지 않습니다');
+      return;
+    }
+    const btn = document.getElementById('gpsBtn');
+    btn.disabled = true;
+    btn.textContent = '위치 확인 중...';
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        this.state.location = {
+          lat: latitude,
+          lon: longitude,
+          label: '현재 위치',
+          mode: 'gps'
+        };
+        // 좌표 → 시도 역변환은 응급의료 API의 STAGE1/STAGE2 시도/시군구 필터에 어려움이 있어
+        // GPS 모드에서는 모든 데이터를 받아서 거리순으로 정렬하는 방식으로 처리함
+        this.saveLocation();
+        this.updateLocationLabel();
+        this.toast('현재 위치를 사용합니다');
+        btn.disabled = false;
+        btn.textContent = '📍 현재 위치 사용';
+        this.closeLocationSheet();
+        this.refreshCurrentTab();
+      },
+      (err) => {
+        btn.disabled = false;
+        btn.textContent = '📍 현재 위치 사용';
+        let msg = '위치를 가져올 수 없습니다';
+        if (err.code === 1) msg = '위치 권한이 거부되었습니다';
+        else if (err.code === 2) msg = '위치를 알 수 없습니다';
+        else if (err.code === 3) msg = '위치 확인 시간이 초과되었습니다';
+        this.toast(msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  },
+
+  refreshCurrentTab() {
+    const t = this.state.activeTab;
+    if (t === 'emergency') this.renderEmergency();
+    else if (t === 'pharmacy') this.renderPharmacy();
+    else if (t === 'hospital') this.renderHospital();
+    else if (t === 'drug') this.renderDrug();
+  },
+
+  // ============ 토스트 ============
+  toastTimer: null,
+  toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  },
+
+  // ============ 유틸 ============
+  // Haversine 거리 (km)
+  distance(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lat2) return Infinity;
+    const R = 6371;
+    const dLat = (lat2-lat1) * Math.PI/180;
+    const dLon = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  },
+
+  formatDistance(km) {
+    if (!isFinite(km)) return '';
+    if (km < 1) return `${Math.round(km*1000)}m`;
+    return `${km.toFixed(1)}km`;
+  },
+
+  // 길찾기 - 카카오맵
+  openMap(name, lat, lon) {
+    if (!lat || !lon) {
+      this.toast('위치 정보가 없습니다');
+      return;
+    }
+    // 카카오맵 길찾기 URL
+    const url = `https://map.kakao.com/link/to/${encodeURIComponent(name)},${lat},${lon}`;
+    window.open(url, '_blank');
+  },
+
+  call(tel) {
+    if (!tel) { this.toast('전화번호가 없습니다'); return; }
+    location.href = `tel:${tel.replace(/[^0-9+]/g,'')}`;
+  },
+
+  // 공공데이터 API 호출 (XML/JSON 자동 처리)
+  async apiCall(url) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      // JSON 우선 시도
+      try { return JSON.parse(text); }
+      catch(e) {
+        // XML 파싱
+        return this.parseXml(text);
+      }
+    } catch(e) {
+      console.error('API error:', e);
+      throw e;
+    }
+  },
+
+  // XML → JSON 변환 (공공데이터 표준 형식)
+  parseXml(xmlStr) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlStr, 'text/xml');
+    return this.xmlNodeToObj(doc.documentElement);
+  },
+
+  xmlNodeToObj(node) {
+    const obj = {};
+    if (node.nodeType !== 1) return node.nodeValue;
+    if (node.children.length === 0) return node.textContent;
+    const childTags = {};
+    Array.from(node.children).forEach(child => {
+      const name = child.tagName;
+      const val = this.xmlNodeToObj(child);
+      if (childTags[name]) {
+        if (!Array.isArray(childTags[name])) childTags[name] = [childTags[name]];
+        childTags[name].push(val);
+      } else {
+        childTags[name] = val;
+      }
+    });
+    return childTags;
+  },
+
+  // API 응답에서 items 배열 추출 (공공데이터 표준 응답 패턴)
+  extractItems(data) {
+    if (!data) return [];
+    // response.body.items.item 또는 response.body.items 형태
+    let body = data?.response?.body;
+    if (!body) return [];
+    let items = body.items;
+    if (!items) return [];
+    // items가 객체이고 안에 item이 있는 경우
+    if (typeof items === 'object' && items.item !== undefined) {
+      items = items.item;
+    }
+    if (!items) return [];
+    if (!Array.isArray(items)) items = [items];
+    return items;
+  }
+};
+
+/* ============================================
+   TAB: 응급 (응급실/중증질환/외상센터)
+   ============================================ */
+App.renderEmergency = async function() {
+  const c = document.getElementById('emerContent');
+  const sub = this.state.activeEmerSub;
+
+  if (this.state.allKeysMissing) {
+    c.innerHTML = this.apiWarningHtml();
+    return;
+  }
+  if (API_KEYS.emergency === 'YOUR_API_KEY_HERE' || !API_KEYS.emergency) {
+    c.innerHTML = this.apiWarningHtml();
+    return;
+  }
+  if (!this.state.location) {
+    c.innerHTML = this._needLocationHtml();
+    return;
+  }
+
+  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>불러오는 중...</div>`;
+
+  try {
+    if (sub === 'er') await this._renderER();
+    else if (sub === 'severe') await this._renderSevere();
+    else if (sub === 'trauma') await this._renderTrauma();
+  } catch (e) {
+    c.innerHTML = this._errorHtml(e.message);
+  }
+};
+
+App._needLocationHtml = function() {
+  return `<div class="state-msg">
+    <div class="ico">📍</div>
+    위치를 먼저 설정해주세요
+    <div class="sub">상단 우측 위치 버튼을 눌러주세요</div>
+    <button class="retry" onclick="App.openLocationSheet()">위치 설정하기</button>
+  </div>`;
+};
+
+App._errorHtml = function(msg) {
+  return `<div class="state-msg">
+    <div class="ico">⚠️</div>
+    데이터를 불러오지 못했습니다
+    <div class="sub">${msg || ''}</div>
+    <button class="retry" onclick="App.refreshCurrentTab()">다시 시도</button>
+  </div>`;
+};
+
+App._emptyHtml = function(msg) {
+  return `<div class="state-msg">
+    <div class="ico">🔍</div>
+    ${msg || '결과가 없습니다'}
+  </div>`;
+};
+
+// ============ 응급실 ============
+App._renderER = async function() {
+  const c = document.getElementById('emerContent');
+  const loc = this.state.location;
+  // 응급실 가용병상 조회: STAGE1=시도, STAGE2=시군구
+  // GPS 모드일 경우: 시도 미지정으로 광역 조회 후 클라이언트단 거리 정렬
+  // 수동 모드일 경우: 시도로 필터
+  const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire';
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(API_KEYS.emergency),
+    pageNo: '1',
+    numOfRows: '200'
+  });
+  if (loc.mode === 'manual' && loc.sido) {
+    params.set('STAGE1', loc.sido);
+  }
+  // GPS 모드라도 광역 시도 미지정으로 호출하면 너무 많이 오므로
+  // 우선 가능한 시도들에서 데이터를 받음. GPS면 일단 사용자가 시도 선택을 추천하지만
+  // 일단 그냥 호출해보고 거리 계산 적용
+  const url = `${baseUrl}?${params.toString()}`;
+  const data = await this.apiCall(url);
+  let items = this.extractItems(data);
+
+  // 거리 계산 + 정렬
+  if (loc.lat && loc.lon) {
+    items.forEach(it => {
+      it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
+    });
+    items.sort((a,b) => a._dist - b._dist);
+    items = items.slice(0, 50);
+  } else {
+    items = items.slice(0, 50);
+  }
+
+  if (items.length === 0) {
+    c.innerHTML = this._emptyHtml('해당 지역에 응급실 정보가 없습니다');
+    return;
+  }
+
+  c.innerHTML = '<div class="list-wrap">' + items.map(it => this._erCardHtml(it)).join('') + '</div>';
+  // 카드 클릭 → 상세
+  c.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', (e) => {
+      // 액션 버튼 클릭은 무시
+      if (e.target.closest('.card-action-btn')) return;
+      this._openErDetail(items[i]);
+    });
+  });
+};
+
+App._erCardHtml = function(it) {
+  const name = it.dutyName || '응급실';
+  const tel = it.dutyTel3 || it.dutyTel1 || '';
+  const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
+  // 가용병상 (응급실/일반/소아)
+  const er = parseInt(it.hvec) || 0;          // 응급실 일반
+  const erMax = parseInt(it.hvs01) || 0;
+  const op = parseInt(it.hvoc) || 0;           // 수술실
+  const opMax = parseInt(it.hvs04) || 0;
+  const child = parseInt(it.hv28) || -1;       // 소아응급실
+  const childMax = parseInt(it.hvs59) || 0;
+
+  const cellHtml = (lbl, cur, max) => {
+    if (cur < 0 || max <= 0) {
+      return `<div class="bed-cell"><span class="lbl">${lbl}</span><span class="val">-</span></div>`;
+    }
+    const cls = cur === 0 ? 'full' : (cur <= 2 ? '' : 'ok');
+    return `<div class="bed-cell ${cls}"><span class="lbl">${lbl}</span><span class="val">${cur}/${max}</span></div>`;
+  };
+
+  return `<div class="card">
+    <div class="card-row">
+      <div class="card-name">${this._escape(name)}</div>
+      ${dist ? `<div class="card-distance">${dist}</div>` : ''}
+    </div>
+    <div class="card-meta">
+      <span>${this._escape(it.dutyAddr || '')}</span>
+    </div>
+    <div class="bed-counts">
+      ${cellHtml('응급실', er, erMax)}
+      ${cellHtml('수술실', op, opMax)}
+      ${cellHtml('소아', child, childMax)}
+    </div>
+    <div class="card-actions">
+      ${tel ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${tel}')">📞 전화</button>` : ''}
+      <button class="card-action-btn map" onclick="event.stopPropagation();App.openMap('${this._escape(name)}', '${it.wgs84Lat||''}', '${it.wgs84Lon||''}')">🗺️ 길찾기</button>
+    </div>
+  </div>`;
+};
+
+App._openErDetail = async function(item) {
+  const name = item.dutyName || '응급실';
+  // 추가 메시지 조회 (응급실 메시지)
+  let msgHtml = '';
+  try {
+    const url = `https://apis.data.go.kr/B552657/ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire?serviceKey=${encodeURIComponent(decodeURIComponent(API_KEYS.emergency))}&HPID=${item.hpid}&pageNo=1&numOfRows=1`;
+    const data = await this.apiCall(url);
+    const msg = this.extractItems(data)[0];
+    if (msg && msg.symBlkMsg) {
+      msgHtml = `<div class="section">
+        <div class="section-h">응급실 메시지</div>
+        <div class="section-c">${this._escape(msg.symBlkMsg)}</div>
+      </div>`;
+    }
+  } catch(e) { /* 무시 */ }
+
+  // 가용병상 상세
+  const beds = [
+    ['응급실 일반', item.hvec, item.hvs01],
+    ['응급실 소아', item.hv28, item.hvs59],
+    ['응급실 음압격리', item.hv29, item.hvs60],
+    ['응급실 일반격리', item.hv30, item.hvs61],
+    ['수술실', item.hvoc, item.hvs04],
+    ['입원실 일반', item.hvgc, item.hvs02],
+    ['입원실 소아', item.hv2, item.hvs03],
+    ['신경중환자실', item.hv3, item.hvs05],
+    ['신생아중환자실', item.hv6, item.hvs08],
+    ['소아중환자실', item.hv7, item.hvs09],
+    ['일반중환자실', item.hvcc, item.hvs06],
+    ['흉부중환자실', item.hv8, item.hvs10],
+  ];
+  const bedHtml = beds.map(([lbl, cur, max]) => {
+    if (cur === undefined || cur === null || cur === '' || max === undefined || max === '' || parseInt(max) <= 0) return '';
+    const c = parseInt(cur), m = parseInt(max);
+    const cls = c <= 0 ? 'full' : (c <= 2 ? 'warn' : 'open');
+    return `<div class="info-row"><div class="lbl">${lbl}</div><div class="val"><span class="badge ${cls}">${c}/${m}</span></div></div>`;
+  }).join('');
+
+  const body = `
+    <div class="section">
+      <div class="section-h">기관 정보</div>
+      <div class="info-row"><div class="lbl">주소</div><div class="val">${this._escape(item.dutyAddr || '-')}</div></div>
+      <div class="info-row"><div class="lbl">대표전화</div><div class="val">${this._escape(item.dutyTel1 || '-')}</div></div>
+      <div class="info-row"><div class="lbl">응급실</div><div class="val">${this._escape(item.dutyTel3 || '-')}</div></div>
+    </div>
+    ${bedHtml ? `<div class="section"><div class="section-h">가용병상</div>${bedHtml}</div>` : ''}
+    ${msgHtml}
+  `;
+
+  this.openModal({
+    title: name,
+    body,
+    actions: [
+      { label: '📞 전화', className: 'btn-call', onClick: () => this.call(item.dutyTel3 || item.dutyTel1) },
+      { label: '🗺️ 길찾기', className: 'btn-map', onClick: () => this.openMap(name, item.wgs84Lat, item.wgs84Lon) }
+    ]
+  });
+};
+
+// ============ 중증질환 ============
+App._renderSevere = async function() {
+  const c = document.getElementById('emerContent');
+  const loc = this.state.location;
+  // 중증질환 코드 (응급의료포털 정의)
+  const symptoms = [
+    {code:'Y0010', name:'뇌출혈'}, {code:'Y0020', name:'뇌경색'},
+    {code:'Y0031', name:'심근경색'}, {code:'Y0040', name:'복부손상'},
+    {code:'Y0050', name:'사지접합'}, {code:'Y0060', name:'응급내시경'},
+    {code:'Y0070', name:'응급투석'}, {code:'Y0080', name:'조산산모'},
+    {code:'Y0100', name:'정신과(폐쇄)'}, {code:'Y0111', name:'정신과(응급)'},
+    {code:'Y0120', name:'신생아'}, {code:'Y0150', name:'중증화상'},
+  ];
+  if (!this.state.severeFilter) this.state.severeFilter = symptoms[0].code;
+
+  const chipsHtml = `<div class="chip-row">
+    ${symptoms.map(s => `<button class="chip ${s.code===this.state.severeFilter?'active':''}" data-code="${s.code}">${s.name}</button>`).join('')}
+  </div>`;
+  c.innerHTML = chipsHtml + '<div id="severeList"><div class="state-msg"><div class="spinner"></div>불러오는 중...</div></div>';
+
+  c.querySelectorAll('.chip').forEach(b => {
+    b.addEventListener('click', () => {
+      this.state.severeFilter = b.dataset.code;
+      this.renderEmergency();
+    });
+  });
+
+  // 데이터 조회
+  const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire';
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(API_KEYS.emergency),
+    pageNo: '1',
+    numOfRows: '200'
+  });
+  if (loc.mode === 'manual' && loc.sido) {
+    params.set('STAGE1', loc.sido);
+  }
+  const url = `${baseUrl}?${params.toString()}`;
+  let data;
+  try {
+    data = await this.apiCall(url);
+  } catch(e) {
+    document.getElementById('severeList').innerHTML = this._errorHtml(e.message);
+    return;
+  }
+  let items = this.extractItems(data);
+
+  // 선택한 중증질환 수용 가능한 곳 필터
+  const code = this.state.severeFilter;
+  // 메시지 형식: MKioskTy26(중증질환별 코드) - 응급의료포털 메시지 컬럼
+  // 실제로는 응답 내 컬럼이 다양함. MKioskTy24~ 등 차단 메시지 컬럼이 있는 곳을 제외
+  // 단순화: MKioskTy값 중 해당 코드가 'Y' 또는 가능 표시인 곳
+  // (정확한 매핑은 응급의료포털 코드표 기반인데, 데모에서는 모든 응급기관 표시 후 차단여부만 표시)
+
+  // 거리 계산
+  if (loc.lat && loc.lon) {
+    items.forEach(it => {
+      it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
+    });
+    items.sort((a,b) => (a._dist||Infinity) - (b._dist||Infinity));
+    items = items.slice(0, 50);
+  } else {
+    items = items.slice(0, 50);
+  }
+
+  // 차단 메시지 컬럼 확인 (해당 질환 수용불가 메시지 있는지)
+  // MKioskTy 컬럼 매핑:
+  // MKioskTy1: 뇌출혈수술, MKioskTy2: 뇌경색재관류, MKioskTy3: 심근경색
+  // MKioskTy4: 복부손상수술, MKioskTy5: 사지재접합, MKioskTy6: 응급내시경
+  // MKioskTy7: 응급투석, MKioskTy8: 조산산모, MKioskTy10: 정신과폐쇄병동
+  // MKioskTy11: 정신과응급입원, MKioskTy20: 신생아, MKioskTy15: 중증화상
+  const codeMap = {
+    'Y0010':'MKioskTy1','Y0020':'MKioskTy2','Y0031':'MKioskTy3',
+    'Y0040':'MKioskTy4','Y0050':'MKioskTy5','Y0060':'MKioskTy6',
+    'Y0070':'MKioskTy7','Y0080':'MKioskTy8','Y0100':'MKioskTy10',
+    'Y0111':'MKioskTy11','Y0120':'MKioskTy20','Y0150':'MKioskTy15'
+  };
+  const colName = codeMap[code];
+
+  const filtered = items.map(it => {
+    const blockMsg = colName ? (it[colName] || '') : '';
+    return { ...it, _blocked: blockMsg && blockMsg !== 'N' && blockMsg !== '' && blockMsg !== ' ' && blockMsg.trim().length > 0 && blockMsg !== '0' };
+  });
+  // 수용 가능한 곳 우선
+  filtered.sort((a,b) => {
+    if (a._blocked !== b._blocked) return a._blocked ? 1 : -1;
+    return (a._dist||Infinity) - (b._dist||Infinity);
+  });
+
+  const list = document.getElementById('severeList');
+  if (filtered.length === 0) {
+    list.innerHTML = this._emptyHtml('정보가 없습니다');
+    return;
+  }
+
+  list.innerHTML = '<div class="list-wrap">' + filtered.map(it => {
+    const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
+    const status = it._blocked
+      ? `<span class="badge closed">수용불가</span>`
+      : `<span class="badge open">수용가능</span>`;
+    return `<div class="card" data-hpid="${it.hpid}">
+      <div class="card-row">
+        <div class="card-name">${this._escape(it.dutyName || '')}</div>
+        ${dist ? `<div class="card-distance">${dist}</div>` : ''}
+      </div>
+      <div class="card-meta"><span>${this._escape(it.dutyAddr || '')}</span></div>
+      <div class="card-badges">${status}</div>
+      <div class="card-actions">
+        ${it.dutyTel3 ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${it.dutyTel3}')">📞 전화</button>` : ''}
+        <button class="card-action-btn map" onclick="event.stopPropagation();App.openMap('${this._escape(it.dutyName)}', '${it.wgs84Lat||''}', '${it.wgs84Lon||''}')">🗺️ 길찾기</button>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+
+  list.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.card-action-btn')) return;
+      this._openErDetail(filtered[i]);
+    });
+  });
+};
+
+// ============ 외상센터 ============
+App._renderTrauma = async function() {
+  const c = document.getElementById('emerContent');
+  const loc = this.state.location;
+  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>불러오는 중...</div>`;
+
+  const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getStrmListInfoInqire';
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(API_KEYS.emergency),
+    pageNo: '1',
+    numOfRows: '50'
+  });
+  if (loc.mode === 'manual' && loc.sido) {
+    params.set('STAGE1', loc.sido);
+  }
+  let items = [];
+  try {
+    const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
+    items = this.extractItems(data);
+  } catch(e) {
+    c.innerHTML = this._errorHtml(e.message);
+    return;
+  }
+
+  if (loc.lat && loc.lon) {
+    items.forEach(it => {
+      it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
+    });
+    items.sort((a,b) => (a._dist||Infinity) - (b._dist||Infinity));
+  }
+
+  if (items.length === 0) {
+    c.innerHTML = this._emptyHtml('외상센터 정보가 없습니다');
+    return;
+  }
+
+  c.innerHTML = '<div class="list-wrap">' + items.map(it => {
+    const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
+    return `<div class="card" data-hpid="${it.hpid || ''}">
+      <div class="card-row">
+        <div class="card-name">${this._escape(it.dutyName || '')}</div>
+        ${dist ? `<div class="card-distance">${dist}</div>` : ''}
+      </div>
+      <div class="card-meta"><span>${this._escape(it.dutyAddr || '')}</span></div>
+      <div class="card-actions">
+        ${it.dutyTel1 ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${it.dutyTel1}')">📞 전화</button>` : ''}
+        <button class="card-action-btn map" onclick="event.stopPropagation();App.openMap('${this._escape(it.dutyName)}', '${it.wgs84Lat||''}', '${it.wgs84Lon||''}')">🗺️ 길찾기</button>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+
+  c.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.card-action-btn')) return;
+      this._openTraumaDetail(items[i]);
+    });
+  });
+};
+
+App._openTraumaDetail = function(item) {
+  const name = item.dutyName || '외상센터';
+  const body = `
+    <div class="section">
+      <div class="section-h">기관 정보</div>
+      <div class="info-row"><div class="lbl">주소</div><div class="val">${this._escape(item.dutyAddr || '-')}</div></div>
+      <div class="info-row"><div class="lbl">전화</div><div class="val">${this._escape(item.dutyTel1 || '-')}</div></div>
+      <div class="info-row"><div class="lbl">응급실</div><div class="val">${this._escape(item.dutyTel3 || '-')}</div></div>
+    </div>
+  `;
+  this.openModal({
+    title: name,
+    body,
+    actions: [
+      { label: '📞 전화', className: 'btn-call', onClick: () => this.call(item.dutyTel1) },
+      { label: '🗺️ 길찾기', className: 'btn-map', onClick: () => this.openMap(name, item.wgs84Lat, item.wgs84Lon) }
+    ]
+  });
+};
+
+App._escape = function(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'}[c]));
+};
+
+/* ============================================
+   TAB: 약국
+   ============================================ */
+App.renderPharmacy = async function() {
+  const c = document.getElementById('pharmacyContent');
+  if (API_KEYS.pharmacy === 'YOUR_API_KEY_HERE' || !API_KEYS.pharmacy) {
+    c.innerHTML = this.apiWarningHtml();
+    return;
+  }
+  if (!this.state.location) {
+    c.innerHTML = this._needLocationHtml();
+    return;
+  }
+  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>불러오는 중...</div>`;
+
+  const loc = this.state.location;
+  const searchInput = document.querySelector('#pharmacySearch input').value.trim();
+  const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire';
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(API_KEYS.pharmacy),
+    pageNo: '1',
+    numOfRows: '300'
+  });
+  if (loc.mode === 'manual' && loc.sido) {
+    params.set('Q0', loc.sido);
+  }
+  if (searchInput) {
+    params.set('QN', searchInput);
+  }
+
+  let items = [];
+  try {
+    const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
+    items = this.extractItems(data);
+  } catch(e) {
+    c.innerHTML = this._errorHtml(e.message);
+    return;
+  }
+
+  // 거리 계산
+  if (loc.lat && loc.lon) {
+    items.forEach(it => {
+      it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
+    });
+    items.sort((a,b) => (a._dist||Infinity) - (b._dist||Infinity));
+  }
+
+  // 운영 상태 판정 (현재 시각 기준)
+  const now = new Date();
+  const day = now.getDay(); // 0=일, 1=월, ..., 6=토
+  const dayMap = [8, 1, 2, 3, 4, 5, 6]; // dutyTime{N}s/c, 7=공휴일, 8=일요일 (실제로는 1~5=월금, 6=토, 7=일, 8=공휴일이 표준)
+  // 공공데이터 정의: dutyTime1s/1c=월요일, ... 5s/5c=금요일, 6s/6c=토요일, 7s/7c=일요일, 8s/8c=공휴일
+  const dayIdx = day === 0 ? 7 : day; // 1~7
+  const todayStartKey = `dutyTime${dayIdx}s`;
+  const todayCloseKey = `dutyTime${dayIdx}c`;
+
+  items.forEach(it => {
+    const startStr = it[todayStartKey] || '';
+    const closeStr = it[todayCloseKey] || '';
+    if (!startStr || !closeStr || startStr.length < 4 || closeStr.length < 4) {
+      it._open = null;
+      it._24h = false;
+    } else {
+      const sH = parseInt(startStr.substring(0, startStr.length-2));
+      const sM = parseInt(startStr.substring(startStr.length-2));
+      const cH = parseInt(closeStr.substring(0, closeStr.length-2));
+      const cM = parseInt(closeStr.substring(closeStr.length-2));
+      const startMin = sH*60 + sM;
+      const closeMin = cH*60 + cM;
+      const nowMin = now.getHours()*60 + now.getMinutes();
+      // 24시간 = 시작 0000, 종료 2400 (또는 0000)
+      it._24h = (sH === 0 && sM === 0 && (cH === 24 || (cH === 0 && cM === 0)));
+      if (closeMin > startMin) {
+        it._open = nowMin >= startMin && nowMin < closeMin;
+      } else if (closeMin < startMin) {
+        // 자정 넘어가는 경우
+        it._open = nowMin >= startMin || nowMin < closeMin;
+      } else {
+        it._open = it._24h;
+      }
+      it._closeMin = closeMin;
+    }
+  });
+
+  // 필터 적용
+  const filter = this.state.pharmacyFilter;
+  let filtered = items;
+  if (filter === 'open') {
+    filtered = items.filter(it => it._open === true);
+  } else if (filter === '24h') {
+    filtered = items.filter(it => it._24h);
+  } else if (filter === 'night') {
+    // 야간 = 22시 이후까지 운영
+    filtered = items.filter(it => it._closeMin >= 22*60 || it._24h);
+  }
+  filtered = filtered.slice(0, 100);
+
+  if (filtered.length === 0) {
+    c.innerHTML = this._emptyHtml('조건에 맞는 약국이 없습니다');
+    return;
+  }
+
+  c.innerHTML = '<div class="list-wrap">' + filtered.map(it => {
+    const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
+    const badges = [];
+    if (it._24h) badges.push('<span class="badge open">24시간</span>');
+    else if (it._open === true) badges.push('<span class="badge open">영업중</span>');
+    else if (it._open === false) badges.push('<span class="badge closed">영업종료</span>');
+    return `<div class="card">
+      <div class="card-row">
+        <div class="card-name">${this._escape(it.dutyName || '')}</div>
+        ${dist ? `<div class="card-distance">${dist}</div>` : ''}
+      </div>
+      <div class="card-meta"><span>${this._escape(it.dutyAddr || '')}</span></div>
+      ${badges.length ? `<div class="card-badges">${badges.join('')}</div>` : ''}
+      <div class="card-actions">
+        ${it.dutyTel1 ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${it.dutyTel1}')">📞 전화</button>` : ''}
+        <button class="card-action-btn map" onclick="event.stopPropagation();App.openMap('${this._escape(it.dutyName)}', '${it.wgs84Lat||''}', '${it.wgs84Lon||''}')">🗺️ 길찾기</button>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+
+  c.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.card-action-btn')) return;
+      this._openPharmacyDetail(filtered[i]);
+    });
+  });
+};
+
+App._openPharmacyDetail = function(item) {
+  const name = item.dutyName || '약국';
+  const dayLabels = ['월','화','수','목','금','토','일','공휴일'];
+  const hoursHtml = dayLabels.map((d, i) => {
+    const idx = i + 1;
+    const s = item[`dutyTime${idx}s`] || '';
+    const c = item[`dutyTime${idx}c`] || '';
+    let timeStr = '-';
+    if (s && c && s.length >= 3 && c.length >= 3) {
+      const sH = s.substring(0, s.length-2).padStart(2,'0');
+      const sM = s.substring(s.length-2);
+      const cH = c.substring(0, c.length-2).padStart(2,'0');
+      const cM = c.substring(c.length-2);
+      timeStr = `${sH}:${sM} ~ ${cH}:${cM}`;
+    }
+    return `<div class="info-row"><div class="lbl">${d}</div><div class="val">${timeStr}</div></div>`;
+  }).join('');
+
+  const body = `
+    <div class="section">
+      <div class="section-h">기관 정보</div>
+      <div class="info-row"><div class="lbl">주소</div><div class="val">${this._escape(item.dutyAddr || '-')}</div></div>
+      <div class="info-row"><div class="lbl">전화</div><div class="val">${this._escape(item.dutyTel1 || '-')}</div></div>
+    </div>
+    <div class="section">
+      <div class="section-h">운영 시간</div>
+      ${hoursHtml}
+    </div>
+    ${item.dutyEtc ? `<div class="section"><div class="section-h">기타</div><div class="section-c">${this._escape(item.dutyEtc)}</div></div>` : ''}
+  `;
+  this.openModal({
+    title: name,
+    body,
+    actions: [
+      { label: '📞 전화', className: 'btn-call', onClick: () => this.call(item.dutyTel1) },
+      { label: '🗺️ 길찾기', className: 'btn-map', onClick: () => this.openMap(name, item.wgs84Lat, item.wgs84Lon) }
+    ]
+  });
+};
+
+/* ============================================
+   TAB: 병의원
+   ============================================ */
+App.renderHospital = async function() {
+  const c = document.getElementById('hospitalContent');
+  if (API_KEYS.hospital === 'YOUR_API_KEY_HERE' || !API_KEYS.hospital) {
+    c.innerHTML = this.apiWarningHtml();
+    return;
+  }
+  if (!this.state.location) {
+    c.innerHTML = this._needLocationHtml();
+    return;
+  }
+  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>불러오는 중...</div>`;
+
+  const loc = this.state.location;
+  const searchInput = document.querySelector('#hospitalSearch input').value.trim();
+  const baseUrl = 'https://apis.data.go.kr/B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire';
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(API_KEYS.hospital),
+    pageNo: '1',
+    numOfRows: '300'
+  });
+  if (loc.mode === 'manual' && loc.sido) {
+    params.set('Q0', loc.sido);
+  }
+  if (this.state.hospitalDept) {
+    params.set('QD', this.state.hospitalDept);
+  }
+  if (searchInput) {
+    params.set('QN', searchInput);
+  }
+
+  let items = [];
+  try {
+    const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
+    items = this.extractItems(data);
+  } catch(e) {
+    c.innerHTML = this._errorHtml(e.message);
+    return;
+  }
+
+  if (loc.lat && loc.lon) {
+    items.forEach(it => {
+      it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
+    });
+    items.sort((a,b) => (a._dist||Infinity) - (b._dist||Infinity));
+  }
+  items = items.slice(0, 100);
+
+  if (items.length === 0) {
+    c.innerHTML = this._emptyHtml('조건에 맞는 병원이 없습니다');
+    return;
+  }
+
+  c.innerHTML = '<div class="list-wrap">' + items.map(it => {
+    const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
+    return `<div class="card">
+      <div class="card-row">
+        <div class="card-name">${this._escape(it.dutyName || '')}</div>
+        ${dist ? `<div class="card-distance">${dist}</div>` : ''}
+      </div>
+      <div class="card-meta">
+        ${it.dutyDivNam ? `<span>${this._escape(it.dutyDivNam)}</span>` : ''}
+        <span>${this._escape(it.dutyAddr || '')}</span>
+      </div>
+      <div class="card-actions">
+        ${it.dutyTel1 ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${it.dutyTel1}')">📞 전화</button>` : ''}
+        <button class="card-action-btn map" onclick="event.stopPropagation();App.openMap('${this._escape(it.dutyName)}', '${it.wgs84Lat||''}', '${it.wgs84Lon||''}')">🗺️ 길찾기</button>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+
+  c.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.card-action-btn')) return;
+      this._openHospitalDetail(items[i]);
+    });
+  });
+};
+
+App._openHospitalDetail = function(item) {
+  const name = item.dutyName || '병원';
+  const dayLabels = ['월','화','수','목','금','토','일','공휴일'];
+  const hoursHtml = dayLabels.map((d, i) => {
+    const idx = i + 1;
+    const s = item[`dutyTime${idx}s`] || '';
+    const c = item[`dutyTime${idx}c`] || '';
+    let timeStr = '-';
+    if (s && c && s.length >= 3 && c.length >= 3) {
+      const sH = s.substring(0, s.length-2).padStart(2,'0');
+      const sM = s.substring(s.length-2);
+      const cH = c.substring(0, c.length-2).padStart(2,'0');
+      const cM = c.substring(c.length-2);
+      timeStr = `${sH}:${sM} ~ ${cH}:${cM}`;
+    }
+    return `<div class="info-row"><div class="lbl">${d}</div><div class="val">${timeStr}</div></div>`;
+  }).join('');
+
+  const body = `
+    <div class="section">
+      <div class="section-h">기관 정보</div>
+      <div class="info-row"><div class="lbl">분류</div><div class="val">${this._escape(item.dutyDivNam || '-')}</div></div>
+      <div class="info-row"><div class="lbl">주소</div><div class="val">${this._escape(item.dutyAddr || '-')}</div></div>
+      <div class="info-row"><div class="lbl">전화</div><div class="val">${this._escape(item.dutyTel1 || '-')}</div></div>
+    </div>
+    <div class="section">
+      <div class="section-h">진료 시간</div>
+      ${hoursHtml}
+    </div>
+    ${item.dutyEtc ? `<div class="section"><div class="section-h">기타</div><div class="section-c">${this._escape(item.dutyEtc)}</div></div>` : ''}
+  `;
+  this.openModal({
+    title: name,
+    body,
+    actions: [
+      { label: '📞 전화', className: 'btn-call', onClick: () => this.call(item.dutyTel1) },
+      { label: '🗺️ 길찾기', className: 'btn-map', onClick: () => this.openMap(name, item.wgs84Lat, item.wgs84Lon) }
+    ]
+  });
+};
+
+/* ============================================
+   TAB: 약정보
+   ============================================ */
+App.renderDrug = function() {
+  const c = document.getElementById('drugContent');
+  const sub = this.state.activeDrugSub;
+  if (sub === 'name') {
+    c.innerHTML = `
+      <div class="searchbar" id="drugNameSearch" style="margin-top:12px;">
+        <span class="icon">🔍</span>
+        <input type="text" placeholder="약 이름 또는 제조사 입력" id="drugNameInput" />
+        <button class="clear">×</button>
+      </div>
+      <div id="drugNameResults"><div class="state-msg"><div class="ico">💊</div>약 이름을 검색해보세요<div class="sub">예) 타이레놀, 게보린, 후시딘</div></div></div>
+    `;
+    this._bindDrugNameSearch();
+  } else if (sub === 'shape') {
+    c.innerHTML = `
+      <div style="padding:12px 16px;">
+        <div class="filter-row">
+          <div class="group">
+            <label>모양</label>
+            <select id="pillShape">
+              <option value="">전체</option>
+              <option value="원형">원형</option>
+              <option value="타원형">타원형</option>
+              <option value="장방형">장방형</option>
+              <option value="삼각형">삼각형</option>
+              <option value="사각형">사각형</option>
+              <option value="마름모형">마름모형</option>
+              <option value="오각형">오각형</option>
+              <option value="육각형">육각형</option>
+              <option value="팔각형">팔각형</option>
+              <option value="반원형">반원형</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="group">
+            <label>색상</label>
+            <select id="pillColor">
+              <option value="">전체</option>
+              <option value="하양">하양</option>
+              <option value="노랑">노랑</option>
+              <option value="주황">주황</option>
+              <option value="분홍">분홍</option>
+              <option value="빨강">빨강</option>
+              <option value="갈색">갈색</option>
+              <option value="연두">연두</option>
+              <option value="초록">초록</option>
+              <option value="청록">청록</option>
+              <option value="파랑">파랑</option>
+              <option value="남색">남색</option>
+              <option value="자주">자주</option>
+              <option value="보라">보라</option>
+              <option value="회색">회색</option>
+              <option value="검정">검정</option>
+              <option value="투명">투명</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="group">
+            <label>식별표기 (앞면)</label>
+            <input type="text" id="pillFront" placeholder="예: T1" />
+          </div>
+          <div class="group">
+            <label>식별표기 (뒷면)</label>
+            <input type="text" id="pillBack" placeholder="예: 100" />
+          </div>
+        </div>
+        <button class="filter-submit" onclick="App._searchPills()">🔍 알약 검색</button>
+      </div>
+      <div id="pillResults"></div>
+    `;
+  }
+};
+
+App._bindDrugNameSearch = function() {
+  const bar = document.getElementById('drugNameSearch');
+  const input = bar.querySelector('input');
+  const clear = bar.querySelector('.clear');
+  let timer;
+  input.addEventListener('input', () => {
+    bar.classList.toggle('has-value', !!input.value);
+    clearTimeout(timer);
+    timer = setTimeout(() => this._searchDrugByName(input.value.trim()), 400);
+  });
+  clear.addEventListener('click', () => {
+    input.value = '';
+    bar.classList.remove('has-value');
+    document.getElementById('drugNameResults').innerHTML = `<div class="state-msg"><div class="ico">💊</div>약 이름을 검색해보세요</div>`;
+  });
+};
+
+App._searchDrugByName = async function(query) {
+  const c = document.getElementById('drugNameResults');
+  if (!query || query.length < 2) {
+    c.innerHTML = `<div class="state-msg"><div class="ico">💊</div>2글자 이상 입력해주세요</div>`;
+    return;
+  }
+  if (API_KEYS.drugInfo === 'YOUR_API_KEY_HERE' || !API_KEYS.drugInfo) {
+    c.innerHTML = this.apiWarningHtml();
+    return;
+  }
+  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>검색 중...</div>`;
+
+  const url = `https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList?serviceKey=${encodeURIComponent(decodeURIComponent(API_KEYS.drugInfo))}&pageNo=1&numOfRows=50&itemName=${encodeURIComponent(query)}&type=json`;
+  let items = [];
+  try {
+    const data = await this.apiCall(url);
+    items = this.extractItems(data);
+  } catch(e) {
+    c.innerHTML = this._errorHtml(e.message);
+    return;
+  }
+
+  if (items.length === 0) {
+    c.innerHTML = this._emptyHtml('해당 약을 찾지 못했습니다');
+    return;
+  }
+
+  c.innerHTML = '<div class="list-wrap">' + items.map((it, i) => {
+    return `<div class="card" data-idx="${i}">
+      <div class="card-row">
+        <div class="card-name">${this._escape(it.itemName || '')}</div>
+      </div>
+      <div class="card-meta">
+        <span>${this._escape(it.entpName || '')}</span>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+
+  c.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', () => this._openDrugDetail(items[i]));
+  });
+};
+
+App._openDrugDetail = function(item) {
+  const name = item.itemName || '의약품';
+  const sections = [
+    ['효능', item.efcyQesitm],
+    ['사용법', item.useMethodQesitm],
+    ['주의사항 (경고)', item.atpnWarnQesitm],
+    ['주의사항', item.atpnQesitm],
+    ['상호작용', item.intrcQesitm],
+    ['부작용', item.seQesitm],
+    ['보관법', item.depositMethodQesitm],
+  ];
+  const sectionsHtml = sections.map(([h, c]) => {
+    if (!c) return '';
+    return `<div class="section">
+      <div class="section-h">${h}</div>
+      <div class="section-c">${this._escape(c)}</div>
+    </div>`;
+  }).join('');
+
+  const imgHtml = item.itemImage ? `<img class="pill-image" src="${item.itemImage}" alt="${this._escape(name)}" onerror="this.style.display='none'">` : '';
+
+  const body = `
+    ${imgHtml}
+    <div class="section">
+      <div class="section-h">기본 정보</div>
+      <div class="info-row"><div class="lbl">제조사</div><div class="val">${this._escape(item.entpName || '-')}</div></div>
+      <div class="info-row"><div class="lbl">품목코드</div><div class="val">${this._escape(item.itemSeq || '-')}</div></div>
+      ${item.openDe ? `<div class="info-row"><div class="lbl">공개일</div><div class="val">${this._escape(item.openDe)}</div></div>` : ''}
+    </div>
+    ${sectionsHtml}
+  `;
+  this.openModal({ title: name, body });
+};
+
+App._searchPills = async function() {
+  const c = document.getElementById('pillResults');
+  if (API_KEYS.drugPill === 'YOUR_API_KEY_HERE' || !API_KEYS.drugPill) {
+    c.innerHTML = this.apiWarningHtml();
+    return;
+  }
+  const shape = document.getElementById('pillShape').value;
+  const color = document.getElementById('pillColor').value;
+  const front = document.getElementById('pillFront').value.trim();
+  const back  = document.getElementById('pillBack').value.trim();
+
+  if (!shape && !color && !front && !back) {
+    this.toast('최소 하나의 조건을 입력해주세요');
+    return;
+  }
+  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>검색 중...</div>`;
+
+  const params = new URLSearchParams({
+    serviceKey: decodeURIComponent(API_KEYS.drugPill),
+    pageNo: '1',
+    numOfRows: '50',
+    type: 'json'
+  });
+  if (shape) params.set('DRUG_SHAPE', shape);
+  if (color) params.set('COLOR_CLASS1', color);
+  if (front) params.set('PRINT_FRONT', front);
+  if (back)  params.set('PRINT_BACK', back);
+
+  const url = `https://apis.data.go.kr/1471000/MdcinGrnIdntfcInfoService02/getMdcinGrnIdntfcInfoList02?${params.toString()}`;
+  let items = [];
+  try {
+    const data = await this.apiCall(url);
+    items = this.extractItems(data);
+  } catch(e) {
+    c.innerHTML = this._errorHtml(e.message);
+    return;
+  }
+
+  if (items.length === 0) {
+    c.innerHTML = this._emptyHtml('일치하는 알약을 찾지 못했습니다');
+    return;
+  }
+
+  c.innerHTML = `<div class="list-wrap"><div class="pill-grid">` + items.map((it, i) => {
+    const img = it.ITEM_IMAGE || '';
+    return `<div class="card" data-idx="${i}">
+      ${img ? `<img class="pill-thumb" src="${img}" onerror="this.style.display='none'">` : '<div class="pill-thumb"></div>'}
+      <div class="card-name" style="font-size:13px;">${this._escape(it.ITEM_NAME || '')}</div>
+      <div class="card-meta"><span>${this._escape(it.ENTP_NAME || '')}</span></div>
+    </div>`;
+  }).join('') + `</div></div>`;
+
+  c.querySelectorAll('.card').forEach((el, i) => {
+    el.addEventListener('click', () => this._openPillDetail(items[i]));
+  });
+};
+
+App._openPillDetail = function(item) {
+  const name = item.ITEM_NAME || '의약품';
+  const img = item.ITEM_IMAGE || '';
+  const body = `
+    ${img ? `<img class="pill-image" src="${img}" onerror="this.style.display='none'">` : ''}
+    <div class="section">
+      <div class="section-h">알약 정보</div>
+      <div class="info-row"><div class="lbl">제조사</div><div class="val">${this._escape(item.ENTP_NAME || '-')}</div></div>
+      <div class="info-row"><div class="lbl">모양</div><div class="val">${this._escape(item.DRUG_SHAPE || '-')}</div></div>
+      <div class="info-row"><div class="lbl">색상</div><div class="val">${this._escape(item.COLOR_CLASS1 || '-')}${item.COLOR_CLASS2 ? ' / '+this._escape(item.COLOR_CLASS2) : ''}</div></div>
+      <div class="info-row"><div class="lbl">앞면 표기</div><div class="val">${this._escape(item.PRINT_FRONT || '-')}</div></div>
+      <div class="info-row"><div class="lbl">뒷면 표기</div><div class="val">${this._escape(item.PRINT_BACK || '-')}</div></div>
+      ${item.LINE_FRONT || item.LINE_BACK ? `<div class="info-row"><div class="lbl">분할선</div><div class="val">${this._escape((item.LINE_FRONT||'-')+' / '+(item.LINE_BACK||'-'))}</div></div>` : ''}
+      <div class="info-row"><div class="lbl">크기(장축/단축/두께)</div><div class="val">${this._escape((item.LENG_LONG||'-')+' / '+(item.LENG_SHORT||'-')+' / '+(item.THICK||'-'))} mm</div></div>
+      <div class="info-row"><div class="lbl">품목코드</div><div class="val">${this._escape(item.ITEM_SEQ || '-')}</div></div>
+    </div>
+    ${item.CHART ? `<div class="section"><div class="section-h">성상</div><div class="section-c">${this._escape(item.CHART)}</div></div>` : ''}
+  `;
+  this.openModal({ title: name, body });
+};
+
+/* ============================================
+   APP START
+   ============================================ */
+document.addEventListener('DOMContentLoaded', () => App.init());
+</script>
+</body>
+</html>
