@@ -670,17 +670,12 @@ input { font-family: inherit; }
       <div id="hospitalContent"></div>
     </section>
 
-    <!-- 약정보 탭 -->
-    <section class="tab-panel" id="tab-drug">
-      <div id="drugContent"></div>
-    </section>
   </main>
 
   <!-- 탭바 -->
   <nav class="app-tabbar">
     <button class="active" data-tab="hospital"><span class="ico">🏥</span>병의원</button>
     <button data-tab="pharmacy"><span class="ico">💊</span>약국</button>
-    <button data-tab="drug"><span class="ico">💉</span>약정보</button>
     <button data-tab="emergency"><span class="ico">🚑</span>응급</button>
   </nav>
 </div>
@@ -726,8 +721,7 @@ const API_KEYS = {
   pharmacy:  '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25',
   // ③ 병의원 - data.go.kr/data/15000736
   hospital:  '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25',
-  // ④ 의약품 제품 허가정보 (전문+일반 전체) - data.go.kr/data/15095677
-  drugPrmsn: '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25',
+
 };
 
 /* ============================================
@@ -810,7 +804,6 @@ const App = {
     if (tab === 'emergency') this.renderEmergency();
     else if (tab === 'pharmacy') this.renderPharmacy();
     else if (tab === 'hospital') this.renderHospital();
-    else if (tab === 'drug') this.renderDrug();
   },
 
   // ============ 세그먼트 ============
@@ -1051,7 +1044,6 @@ const App = {
     if (t === 'emergency') this.renderEmergency();
     else if (t === 'pharmacy') this.renderPharmacy();
     else if (t === 'hospital') this.renderHospital();
-    else if (t === 'drug') this.renderDrug();
   },
 
   // ============ 토스트 ============
@@ -1960,176 +1952,9 @@ App._openHospitalDetail = function(item) {
 };
 
 /* ============================================
-   TAB: 약정보
+   APP START
    ============================================ */
-App.renderDrug = function() {
-  const c = document.getElementById('drugContent');
-  c.innerHTML = `
-    <div class="searchbar" id="drugNameSearch" style="margin-top:12px;">
-      <span class="icon">🔍</span>
-      <input type="text" placeholder="약 이름 또는 제조사 입력" id="drugNameInput" />
-      <button class="clear">×</button>
-    </div>
-    <div id="drugNameResults"><div class="state-msg"><div class="ico">💊</div>약 이름을 검색해보세요<div class="sub">예) 타이레놀, 게보린, 바이투스정</div></div></div>
-  `;
-  this._bindDrugNameSearch();
-};
-
-App._bindDrugNameSearch = function() {
-  const bar = document.getElementById('drugNameSearch');
-  const input = bar.querySelector('input');
-  const clear = bar.querySelector('.clear');
-  let timer;
-  input.addEventListener('input', () => {
-    bar.classList.toggle('has-value', !!input.value);
-    clearTimeout(timer);
-    timer = setTimeout(() => this._searchDrugByName(input.value.trim()), 400);
-  });
-  clear.addEventListener('click', () => {
-    input.value = '';
-    bar.classList.remove('has-value');
-    document.getElementById('drugNameResults').innerHTML = `<div class="state-msg"><div class="ico">💊</div>약 이름을 검색해보세요</div>`;
-  });
-};
-
-App._searchDrugByName = async function(query) {
-  const c = document.getElementById('drugNameResults');
-  if (!query || query.length < 2) {
-    c.innerHTML = `<div class="state-msg"><div class="ico">💊</div>2글자 이상 입력해주세요</div>`;
-    return;
-  }
-  if (!API_KEYS.drugPrmsn || API_KEYS.drugPrmsn === 'YOUR_API_KEY_HERE') {
-    c.innerHTML = this.apiWarningHtml();
-    return;
-  }
-  c.innerHTML = `<div class="state-msg"><div class="spinner"></div>검색 중...</div>`;
-
-  const key = encodeURIComponent(API_KEYS.drugPrmsn);
-  const q   = encodeURIComponent(query);
-
-  // 식품의약품안전처_의약품 제품 허가정보 (전문+일반 전체 DB)
-  const url = `https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07?serviceKey=${key}&pageNo=1&numOfRows=50&item_name=${q}&type=json`;
-
-  let items = [];
-  try {
-    const data = await this.apiCall(url);
-    items = this.extractItems(data);
-  } catch(e) {
-    c.innerHTML = this._errorHtml(e.message);
-    return;
-  }
-
-  if (items.length === 0) {
-    c.innerHTML = this._emptyHtml('해당 약을 찾지 못했습니다');
-    return;
-  }
-
-  // 필드명 정규화
-  items = items.map(it => ({
-    _source:        it.SPCLTY_PBLC === '전문의약품' ? 'prms' : 'easy',
-    itemName:       it.ITEM_NAME        || '',
-    entpName:       it.ENTP_NAME        || '',
-    itemSeq:        it.ITEM_SEQ         || '',
-    itemImage:      it.BIG_PRDT_IMG_URL || '',
-    _classNo:       it.PRDUCT_TYPE      || '',
-    _spclty:        it.SPCLTY_PBLC      || '',
-    _permitDate:    it.ITEM_PERMIT_DATE || '',
-    _cancelName:    it.CANCEL_NAME      || '',
-    _raw:           it
-  }));
-
-  c.innerHTML = '<div class="list-wrap">' + items.map((it, i) => {
-    const badge = it._source === 'prms'
-      ? `<span style="font-size:10px;background:#e7f0fb;color:#2e7dd9;padding:2px 6px;border-radius:8px;font-weight:600;flex-shrink:0;">전문</span>`
-      : `<span style="font-size:10px;background:#e6f7ee;color:#16a34a;padding:2px 6px;border-radius:8px;font-weight:600;flex-shrink:0;">일반</span>`;
-    const canceled = it._cancelName && it._cancelName !== '정상'
-      ? `<span style="font-size:10px;background:#fdecec;color:#d83838;padding:2px 6px;border-radius:8px;font-weight:600;flex-shrink:0;">${this._escape(it._cancelName)}</span>` : '';
-    return `<div class="card" data-idx="${i}">
-      <div class="card-row">
-        <div class="card-name">${this._escape(it.itemName)}</div>
-        ${badge}${canceled}
-      </div>
-      <div class="card-meta">
-        <span>${this._escape(it.entpName)}</span>
-        ${it._classNo ? `<span>${this._escape(it._classNo)}</span>` : ''}
-      </div>
-    </div>`;
-  }).join('') + '</div>';
-
-  c.querySelectorAll('.card').forEach((el, i) => {
-    el.addEventListener('click', () => this._openDrugDetail(items[i]));
-  });
-};
-
-App._openDrugDetail = async function(item) {
-  const name = item.itemName || '의약품';
-
-  const badge = item._source === 'prms'
-    ? `<span style="font-size:11px;background:#e7f0fb;color:#2e7dd9;padding:2px 8px;border-radius:8px;font-weight:600;margin-left:6px;">전문(처방)의약품</span>`
-    : `<span style="font-size:11px;background:#e6f7ee;color:#16a34a;padding:2px 8px;border-radius:8px;font-weight:600;margin-left:6px;">일반의약품</span>`;
-
-  // 먼저 기본 정보로 모달 열기
-  this.openModal({ title: name, body: `
-    <div class="section">
-      <div class="section-h">기본 정보 ${badge}</div>
-      <div class="info-row"><div class="lbl">제조사</div><div class="val">${this._escape(item.entpName || '-')}</div></div>
-      <div class="info-row"><div class="lbl">품목코드</div><div class="val">${this._escape(item.itemSeq || '-')}</div></div>
-      ${item._classNo ? `<div class="info-row"><div class="lbl">약효분류</div><div class="val">${this._escape(item._classNo)}</div></div>` : ''}
-      ${item._spclty ? `<div class="info-row"><div class="lbl">구분</div><div class="val">${this._escape(item._spclty)}</div></div>` : ''}
-      ${item._permitDate ? `<div class="info-row"><div class="lbl">허가일자</div><div class="val">${this._escape(item._permitDate)}</div></div>` : ''}
-    </div>
-    <div class="state-msg"><div class="spinner"></div>상세 정보 불러오는 중...</div>
-  `});
-
-  // 상세 API 호출
-  if (!item.itemSeq) return;
-  const key = encodeURIComponent(API_KEYS.drugPrmsn);
-  const url = `https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnDtlInq06?serviceKey=${key}&item_seq=${encodeURIComponent(item.itemSeq)}&type=json`;
-
-  let detail = null;
-  try {
-    const data = await this.apiCall(url);
-    const items = this.extractItems(data);
-    detail = items[0] || null;
-  } catch(e) { /* 상세 실패해도 기본 정보는 유지 */ }
-
-  const stripTags = s => s ? s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim() : '';
-
-  const sections = [
-    ['효능·효과',     detail?.EE_DOC_DATA],
-    ['사용법·용량',   detail?.UD_DOC_DATA],
-    ['주의사항(경고)', detail?.NB_DOC_DATA],
-    ['상호작용',      detail?.PN_DOC_DATA],
-    ['부작용',        detail?.SE_DOC_DATA],
-    ['보관법',        detail?.ST_DOC_DATA],
-  ].map(([h, c]) => {
-    const text = stripTags(c);
-    if (!text) return '';
-    return `<div class="section"><div class="section-h">${h}</div><div class="section-c">${this._escape(text)}</div></div>`;
-  }).join('');
-
-  const imgHtml = (detail?.BIG_PRDT_IMG_URL)
-    ? `<img class="pill-image" src="${detail.BIG_PRDT_IMG_URL}" onerror="this.style.display='none'">` : '';
-
-  const noDetail = !sections
-    ? `<div class="state-msg"><div class="ico">📋</div>상세 설명이 제공되지 않는 품목입니다</div>` : '';
-
-  // 모달 내용 교체
-  document.getElementById('modalBody').innerHTML = `
-    ${imgHtml}
-    <div class="section">
-      <div class="section-h">기본 정보 ${badge}</div>
-      <div class="info-row"><div class="lbl">제조사</div><div class="val">${this._escape(item.entpName || '-')}</div></div>
-      <div class="info-row"><div class="lbl">품목코드</div><div class="val">${this._escape(item.itemSeq || '-')}</div></div>
-      ${item._classNo ? `<div class="info-row"><div class="lbl">약효분류</div><div class="val">${this._escape(item._classNo)}</div></div>` : ''}
-      ${item._spclty ? `<div class="info-row"><div class="lbl">구분</div><div class="val">${this._escape(item._spclty)}</div></div>` : ''}
-      ${item._permitDate ? `<div class="info-row"><div class="lbl">허가일자</div><div class="val">${this._escape(item._permitDate)}</div></div>` : ''}
-    </div>
-    ${sections}
-    ${noDetail}
-  `;
-};
-
+document.addEventListener('DOMContentLoaded', () => App.init());
 /* ============================================
    APP START
    ============================================ */
