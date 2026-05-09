@@ -248,6 +248,36 @@
       box-shadow: 0 2px 16px rgba(79,174,224,0.10);
       border-bottom: 1.5px solid rgba(176,210,235,0.4);
     }
+    .confirm-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(20,40,60,0.45); backdrop-filter: blur(6px);
+      z-index: 300; align-items: center; justify-content: center;
+    }
+    .confirm-overlay.open { display: flex; animation: fadeIn 0.18s ease both; }
+    .confirm-sheet {
+      width: calc(100% - 48px); max-width: 320px;
+      background: linear-gradient(160deg, #f0f8fe 0%, #e8f4fc 100%);
+      border-radius: 24px; padding: 28px 24px 20px;
+      animation: scaleIn 0.2s cubic-bezier(.34,1.2,.64,1) both;
+      box-shadow: 0 16px 48px rgba(79,174,224,0.18);
+    }
+    @keyframes scaleIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+    .confirm-icon { font-size: 36px; text-align: center; margin-bottom: 12px; }
+    .confirm-title { font-family: 'Nunito', sans-serif; font-size: 17px; font-weight: 900; color: var(--text-dark); text-align: center; margin-bottom: 8px; }
+    .confirm-desc { font-size: 13px; color: var(--text-mid); text-align: center; line-height: 1.6; margin-bottom: 22px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-btn-cancel {
+      flex: 1; padding: 13px; border: 1.5px solid rgba(79,174,224,0.2); border-radius: var(--radius-sm);
+      background: white; font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700;
+      color: var(--text-mid); cursor: pointer; transition: all 0.15s;
+    }
+    .confirm-btn-cancel:active { background: #f0f4f8; }
+    .confirm-btn-delete {
+      flex: 1; padding: 13px; border: none; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #f87171, #ef4444); font-family: 'Nunito', sans-serif;
+      font-size: 14px; font-weight: 800; color: white; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(239,68,68,0.3); transition: all 0.15s;
+    }
+    .confirm-btn-delete:active { transform: scale(0.97); box-shadow: none; }
     @media (max-width: 400px) { .icon-picker-grid { grid-template-columns: repeat(7, 1fr); } }
   </style>
 </head>
@@ -297,6 +327,19 @@
 
 <!-- FAB -->
 <button class="add-fab" onclick="openModal()" title="습관 추가">＋</button>
+
+<!-- 삭제 확인 모달 -->
+<div class="confirm-overlay" id="confirm-modal">
+  <div class="confirm-sheet">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">습관을 삭제할까요?</div>
+    <div class="confirm-desc" id="confirm-desc">이 습관과 모든 기록이 삭제돼요.<br>삭제 후에는 복구할 수 없어요.</div>
+    <div class="confirm-btns">
+      <button class="confirm-btn-cancel" onclick="closeConfirm()">취소</button>
+      <button class="confirm-btn-delete" id="confirm-delete-btn">삭제</button>
+    </div>
+  </div>
+</div>
 
 <!-- 추가/수정 모달 -->
 <div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
@@ -458,7 +501,9 @@ function closeModal() {
 function handleOverlayClick(e) { if (e.target.id === 'modal') closeModal(); }
 window.addEventListener('popstate', function(e) {
   const modal = document.getElementById('modal');
-  if (modal.classList.contains('open')) modal.classList.remove('open');
+  if (modal.classList.contains('open')) { modal.classList.remove('open'); return; }
+  const confirmModal = document.getElementById('confirm-modal');
+  if (confirmModal.classList.contains('open')) { confirmModal.classList.remove('open'); }
 });
 function saveHabit() {
   const name = document.getElementById('habit-name-input').value.trim();
@@ -486,8 +531,23 @@ function saveHabit() {
   closeModal(); loadAll(); renderWeek();
 }
 function deleteHabit(habitId) {
-  if (!confirm('이 습관을 삭제할까요?')) return;
-  saveDefs(loadDefs().filter(d => d.habit_id!==habitId)); loadAll(); renderWeek();
+  const h = habitDefs.find(d => d.habit_id === habitId); if (!h) return;
+  openConfirm(h.name, () => {
+    saveDefs(loadDefs().filter(d => d.habit_id !== habitId)); loadAll(); renderWeek();
+  });
+}
+function openConfirm(habitName, onConfirm) {
+  const modal = document.getElementById('confirm-modal');
+  document.getElementById('confirm-desc').innerHTML = `<strong style="color:var(--text-dark)">${habitName}</strong> 습관과 모든 기록이 삭제돼요.<br>삭제 후에는 복구할 수 없어요.`;
+  document.getElementById('confirm-delete-btn').onclick = () => { closeConfirm(); onConfirm(); };
+  modal.classList.add('open');
+  history.pushState({confirmModal: true}, '');
+}
+function closeConfirm() {
+  const modal = document.getElementById('confirm-modal');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  if (history.state && history.state.confirmModal) history.back();
 }
 function toggleLog(habitId, dateS) {
   const h = habitDefs.find(d => d.habit_id===habitId); if (!h) return;
