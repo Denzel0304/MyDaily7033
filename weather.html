@@ -107,10 +107,10 @@
   }
   .brand-text {
     font-family: 'Gowun Dodum', 'Pretendard', sans-serif;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 400;
     color: #2C3E50;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     background: linear-gradient(135deg, #2C3E50 0%, #4A6B8C 50%, #6FA8DC 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -119,8 +119,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* 좁은 화면(360px 이하)에선 텍스트 숨기고 이모지만 */
-  @media (max-width: 360px) {
+  /* 아주 좁은 화면(320px 이하)에선 텍스트 숨기고 이모지만 */
+  @media (max-width: 320px) {
     .brand-text { display: none; }
   }
 
@@ -569,12 +569,16 @@
     font-size: 13.5px;
   }
 
-  .loc-btn { max-width: 145px; overflow: hidden; }
+  .loc-btn { max-width: 130px; overflow: hidden; }
   .loc-btn span:not(.pin):not(.arrow) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
+  }
+  /* 좁은 화면에선 시간 표시 숨김 (가운데 브랜드 자리 확보) */
+  @media (max-width: 400px) {
+    #updTime { display: none; }
   }
 
   /* ---------- 로딩/에러 ---------- */
