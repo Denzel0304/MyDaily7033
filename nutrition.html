@@ -26,8 +26,24 @@
     .bg-blob-2 { width: 200px; height: 200px; background: #c5ecfb; bottom: 80px; right: -60px; }
     .container { position: relative; z-index: 1; width: 100%; max-width: 420px; padding: 0 18px 60px; }
 
+    /* 고정 헤더 래퍼 */
+    .sticky-header {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 420px; z-index: 50;
+      background: linear-gradient(160deg,#e8f6fd 0%,#ceeaf8 60%,#d9f0fc 100%);
+      backdrop-filter: blur(16px);
+      padding: 0 18px 0;
+      border-bottom: 1.5px solid rgba(79,174,224,0.18);
+      box-shadow: 0 4px 20px rgba(79,174,224,0.10);
+    }
+    body.carb-mode .sticky-header {
+      background: linear-gradient(160deg,#fdf6e8 0%,#faecd0 60%,#fdf0d9 100%);
+      border-bottom-color: rgba(245,166,35,0.18);
+      box-shadow: 0 4px 20px rgba(245,166,35,0.10);
+    }
+
     /* 헤더 */
-    .header { padding: 30px 4px 20px; display: flex; align-items: center; gap: 12px; }
+    .header { padding: 20px 4px 12px; display: flex; align-items: center; gap: 12px; }
     .back-btn {
       display: inline-flex; align-items: center; gap: 5px;
       font-size: 13px; font-weight: 600; color: var(--accent);
@@ -254,7 +270,7 @@
 
     /* 영양소 탭 */
     .nutrient-tab-wrap {
-      display: flex; gap: 0; margin-bottom: 16px;
+      display: flex; gap: 0; margin-bottom: 12px;
       background: rgba(255,255,255,0.6); border-radius: 16px;
       padding: 4px; border: 1.5px solid rgba(255,255,255,0.8);
       box-shadow: 0 2px 8px rgba(79,174,224,0.07);
@@ -377,8 +393,7 @@
 <div class="bg-blob bg-blob-1"></div>
 <div class="bg-blob bg-blob-2"></div>
 
-<div class="container">
-
+<div class="sticky-header">
   <!-- 헤더 -->
   <div class="header">
     <div class="header-text">
@@ -392,6 +407,9 @@
     <button class="nutrient-tab active" id="tabProtein" onclick="switchNutrient('protein')">💪 단백질</button>
     <button class="nutrient-tab" id="tabCarb" onclick="switchNutrient('carb')">🌾 탄수화물</button>
   </div>
+</div>
+
+<div class="container" style="padding-top: 130px;">
 
   <!-- 메인 비주얼 카드 -->
   <div class="main-card">
@@ -838,7 +856,7 @@
     }
   }
 
-  function addFood() {
+  async function addFood() {
     const key = getCurrentFoodKey();
     const val = parseFloat(document.getElementById('amountInput').value);
     if (!key) { showToast('음식을 선택해주세요'); return; }
@@ -851,9 +869,19 @@
       const oppKey = COMMON_PAIR_REVERSE[key];
       if (oppKey) {
         const oppFoods = getOppositeToday();
-        const oppProtein = calcProtein(oppKey, val);
-        oppFoods.push({ key:oppKey, name:FOOD_NAMES[oppKey], icon:FOOD_ICONS[oppKey], gram:val, unit:PROTEIN_UNIT[oppKey], protein:oppProtein, meal:selectedMeal });
-        saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
+        const existing = oppFoods.find(f => f.key === oppKey && f.meal === selectedMeal);
+        if (existing) {
+          const confirmed = await openConfirmModal(FOOD_NAMES[oppKey], MEAL_LABELS[selectedMeal]);
+          if (confirmed) {
+            existing.gram = val;
+            existing.protein = calcProtein(oppKey, val);
+            saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
+          }
+        } else {
+          const oppProtein = calcProtein(oppKey, val);
+          oppFoods.push({ key:oppKey, name:FOOD_NAMES[oppKey], icon:FOOD_ICONS[oppKey], gram:val, unit:PROTEIN_UNIT[oppKey], protein:oppProtein, meal:selectedMeal });
+          saveHistoryDirect(LS_HISTORY, todayStr(), oppFoods);
+        }
       }
       todayFoods.push({ key, name:CARB_FOOD_NAMES[key], icon:CARB_FOOD_ICONS[key], gram:val, unit:unit, protein:carb, meal:selectedMeal });
       renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
@@ -875,9 +903,19 @@
     const oppKey = COMMON_PAIR[key];
     if (oppKey) {
       const oppFoods = getOppositeToday();
-      const oppCarb = calcCarb(oppKey, val);
-      oppFoods.push({ key:oppKey, name:CARB_FOOD_NAMES[oppKey], icon:CARB_FOOD_ICONS[oppKey], gram:val, unit:CARB_FOOD_UNIT[oppKey], protein:oppCarb, meal:selectedMeal });
-      saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
+      const existing = oppFoods.find(f => f.key === oppKey && f.meal === selectedMeal);
+      if (existing) {
+        const confirmed = await openConfirmModal(CARB_FOOD_NAMES[oppKey], MEAL_LABELS[selectedMeal]);
+        if (confirmed) {
+          existing.gram = val;
+          existing.protein = calcCarb(oppKey, val);
+          saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
+        }
+      } else {
+        const oppCarb = calcCarb(oppKey, val);
+        oppFoods.push({ key:oppKey, name:CARB_FOOD_NAMES[oppKey], icon:CARB_FOOD_ICONS[oppKey], gram:val, unit:CARB_FOOD_UNIT[oppKey], protein:oppCarb, meal:selectedMeal });
+        saveHistoryDirect(LS_CARB_HISTORY, todayStr(), oppFoods);
+      }
     }
     todayFoods.push({ key, name:FOOD_NAMES[key], icon:FOOD_ICONS[key], gram:val, unit:unit, protein, meal:selectedMeal });
     renderFoodList(); updateGauge(); saveTodayData(); renderHistory();
