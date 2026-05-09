@@ -190,6 +190,43 @@
   .pack-item .text { flex: 1; }
   .pack-item .text .main { font-size: 16px; font-weight: 600; color: #2C3E50; }
   .pack-item .text .sub { font-size: 12.5px; color: #7E8B96; margin-top: 2px; }
+  .pack-item .text .sub .pm-num {
+    color: #2C3E50;
+    font-weight: 600;
+  }
+  .pack-item .text .sub .pm-num em {
+    font-style: normal;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #1A2A3A;
+    margin-left: 1px;
+  }
+  .pack-item .text .sub .pm-num sub {
+    font-size: 9px;
+    vertical-align: baseline;
+    margin-left: 1px;
+    opacity: 0.7;
+  }
+  .pack-item .text .sub .pm-grade {
+    color: #7E8B96;
+    font-weight: 500;
+    margin-left: 1px;
+  }
+  .vent-text .desc em {
+    font-style: normal;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: #2C3E50;
+    margin-left: 2px;
+  }
+  .vent-text .desc sub {
+    font-size: 9px;
+    vertical-align: baseline;
+    margin-left: 1px;
+    opacity: 0.7;
+  }
   .pack-item .badge {
     font-size: 11px;
     padding: 4px 10px;
@@ -293,33 +330,6 @@
   .grade-2 { background: #D6EAFB; color: #2566A8; }
   .grade-3 { background: #FFE2B0; color: #A36400; }
   .grade-4 { background: #FFCFCB; color: #B83A33; }
-
-  /* ---------- 점수 (4순위) ---------- */
-  .score-card { padding: 16px 18px; }
-  .score-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-  .score-num {
-    font-family: 'Outfit', sans-serif;
-    font-size: 38px;
-    font-weight: 700;
-    line-height: 1;
-    color: #2C3E50;
-  }
-  .score-num small { font-size: 18px; opacity: 0.4; font-weight: 400; }
-  .score-bar {
-    flex: 1;
-    height: 8px;
-    background: #EEF2F5;
-    border-radius: 999px;
-    overflow: hidden;
-    position: relative;
-  }
-  .score-bar .fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-    background: linear-gradient(90deg, #FFB75E, #8FE0AB);
-  }
-  .score-label { font-size: 12px; color: #7E8B96; margin-top: 8px; }
 
   /* ---------- 모달 (도시 선택) ---------- */
   .modal-back {
@@ -576,7 +586,7 @@ const STN_BASE = 'https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc';
 // 캐시 키
 const LS_LOC = 'weather_loc_v1';        // 현재 선택된 위치
 const LS_WX_PREFIX = 'weather_wx_';      // 날씨 캐시 (위치별)
-const LS_AIR_PREFIX = 'weather_air_';    // 대기질 캐시 (시도별)
+const LS_AIR_PREFIX = 'weather_air_v2_'; // 대기질 캐시 (시도별, v2: 매칭 로직 변경)
 const LS_STN_PREFIX = 'weather_stn_';    // 측정소 캐시 (시군구별)
 
 const WX_CACHE_MS = 30 * 60 * 1000;      // 30분
@@ -1095,6 +1105,61 @@ function normalizeAir(it) {
   };
 }
 
+// 측정소 응답이 유효한지 (PM 결측 아닌지)
+function validAirItem(it) {
+  const v25 = parseFloat(it.pm25Value);
+  const v10 = parseFloat(it.pm10Value);
+  return !isNaN(v25) || !isNaN(v10);
+}
+
+// PM 농도 → 등급 (환경부 기준)
+function pm25Grade(v) {
+  if (v == null || isNaN(v)) return null;
+  if (v <= 15) return 1;
+  if (v <= 35) return 2;
+  if (v <= 75) return 3;
+  return 4;
+}
+function pm10Grade(v) {
+  if (v == null || isNaN(v)) return null;
+  if (v <= 30) return 1;
+  if (v <= 80) return 2;
+  if (v <= 150) return 3;
+  return 4;
+}
+
+// 시도 전체 평균 계산 (가장 보편적인 표시값)
+function computeSidoAverage(items, sidoName) {
+  const valid = items.filter(validAirItem);
+  if (!valid.length) return null;
+
+  const avg = (key) => {
+    const vals = valid.map(it => parseFloat(it[key])).filter(v => !isNaN(v));
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  };
+
+  const pm25 = avg('pm25Value');
+  const pm10 = avg('pm10Value');
+  const o3 = avg('o3Value');
+  const khai = avg('khaiValue');
+
+  return {
+    stationName: sidoName + ' 평균',
+    dataTime: valid[0].dataTime,
+    pm10: pm10 != null ? Math.round(pm10) : null,
+    pm25: pm25 != null ? Math.round(pm25) : null,
+    o3: o3,
+    no2: avg('no2Value'),
+    co: avg('coValue'),
+    so2: avg('so2Value'),
+    pm10Grade: pm10Grade(pm10),
+    pm25Grade: pm25Grade(pm25),
+    khaiValue: khai != null ? Math.round(khai) : null,
+    khaiGrade: pm25Grade(pm25) // 통합지수 등급은 PM2.5 등급으로 대체 (단순화)
+  };
+}
+
 /* ============================================================
    판단 로직
    ============================================================ */
@@ -1154,20 +1219,26 @@ function decidePack(hourly, air) {
   // 마스크: PM2.5 ≥ 36(나쁨) OR PM10 ≥ 81(나쁨)
   let mask = false;
   let maskReason = '';
+  let maskHtml = ''; // HTML 버전 (수치 강조용)
   if (air) {
     const bad25 = (air.pm25 != null && air.pm25 >= 36) || air.pm25Grade >= 3;
     const bad10 = (air.pm10 != null && air.pm10 >= 81) || air.pm10Grade >= 3;
+    const fmt = (v) => v == null ? '-' : v;
+    const pm25Html = `<b class="pm-num">PM<sub>2.5</sub> <em>${fmt(air.pm25)}</em></b>`;
+    const pm10Html = `<b class="pm-num">PM<sub>10</sub> <em>${fmt(air.pm10)}</em></b>`;
     if (bad25 || bad10) {
       mask = true;
-      maskReason = `PM2.5 ${air.pm25 ?? '-'}, PM10 ${air.pm10 ?? '-'}`;
+      maskHtml = `${pm25Html} · ${pm10Html}`;
     } else {
-      maskReason = `PM2.5 ${air.pm25 ?? '-'} (${gradeText(air.pm25Grade)})`;
+      maskHtml = `${pm25Html} <span class="pm-grade">${gradeText(air.pm25Grade)}</span> · ${pm10Html} <span class="pm-grade">${gradeText(air.pm10Grade)}</span>`;
     }
+    maskReason = maskHtml; // 호환
   } else {
     maskReason = '대기질 정보 없음';
+    maskHtml = '대기질 정보 없음';
   }
 
-  return { umbrella, umbrellaReason, mask, maskReason };
+  return { umbrella, umbrellaReason, mask, maskReason, maskHtml };
 }
 
 // 환기 판단
@@ -1178,6 +1249,10 @@ function decideVent(hourly, air) {
 
   if (!air) return { state: 'maybe', head: '판단 어려움', desc: '대기질 정보 없음' };
 
+  const fmt = (v) => v == null ? '-' : v;
+  const pm25Html = `PM<sub>2.5</sub> <em>${fmt(air.pm25)}</em>`;
+  const pm10Html = `PM<sub>10</sub> <em>${fmt(air.pm10)}</em>`;
+
   const pm25Bad = (air.pm25 != null && air.pm25 > 35) || air.pm25Grade >= 3;
   const pm10Bad = (air.pm10 != null && air.pm10 > 80) || air.pm10Grade >= 3;
 
@@ -1185,7 +1260,7 @@ function decideVent(hourly, air) {
     return {
       state: 'no',
       head: '환기 비추천',
-      desc: `미세먼지 나쁨 (PM2.5 ${air.pm25 ?? '-'}, PM10 ${air.pm10 ?? '-'})`
+      desc: `미세먼지 나쁨 · ${pm25Html} · ${pm10Html}`
     };
   }
   if (willRain) {
@@ -1197,39 +1272,8 @@ function decideVent(hourly, air) {
   return {
     state: 'ok',
     head: '환기 좋아요',
-    desc: `PM2.5 ${air.pm25 ?? '-'} · 비 없음`
+    desc: `${pm25Html} · 비 없음`
   };
-}
-
-// 외출 점수 (100 만점)
-function calcScore(now, hourly, air) {
-  let score = 100;
-  // 미세먼지 페널티 (최대 -40)
-  if (air?.pm25 != null) {
-    if (air.pm25 > 75) score -= 40;
-    else if (air.pm25 > 35) score -= 20;
-    else if (air.pm25 > 15) score -= 8;
-  }
-  // 기온 페널티 (체감 -)
-  const t = parseFloat(now.T1H);
-  if (!isNaN(t)) {
-    if (t < -5 || t > 33) score -= 25;
-    else if (t < 0 || t > 30) score -= 12;
-    else if (t < 5 || t > 28) score -= 5;
-  }
-  // 강수 페널티
-  const next6 = nextHours(hourly, 6);
-  const willRain = next6.some(h => parseInt(h.PTY || 0) > 0 || parseInt(h.POP || 0) >= 50);
-  if (willRain) score -= 15;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function scoreLabel(s) {
-  if (s >= 80) return '아주 좋아요';
-  if (s >= 60) return '괜찮아요';
-  if (s >= 40) return '주의';
-  return '안 좋음';
 }
 
 /* ============================================================
@@ -1256,7 +1300,6 @@ function render(loc, weather, air) {
 
   const pack = decidePack(hourly, air);
   const vent = decideVent(hourly, air);
-  const score = calcScore(now, hourly, air);
 
   // 시간별 12시간
   const hourCells = nextHours(hourly, 12).map((h, i) => {
@@ -1313,7 +1356,7 @@ function render(loc, weather, air) {
           <div class="ico">😷</div>
           <div class="text">
             <div class="main">${pack.mask ? '마스크 챙기세요' : '마스크 불필요'}</div>
-            <div class="sub">${escapeHtml(pack.maskReason)}</div>
+            <div class="sub">${pack.maskHtml}</div>
           </div>
           <div class="badge ${pack.mask ? 'badge-need' : 'badge-skip'}">${pack.mask ? '필요' : 'OK'}</div>
         </div>
@@ -1327,7 +1370,7 @@ function render(loc, weather, air) {
         <div class="vent-circle ${vent.state}">${vent.state === 'ok' ? '✓' : vent.state === 'no' ? '✕' : '~'}</div>
         <div class="vent-text">
           <div class="head">${escapeHtml(vent.head)}</div>
-          <div class="desc">${escapeHtml(vent.desc)}</div>
+          <div class="desc">${vent.desc}</div>
         </div>
       </div>
     </div>
@@ -1365,16 +1408,6 @@ function render(loc, weather, air) {
         </div>
       </div>
       ` : `<div style="color:#7E8B96; font-size:13px;">대기질 정보를 불러올 수 없어요.</div>`}
-    </div>
-
-    <!-- 점수 -->
-    <div class="card score-card">
-      <div class="card-title">📊 외출 점수</div>
-      <div class="score-row">
-        <div class="score-num">${score}<small>/100</small></div>
-        <div class="score-bar"><div class="fill" style="width:${score}%;"></div></div>
-      </div>
-      <div class="score-label">${scoreLabel(score)}</div>
     </div>
   `;
 }
@@ -1422,12 +1455,45 @@ async function loadAndRender(loc, force = false) {
         console.warn('대기질 로드 실패', e);
       }
     }
-    if (airList) {
-      // 측정소 이름 매칭: sgg와 같은 이름 우선 → 포함 → 첫번째
-      let target = airList.find(it => it.stationName === loc.sgg);
-      if (!target) target = airList.find(it => it.stationName && loc.sgg && it.stationName.includes(loc.sgg));
-      if (!target) target = airList.find(it => parseFloat(it.pm10Value) >= 0); // 유효값 있는 첫번째
-      if (target) air = normalizeAir(target);
+    if (airList && airList.length) {
+      // 측정소 매칭 우선순위:
+      // 1) sgg와 정확히 일치 (예: 서울 종로구 → "종로구")
+      // 2) 우선 매칭 테이블 (도시별 대표 측정소)
+      // 3) sgg를 포함하는 측정소
+      // 4) GPS면 위경도 거리 기반 (loc.lat/lon이 있는 경우 → 측정소정보 호출은 비용 ↑이라 일단 생략)
+      // 5) 시도 전체 평균값 계산 (네이버/에어코리아 표시 방식과 가까움)
+
+      // 도시별 대표 측정소 (시군구명이 측정소명과 다른 경우)
+      const STATION_OVERRIDE = {
+        '세종': ['신흥동', '아름동', '전의', '조치원', '연기'],
+        '제주': ['이도동', '연동', '노형'],
+        '서귀포': ['동홍동'],
+      };
+
+      let target = null;
+
+      // 1) 정확 일치
+      target = airList.find(it => it.stationName === loc.sgg);
+
+      // 2) 오버라이드 테이블 우선순위로 검색
+      if (!target && STATION_OVERRIDE[loc.sgg]) {
+        for (const stnName of STATION_OVERRIDE[loc.sgg]) {
+          target = airList.find(it => it.stationName === stnName && validAirItem(it));
+          if (target) break;
+        }
+      }
+
+      // 3) 부분 일치 (단, 의미있는 매칭 - sgg 길이 2 이상일 때만)
+      if (!target && loc.sgg && loc.sgg.length >= 2) {
+        target = airList.find(it => it.stationName && it.stationName.includes(loc.sgg) && validAirItem(it));
+      }
+
+      // 4) 시도 평균값 계산 (가장 합리적인 fallback)
+      if (target) {
+        air = normalizeAir(target);
+      } else {
+        air = computeSidoAverage(airList, loc.sido);
+      }
     }
 
     render(loc, weather, air);
