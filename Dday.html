@@ -15,7 +15,6 @@
   --border: rgba(44,74,90,0.15); --border-mid: rgba(44,74,90,0.25);
   --radius: 12px; --radius-sm: 8px;
   --shadow-sm: 0 1px 4px rgba(44,74,90,0.08);
-  --accent: #E8845A;
   --accent-light: #FDE8D8;
   --accent-mid: #F9A870;
   --accent-btn: #C8623C;
@@ -31,35 +30,44 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
   flex-shrink: 0;
   background: var(--header-bg);
   border-bottom: 1.5px solid rgba(44,74,90,0.13);
-  padding: 0 16px 0 18px;
+  padding: 0 10px 0 18px;
   box-shadow: 0 2px 8px rgba(44,74,90,0.07);
 }
 .header-left { display: flex; align-items: center; gap: 8px; }
 .app-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
 .header-icon { font-size: 26px; line-height: 1; }
+.header-right { display: flex; align-items: center; gap: 6px; }
+
+.add-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent-mid);
+  color: white; border: none;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(232,132,90,0.3);
+}
 .gear-btn {
   width: 38px; height: 38px;
   border-radius: 50%;
   background: transparent;
-  border: none;
-  font-size: 22px;
+  border: none; font-size: 22px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: var(--text-muted);
-  transition: background 0.15s;
-  position: relative;
 }
-.gear-btn:active { background: rgba(44,74,90,0.1); }
 
 /* GEAR DROPDOWN */
 .gear-dropdown {
-  position: absolute;
-  top: 54px; right: 12px;
+  position: fixed;
+  top: 62px; right: 10px;
   background: var(--white);
   border-radius: var(--radius);
   border: 1px solid var(--border-mid);
   box-shadow: 0 6px 24px rgba(44,74,90,0.18);
-  z-index: 200;
+  z-index: 300;
   min-width: 150px;
   overflow: hidden;
   animation: dropIn 0.15s ease;
@@ -74,14 +82,13 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
   padding: 14px 18px;
   font-size: 14px; font-weight: 500; color: var(--text);
   cursor: pointer;
-  transition: background 0.12s;
   border: none; background: transparent; width: 100%; text-align: left;
 }
 .gear-menu-item:not(:last-child) { border-bottom: 1px solid var(--border); }
 .gear-menu-item:active { background: var(--accent-light); }
-.gear-menu-item .mi-icon { font-size: 16px; }
+.mi-icon { font-size: 16px; }
 .dropdown-backdrop {
-  position: fixed; inset: 0; z-index: 199;
+  position: fixed; inset: 0; z-index: 299;
   background: transparent;
 }
 .dropdown-backdrop.hidden { display: none; }
@@ -90,23 +97,11 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
 
 /* PANEL */
 .panel { padding: 0 12px 20px; }
-.panel-hd { display: flex; align-items: center; justify-content: flex-end; padding: 14px 4px 10px; }
-.add-btn {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: var(--accent-mid);
-  color: white; border: none;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(232,132,90,0.3);
-  margin-right: 4px;
-}
+.panel-hd { padding: 8px 0 6px; }
 
 /* ITEM LIST */
 .item-list { display: flex; flex-direction: column; gap: 8px; }
-.item-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 10px 10px; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); user-select: none; }
+.item-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); padding: 10px; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); user-select: none; }
 .item-body { flex: 1; min-width: 0; }
 .item-name { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
@@ -138,7 +133,7 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
 .confirm-overlay {
   position: fixed; inset: 0;
   background: rgba(44,74,90,0.52);
-  z-index: 300;
+  z-index: 400;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
@@ -170,31 +165,26 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
       <span class="header-icon">⏳</span>
       <span class="app-title">디데이</span>
     </div>
-    <div style="position:relative">
+    <div class="header-right">
+      <button class="add-btn" id="add-dd" aria-label="추가">+</button>
       <button class="gear-btn" id="gear-btn" aria-label="설정">⚙️</button>
     </div>
   </div>
   <div class="tab-content">
     <div class="panel" id="panel-dday">
-      <div class="panel-hd">
-        <button class="add-btn" id="add-dd" aria-label="추가">+</button>
-      </div>
+      <div class="panel-hd"></div>
       <div class="item-list" id="dd-list"></div>
     </div>
     <input type="file" id="file-import-dd" accept=".json" style="display:none">
   </div>
 </div>
 
-<!-- 기어 드롭다운 배경 -->
 <div class="dropdown-backdrop hidden" id="dropdown-backdrop"></div>
-
-<!-- 기어 드롭다운 메뉴 -->
 <div class="gear-dropdown hidden" id="gear-dropdown">
   <button class="gear-menu-item" id="menu-import"><span class="mi-icon">📥</span> 불러오기</button>
   <button class="gear-menu-item" id="menu-export"><span class="mi-icon">📤</span> 내보내기</button>
 </div>
 
-<!-- 추가/수정 모달 -->
 <div class="modal-overlay hidden" id="modal">
   <div class="modal-box">
     <div class="modal-title" id="m-title">디데이 추가</div>
@@ -224,7 +214,6 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
   </div>
 </div>
 
-<!-- 삭제 확인 모달 -->
 <div class="confirm-overlay hidden" id="confirm-modal">
   <div class="confirm-box">
     <div class="confirm-icon">🗑️</div>
@@ -239,215 +228,192 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
 
 <script>
 const $ = id => document.getElementById(id);
-
-// ── FILE SIGNATURE ────────────────────────────────────────────────────
 const FILE_SIG = 'soso_dday_v1';
 
-// ── UTILS ─────────────────────────────────────────────────────────────
 function today0() { const d = new Date(); d.setHours(0,0,0,0); return d; }
 function dayDiff(ds) { return Math.round((new Date(ds + 'T00:00:00') - today0()) / 86400000); }
 
-// ── STATE ─────────────────────────────────────────────────────────────
 let S = { dd: [] };
-function load() {
-  try { S.dd = JSON.parse(localStorage.getItem('ss_dd') || '[]'); } catch(e) { S.dd = []; }
-}
-function save() {
-  localStorage.setItem('ss_dd', JSON.stringify(S.dd));
-}
+function load() { try { S.dd = JSON.parse(localStorage.getItem('ss_dd') || '[]'); } catch(e) { S.dd = []; } }
+function save() { localStorage.setItem('ss_dd', JSON.stringify(S.dd)); }
 
-// ── HISTORY STACK MANAGER ─────────────────────────────────────────────
-// 현재 열려있는 레이어를 추적 (최대 1개만 유지)
-// 'gear' | 'modal' | 'confirm' | null
-let activeLayer = null;
+// ── HISTORY ────────────────────────────────────────────────────────────
+// 열 때: pushState  /  닫을 때: 항상 history.back() 한 번만 호출
+// popstate가 실제 UI 닫기의 유일한 경로
 
-function pushLayer(name) {
-  // 새 레이어 열 때 항상 새 히스토리 엔트리 1개만 추가
+function openLayer(name) {
   history.pushState({ layer: name }, '');
-  activeLayer = name;
 }
 
-function closeLayer(name) {
-  if (activeLayer !== name) return;
-  activeLayer = null;
-  // closeLayer는 직접 UI만 닫음 (popstate에서 호출 시 history 조작 불필요)
-}
-
-window.addEventListener('popstate', e => {
-  const layer = e.state && e.state.layer;
-  if (layer === 'gear') {
-    hideGear(false);
-  } else if (layer === 'modal') {
-    hideModal(false);
-  } else if (layer === 'confirm') {
-    hideConfirm(false);
-  } else {
-    // 아무 레이어도 없는 상태에서 뒤로가기 → 정상 종료
-    // 이미 activeLayer가 null이면 브라우저 기본 동작
+function closeLayerUI(name) {
+  if (name === 'gear') {
+    $('gear-dropdown').classList.add('hidden');
+    $('dropdown-backdrop').classList.add('hidden');
+  } else if (name === 'modal') {
+    $('modal').classList.add('hidden');
+  } else if (name === 'confirm') {
+    $('confirm-modal').classList.add('hidden');
+    pendingDeleteId = null;
   }
+}
+
+window.addEventListener('popstate', function(e) {
+  const layer = e.state && e.state.layer;
+  if (layer) closeLayerUI(layer);
 });
 
-// ── GEAR DROPDOWN ─────────────────────────────────────────────────────
-function showGear() {
+// 모든 닫기 요청은 이것만 호출 — history.back() 한 번
+function requestClose() {
+  history.back();
+}
+
+// ── GEAR ───────────────────────────────────────────────────────────────
+$('gear-btn').onclick = function() {
   $('gear-dropdown').classList.remove('hidden');
   $('dropdown-backdrop').classList.remove('hidden');
-  pushLayer('gear');
-}
-function hideGear(goBack = true) {
-  $('gear-dropdown').classList.add('hidden');
-  $('dropdown-backdrop').classList.add('hidden');
-  closeLayer('gear');
-  if (goBack) history.back();
-}
-
-$('gear-btn').onclick = () => showGear();
-$('dropdown-backdrop').onclick = () => hideGear(true);
-$('menu-import').onclick = () => {
-  hideGear(true);
-  $('file-import-dd').click();
-};
-$('menu-export').onclick = () => {
-  hideGear(true);
-  exportData();
+  openLayer('gear');
 };
 
-// ── ADD/EDIT MODAL ────────────────────────────────────────────────────
+$('dropdown-backdrop').onclick = function() { requestClose(); };
+
+$('menu-import').onclick = function() {
+  requestClose();
+  setTimeout(function() { $('file-import-dd').click(); }, 80);
+};
+
+$('menu-export').onclick = function() {
+  requestClose();
+  setTimeout(function() { exportData(); }, 80);
+};
+
+// ── ADD/EDIT MODAL ─────────────────────────────────────────────────────
 let mCtx = { item: null, idx: null };
 
-function showModal() {
-  $('modal').classList.remove('hidden');
-  pushLayer('modal');
-}
-function hideModal(goBack = true) {
-  $('modal').classList.add('hidden');
-  closeLayer('modal');
-  if (goBack) history.back();
-}
-
 function openModal(item, idx) {
-  mCtx = { item, idx };
-  const isE = item !== null;
+  mCtx = { item: item, idx: idx };
+  var isE = item !== null;
   $('m-title').textContent = isE ? '수정' : '디데이 추가';
   $('f-name').value = isE ? item.name : '';
   $('f-memo').value = isE ? (item.memo || '') : '';
   if (isE && item.date) {
-    const [y, m, d] = item.date.split('-');
-    $('f-y').value = +y; $('f-mo').value = +m; $('f-d').value = +d;
+    var parts = item.date.split('-');
+    $('f-y').value = +parts[0];
+    $('f-mo').value = +parts[1];
+    $('f-d').value = +parts[2];
   } else {
     $('f-y').value = ''; $('f-mo').value = ''; $('f-d').value = '';
   }
-  showModal();
-  // 수정 시 포커스 없음 (요청 6번)
+  $('modal').classList.remove('hidden');
+  openLayer('modal');
+  // 포커스 없음
 }
 
-$('m-cancel').onclick = () => hideModal(true);
-$('modal').onclick = e => { if (e.target === $('modal')) hideModal(true); };
+$('m-cancel').onclick = function() { requestClose(); };
+$('modal').onclick = function(e) { if (e.target === $('modal')) requestClose(); };
 
-$('m-save').onclick = () => {
-  const name = $('f-name').value.trim();
+$('m-save').onclick = function() {
+  var name = $('f-name').value.trim();
   if (!name) { $('f-name').focus(); return; }
   if (!$('f-y').value || !$('f-mo').value || !$('f-d').value) { alert('날짜를 입력해주세요'); return; }
-  const { item, idx } = mCtx;
-  const y = String($('f-y').value).padStart(4, '0');
-  const m = String($('f-mo').value).padStart(2, '0');
-  const d = String($('f-d').value).padStart(2, '0');
-  const obj = { id: item?.id || Date.now(), name, memo: $('f-memo').value.trim(), date: `${y}-${m}-${d}` };
+  var item = mCtx.item, idx = mCtx.idx;
+  var y = String($('f-y').value).padStart(4, '0');
+  var m = String($('f-mo').value).padStart(2, '0');
+  var d = String($('f-d').value).padStart(2, '0');
+  var obj = { id: item ? item.id : Date.now(), name: name, memo: $('f-memo').value.trim(), date: y+'-'+m+'-'+d };
   if (idx !== null && idx >= 0) S.dd[idx] = obj;
   else S.dd.push(obj);
   save();
   renderDd();
-  hideModal(true);
+  requestClose();
 };
 
-// ── DELETE CONFIRM MODAL ───────────────────────────────────────────────
-let pendingDeleteId = null;
+// ── CONFIRM DELETE MODAL ───────────────────────────────────────────────
+var pendingDeleteId = null;
 
 function showConfirm(id, name) {
   pendingDeleteId = id;
-  $('confirm-desc').innerHTML = `<b>${name}</b>을(를) 삭제하면<br>다시 복구할 수 없어요.`;
+  $('confirm-desc').innerHTML = '<b>' + name + '</b>을(를) 삭제하면<br>다시 복구할 수 없어요.';
   $('confirm-modal').classList.remove('hidden');
-  pushLayer('confirm');
-}
-function hideConfirm(goBack = true) {
-  $('confirm-modal').classList.add('hidden');
-  pendingDeleteId = null;
-  closeLayer('confirm');
-  if (goBack) history.back();
+  openLayer('confirm');
 }
 
-$('confirm-cancel').onclick = () => hideConfirm(true);
-$('confirm-ok').onclick = () => {
+$('confirm-cancel').onclick = function() { requestClose(); };
+$('confirm-modal').onclick = function(e) { if (e.target === $('confirm-modal')) requestClose(); };
+
+$('confirm-ok').onclick = function() {
   if (pendingDeleteId !== null) {
-    S.dd = S.dd.filter(x => x.id !== pendingDeleteId);
+    S.dd = S.dd.filter(function(x) { return x.id !== pendingDeleteId; });
     save();
     renderDd();
   }
-  hideConfirm(true);
+  requestClose();
 };
-$('confirm-modal').onclick = e => { if (e.target === $('confirm-modal')) hideConfirm(true); };
 
-// ── RENDER ────────────────────────────────────────────────────────────
+// ── RENDER ─────────────────────────────────────────────────────────────
 function renderDd() {
-  const list = $('dd-list');
+  var list = $('dd-list');
   list.innerHTML = '';
-  // 미래(먼 날짜)가 상단, 오래된 과거가 하단 (내림차순)
-  const sorted = [...S.dd].sort((a, b) => b.date.localeCompare(a.date));
+  var sorted = S.dd.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
   if (!sorted.length) { list.innerHTML = '<div class="empty-msg">디데이를 추가해보세요</div>'; return; }
-  sorted.forEach(it => list.appendChild(makeCard(it)));
+  sorted.forEach(function(it) { list.appendChild(makeCard(it)); });
 }
 
 function ddText(it) {
-  const diff = dayDiff(it.date);
+  var diff = dayDiff(it.date);
   if (diff === 0) return { t: 'D-DAY', c: 'dday-today' };
-  if (diff < 0) return { t: `+${Math.abs(diff)}일`, c: 'dday-past' };
-  return { t: `D-${diff}`, c: '' };
+  if (diff < 0) return { t: '+' + Math.abs(diff) + '일', c: 'dday-past' };
+  return { t: 'D-' + diff, c: '' };
 }
 
 function makeCard(it) {
-  const card = document.createElement('div');
+  var card = document.createElement('div');
   card.className = 'item-card';
 
-  const body = document.createElement('div');
+  var body = document.createElement('div');
   body.className = 'item-body';
 
-  const nameEl = document.createElement('div');
+  var nameEl = document.createElement('div');
   nameEl.className = 'item-name';
   nameEl.textContent = it.name;
   body.appendChild(nameEl);
 
   if (it.memo) {
-    const m = document.createElement('div');
-    m.className = 'item-meta';
-    m.textContent = it.memo;
-    body.appendChild(m);
+    var memo = document.createElement('div');
+    memo.className = 'item-meta';
+    memo.textContent = it.memo;
+    body.appendChild(memo);
   }
 
-  const dateEl = document.createElement('div');
+  var dateEl = document.createElement('div');
   dateEl.className = 'item-meta';
   dateEl.textContent = it.date.replace(/-/g, '. ') + '.';
   body.appendChild(dateEl);
 
-  const acts = document.createElement('div');
+  var acts = document.createElement('div');
   acts.className = 'item-actions';
 
-  const inf = ddText(it);
-  const badge = document.createElement('span');
-  badge.className = `dday-badge ${inf.c}`;
+  var inf = ddText(it);
+  var badge = document.createElement('span');
+  badge.className = 'dday-badge ' + inf.c;
   badge.textContent = inf.t;
   acts.appendChild(badge);
 
-  const eb = document.createElement('button');
+  var eb = document.createElement('button');
   eb.className = 'edit-btn';
   eb.textContent = '✏️';
-  eb.onclick = () => {
-    const oi = S.dd.findIndex(x => x.id === it.id);
-    openModal(it, oi);
-  };
+  (function(item) {
+    eb.onclick = function() {
+      var oi = S.dd.findIndex(function(x) { return x.id === item.id; });
+      openModal(item, oi);
+    };
+  })(it);
 
-  const db = document.createElement('button');
+  var db = document.createElement('button');
   db.className = 'del-btn';
   db.textContent = '✕';
-  db.onclick = () => showConfirm(it.id, it.name);
+  (function(item) {
+    db.onclick = function() { showConfirm(item.id, item.name); };
+  })(it);
 
   acts.appendChild(eb);
   acts.appendChild(db);
@@ -456,15 +422,15 @@ function makeCard(it) {
   return card;
 }
 
-// ── 내보내기 / 불러오기 ───────────────────────────────────────────────
+// ── 내보내기 / 불러오기 ────────────────────────────────────────────────
 function exportData() {
-  const date = new Date();
-  const ds = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
-  const filename = `soso_dday_${ds}.json`;
-  const payload = { _sig: FILE_SIG, data: S.dd };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  var date = new Date();
+  var ds = date.getFullYear() + String(date.getMonth()+1).padStart(2,'0') + String(date.getDate()).padStart(2,'0');
+  var filename = 'soso_dday_' + ds + '.json';
+  var payload = { _sig: FILE_SIG, data: S.dd };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a);
@@ -473,20 +439,17 @@ function exportData() {
 
 function importData(file) {
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
+  var reader = new FileReader();
+  reader.onload = function(e) {
     try {
-      const parsed = JSON.parse(e.target.result);
-
-      // 시그니처 검증
+      var parsed = JSON.parse(e.target.result);
       if (!parsed._sig || parsed._sig !== FILE_SIG) {
         alert('이 앱에서 내보낸 디데이 파일이 아니에요.\n올바른 파일을 선택해주세요.');
         return;
       }
-      const data = parsed.data;
+      var data = parsed.data;
       if (!Array.isArray(data)) { alert('파일 형식이 올바르지 않아요.'); return; }
-
-      if (confirm(`디데이 ${data.length}개를 불러올까요?\n기존 데이터는 덮어씌워져요.`)) {
+      if (confirm('디데이 ' + data.length + '개를 불러올까요?\n기존 데이터는 덮어씌워져요.')) {
         S.dd = data;
         save();
         renderDd();
@@ -499,13 +462,12 @@ function importData(file) {
   reader.readAsText(file);
 }
 
-$('add-dd').onclick = () => openModal(null, null);
-$('file-import-dd').onchange = e => { importData(e.target.files[0]); e.target.value = ''; };
+$('add-dd').onclick = function() { openModal(null, null); };
+$('file-import-dd').onchange = function(e) { importData(e.target.files[0]); e.target.value = ''; };
 
-// ── INIT ──────────────────────────────────────────────────────────────
+// ── INIT ───────────────────────────────────────────────────────────────
 load();
 renderDd();
-// 초기 히스토리 상태 (레이어 없음)
 history.replaceState({ layer: null }, '');
 </script>
 </body>
