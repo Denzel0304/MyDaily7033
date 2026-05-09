@@ -695,13 +695,15 @@ async function doSearch() {
   document.getElementById('addform').classList.remove('on');
 
   try {
-    const url = `https://apis.data.go.kr/1471000/FoodNtrCpntDbInfo01/getFoodNtrCpntDbInq01`
-      + `?serviceKey=${encodeURIComponent(API_KEY)}&pageNo=1&numOfRows=20&type=json`
+    const target = `https://apis.data.go.kr/1471000/FoodNtrCpntDbInfo01/getFoodNtrCpntDbInq01`
+      + `?serviceKey=${API_KEY}&pageNo=1&numOfRows=20&type=json`
       + `&FOOD_NM_KR=${encodeURIComponent(q)}`;
+    const url = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
 
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
+    const wrapper = await res.json();
+    const json = JSON.parse(wrapper.contents);
     const items = json?.body?.items || [];
 
     if (!items.length) {
