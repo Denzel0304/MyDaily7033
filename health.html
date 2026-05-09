@@ -1619,6 +1619,10 @@ let currentTab = 'dose';
 const modalStack = [];
 
 window.addEventListener('popstate', function() {
+  if (gearMenuOpen) {
+    _closeGearMenu();
+    return;
+  }
   if (modalStack.length > 0) {
     const id = modalStack.pop();
     document.getElementById(id).classList.remove('active');
@@ -1708,24 +1712,35 @@ function onFabClick() {
 }
 
 // ── GEAR MENU ──
-function toggleGearMenu(e) {
-  e.stopPropagation();
-  const menu = document.getElementById('gearMenu');
-  const btn = document.getElementById('gearBtn');
-  const isOpen = menu.classList.toggle('active');
-  btn.classList.toggle('open', isOpen);
-}
-function closeGearMenu() {
+let gearMenuOpen = false;
+
+function _closeGearMenu() {
+  gearMenuOpen = false;
   document.getElementById('gearMenu').classList.remove('active');
   document.getElementById('gearBtn').classList.remove('open');
+}
+function closeGearMenu() {
+  if (!gearMenuOpen) return;
+  history.back();
+}
+function toggleGearMenu(e) {
+  e.stopPropagation();
+  if (gearMenuOpen) {
+    history.back();
+  } else {
+    gearMenuOpen = true;
+    document.getElementById('gearMenu').classList.add('active');
+    document.getElementById('gearBtn').classList.add('open');
+    history.pushState({ gear: true }, '');
+  }
 }
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('gearMenu');
   const btn = document.getElementById('gearBtn');
   if (!menu || !btn) return;
-  if (menu.classList.contains('active') &&
+  if (gearMenuOpen &&
       !menu.contains(e.target) && !btn.contains(e.target)) {
-    closeGearMenu();
+    history.back();
   }
 });
 
