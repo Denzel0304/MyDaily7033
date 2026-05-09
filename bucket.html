@@ -71,7 +71,9 @@
   .check-btn.checked::after { content: '⭐'; font-size: 13px; }
   .check-btn:not(.checked)::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--sky-light); display: block; }
 
-  .item-text { flex: 1; font-size: 14px; line-height: 1.45; word-break: break-word; }
+  .item-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .item-text { font-size: 14px; line-height: 1.45; word-break: break-word; }
+  .item-memo { font-size: 12px; color: var(--text-soft); line-height: 1.4; word-break: break-word; white-space: pre-wrap; }
 
   /* actions */
   .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
@@ -96,7 +98,8 @@
   .modal-box { background: var(--white); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; padding: 24px 20px 32px; transform: translateY(40px); transition: transform 0.25s cubic-bezier(0.34,1.3,0.64,1); }
   .modal-overlay.open .modal-box { transform: translateY(0); }
   .modal-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 14px; }
-  .modal-input { width: 100%; border: 2px solid var(--sky-light); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; font-family: 'Noto Sans KR', sans-serif; outline: none; color: var(--text); background: var(--sky-pale); resize: none; min-height: 60px; }
+  .modal-field-label { font-size: 12px; font-weight: 700; color: var(--text-soft); margin-bottom: 6px; letter-spacing: 0.3px; }
+  .modal-input { width: 100%; border: 2px solid var(--sky-light); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 15px; font-family: 'Noto Sans KR', sans-serif; outline: none; color: var(--text); background: var(--sky-pale); resize: none; display: block; }
   .modal-input:focus { border-color: var(--sky-deep); }
   .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
   .btn-cancel { flex: 1; padding: 12px; border: 2px solid var(--sky-light); background: none; border-radius: var(--radius-sm); font-size: 15px; cursor: pointer; color: var(--text-soft); font-weight: 600; }
@@ -175,7 +178,10 @@
 <div class="modal-overlay" id="add-modal" onclick="closeAddOnBg(event)">
   <div class="modal-box">
     <div class="modal-title" id="modal-title">새 항목 추가</div>
-    <textarea class="modal-input" id="modal-input" placeholder="내용을 입력하세요..." rows="2"></textarea>
+    <div class="modal-field-label">제목 <span style="color:#e05;">*</span></div>
+    <input class="modal-input" id="modal-input" type="text" placeholder="제목을 입력하세요..." autocomplete="off">
+    <div class="modal-field-label" style="margin-top:10px;">메모 <span style="color:var(--text-soft);font-weight:400;font-size:11px;">선택</span></div>
+    <textarea class="modal-input" id="modal-memo" placeholder="메모를 입력하세요... (선택)" rows="3"></textarea>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeAdd()">취소</button>
       <button class="btn-confirm" onclick="confirmAdd()">저장 ✨</button>
@@ -328,12 +334,16 @@ function renderList(tab) {
 
 function renderCard(item, tab, isDone) {
   const star = isDone ? '<span class="star-badge">⭐</span>' : '';
+  const memo = item.memo ? `<span class="item-memo">${escHtml(item.memo)}</span>` : '';
   return `
   <div class="item-card${isDone ? ' done' : ''}" data-id="${item.id}" data-tab="${tab}" draggable="false">
     ${star}
     <span class="drag-handle" title="순서 변경">☰</span>
     <button class="check-btn${isDone ? ' checked' : ''}" onclick="toggleDone('${tab}','${item.id}',this)" title="${isDone ? '완료 해제' : '완료'}"></button>
-    <span class="item-text">${escHtml(item.text)}</span>
+    <div class="item-body">
+      <span class="item-text">${escHtml(item.text)}</span>
+      ${memo}
+    </div>
     <div class="item-actions">
       <button class="act-btn" onclick="openEdit('${tab}','${item.id}')" title="수정">✏️</button>
       <button class="act-btn" onclick="openDeleteConfirm('${tab}','${item.id}')" title="삭제">🗑️</button>
@@ -370,8 +380,10 @@ function openAdd(tab) {
   addTab = tab; editId = null;
   document.getElementById('modal-title').textContent = '새 항목 추가 ✨';
   document.getElementById('modal-input').value = '';
+  document.getElementById('modal-memo').value = '';
   document.getElementById('add-modal').classList.add('open');
   pushModal(_closeAdd);
+  // 추가 모드: 제목에 포커스
   setTimeout(() => document.getElementById('modal-input').focus(), 300);
 }
 function openEdit(tab, id) {
@@ -380,9 +392,10 @@ function openEdit(tab, id) {
   addTab = tab; editId = id;
   document.getElementById('modal-title').textContent = '항목 수정 ✏️';
   document.getElementById('modal-input').value = item.text;
+  document.getElementById('modal-memo').value = item.memo || '';
   document.getElementById('add-modal').classList.add('open');
   pushModal(_closeAdd);
-  setTimeout(() => document.getElementById('modal-input').focus(), 300);
+  // 수정 모드: 포커스 없이 모달만 열림 — 사용자가 원하는 필드 클릭
 }
 function _closeAdd() {
   document.getElementById('add-modal').classList.remove('open');
@@ -398,16 +411,16 @@ function closeAddOnBg(e) { if (e.target.id === 'add-modal') closeAdd(); }
 
 function confirmAdd() {
   const txt = document.getElementById('modal-input').value.trim();
+  const memo = document.getElementById('modal-memo').value.trim();
   if (!txt) { openWarn(); return; }
   if (editId) {
     const item = data[addTab].find(i => i.id === editId);
-    if (item) { item.text = txt; showToast('수정했어요! ✅'); }
+    if (item) { item.text = txt; item.memo = memo; showToast('수정했어요! ✅'); }
   } else {
-    data[addTab].push({ id: Date.now().toString(), text: txt, done: false });
+    data[addTab].push({ id: Date.now().toString(), text: txt, memo: memo, done: false });
     showToast('추가했어요! 🎉');
   }
   save(); renderList(addTab);
-  // pop the modal stack entry and close without history.back
   if (modalStack.length > 0) modalStack.pop();
   history.back();
   _closeAdd();
