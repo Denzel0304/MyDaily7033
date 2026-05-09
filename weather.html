@@ -55,9 +55,10 @@
 
   /* ---------- 헤더 ---------- */
   .header {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
     padding: 8px 4px 14px;
   }
   .loc-btn {
@@ -76,16 +77,60 @@
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     box-shadow: 0 2px 10px rgba(123, 211, 247, 0.15);
+    justify-self: start;
   }
   .loc-btn:active { transform: scale(0.97); }
   .loc-btn .pin { font-size: 14px; }
   .loc-btn .arrow { font-size: 11px; opacity: 0.6; margin-left: 2px; }
+
+  /* 가운데 브랜드 */
+  .brand {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    pointer-events: none;
+    user-select: none;
+    overflow: hidden;
+  }
+  .brand-emoji {
+    font-size: 18px;
+    line-height: 1;
+    display: inline-block;
+    animation: brandFloat 4s ease-in-out infinite;
+    filter: drop-shadow(0 1px 3px rgba(255, 200, 100, 0.4));
+  }
+  @keyframes brandFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-2px) rotate(-3deg); }
+  }
+  .brand-text {
+    font-family: 'Gowun Dodum', 'Pretendard', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #2C3E50;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #2C3E50 0%, #4A6B8C 50%, #6FA8DC 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 좁은 화면(360px 이하)에선 텍스트 숨기고 이모지만 */
+  @media (max-width: 360px) {
+    .brand-text { display: none; }
+  }
+
   .header-right {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
     color: #7E8B96;
+    justify-self: end;
   }
   .icon-btn {
     width: 36px; height: 36px;
@@ -524,16 +569,8 @@
     font-size: 13.5px;
   }
 
-  /* GPS 디버그 표시 */
-  .gps-dbg {
-    font-size: 10px;
-    font-weight: 400;
-    color: #A0AEB8;
-    margin-left: 4px;
-    font-family: 'Outfit', monospace;
-  }
-  .loc-btn { max-width: calc(100vw - 120px); overflow: hidden; }
-  .loc-btn span:not(.pin):not(.arrow):not(.gps-dbg) {
+  .loc-btn { max-width: 145px; overflow: hidden; }
+  .loc-btn span:not(.pin):not(.arrow) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -582,6 +619,34 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  /* ---------- 토스트 ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px);
+    z-index: 200;
+    background: rgba(44, 62, 80, 0.95);
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(44, 62, 80, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    line-height: 1.5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -595,6 +660,10 @@
       <span id="locName">위치 선택</span>
       <span class="arrow">▼</span>
     </button>
+    <div class="brand">
+      <span class="brand-emoji">🌤</span>
+      <span class="brand-text">승승 기상청</span>
+    </div>
     <div class="header-right">
       <span id="updTime"></span>
       <button class="icon-btn" id="refreshBtn" title="새로고침">↻</button>
@@ -630,6 +699,9 @@
     </div>
   </div>
 </div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
 
 <script>
 /* ============================================================
@@ -1508,13 +1580,8 @@ function render(loc, weather, air) {
   const updTime = `${pad(nowDate.getHours())}:${pad(nowDate.getMinutes())} 기준`;
   document.getElementById('updTime').textContent = updTime;
 
-  // 위치 표시 (GPS면 디버그 정보 추가)
-  const locNameEl = document.getElementById('locName');
-  if (loc.isGps) {
-    locNameEl.innerHTML = `${escapeHtml(loc.name)}<span class="gps-dbg"> · ${loc.lat.toFixed(3)},${loc.lon.toFixed(3)} · ${loc.nx},${loc.ny}</span>`;
-  } else {
-    locNameEl.textContent = loc.name;
-  }
+  // 위치 표시
+  document.getElementById('locName').textContent = loc.name;
 
   document.getElementById('content').innerHTML = `
     <!-- 현재 -->
@@ -1861,26 +1928,34 @@ searchInput.addEventListener('keydown', (e) => {
   }
 });
 
+// 토스트 표시
+let _toastTimer = null;
+function showToast(msg, ms = 3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+  }, ms);
+}
+
 document.getElementById('gpsBtn').addEventListener('click', async () => {
   hideModal();
+  // 로딩 표시는 헤더 위치명만 살짝 바꿈 (기존 컨텐츠는 유지)
+  const prevLocName = document.getElementById('locName').textContent;
   document.getElementById('locName').textContent = 'GPS 찾는 중…';
-  document.getElementById('content').innerHTML = `
-    <div class="loading">
-      <div style="font-size:42px; margin-bottom:10px;">🎯</div>
-      현재 위치 확인 중<span class="dots"></span>
-    </div>`;
+
   try {
     const loc = await resolveByGps();
     saveLoc(loc);
     loadAndRender(loc);
   } catch (e) {
-    document.getElementById('content').innerHTML = `
-      <div class="err-box">
-        <span class="err-emoji">📍</span>
-        <div>위치를 가져올 수 없어요.</div>
-        <div style="font-size:12px; color:#A0AEB8; margin-top:6px;">${escapeHtml(e.message || '')}</div>
-        <button onclick="document.getElementById('locBtn').click()">도시 선택</button>
-      </div>`;
+    // 헤더 위치명 복구
+    document.getElementById('locName').textContent = prevLocName;
+    // 토스트로 안내
+    showToast('GPS를 불러올 수 없으니 직접 도시를 선택해주세요');
+    console.warn('GPS 실패:', e.message || e);
   }
 });
 
