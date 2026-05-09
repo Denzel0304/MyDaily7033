@@ -678,24 +678,8 @@ input { font-family: inherit; }
     <section class="tab-panel" id="tab-hospital">
       <div class="searchbar" id="hospitalSearch">
         <span class="icon">🔍</span>
-        <input type="text" placeholder="병원명 검색" />
+        <input type="text" placeholder="병원명 또는 진료과 (예: 내과, 소아과)" />
         <button class="clear">×</button>
-      </div>
-      <div class="chip-row" id="hospitalChips">
-        <button class="chip active" data-dept="">전체</button>
-        <button class="chip" data-dept="내과">내과</button>
-        <button class="chip" data-dept="신경과">신경과</button>
-        <button class="chip" data-dept="정신건강의학과">정신건강의학과</button>
-        <button class="chip" data-dept="외과">외과</button>
-        <button class="chip" data-dept="정형외과">정형외과</button>
-        <button class="chip" data-dept="신경외과">신경외과</button>
-        <button class="chip" data-dept="흉부외과">흉부외과</button>
-        <button class="chip" data-dept="소아청소년과">소아청소년과</button>
-        <button class="chip" data-dept="이비인후과">이비인후과</button>
-        <button class="chip" data-dept="피부과">피부과</button>
-        <button class="chip" data-dept="산부인과">산부인과</button>
-        <button class="chip" data-dept="치과">치과</button>
-        <button class="chip" data-dept="한의원">한의원</button>
       </div>
       <div id="hospitalContent"></div>
     </section>
@@ -776,7 +760,6 @@ const App = {
     activeEmerSub: 'er',
     activeDrugSub: 'name',
     pharmacyFilter: 'open',
-    hospitalDept: '',
     location: null,        // {lat, lon, label, sido, sigungu}
     modalStack: [],        // 열린 모달 스택
     cache: {}              // API 캐시
@@ -879,14 +862,6 @@ const App = {
         c.classList.add('active');
         this.state.pharmacyFilter = c.dataset.filter;
         this.renderPharmacy();
-      });
-    });
-    document.querySelectorAll('#hospitalChips .chip').forEach(c => {
-      c.addEventListener('click', () => {
-        document.querySelectorAll('#hospitalChips .chip').forEach(x => x.classList.remove('active'));
-        c.classList.add('active');
-        this.state.hospitalDept = c.dataset.dept;
-        this.renderHospital();
       });
     });
   },
@@ -1916,9 +1891,6 @@ App.renderHospital = async function() {
   if (loc.mode === 'manual' && loc.sido) {
     params.set('Q0', loc.sido);
   }
-  if (this.state.hospitalDept) {
-    params.set('QD', this.state.hospitalDept);
-  }
   if (searchInput) {
     params.set('QN', searchInput);
   }
@@ -1941,7 +1913,11 @@ App.renderHospital = async function() {
   items = items.slice(0, 100);
 
   if (items.length === 0) {
-    c.innerHTML = this._emptyHtml('조건에 맞는 병원이 없습니다');
+    if (searchInput) {
+      c.innerHTML = this._emptyHtml(`'${this._escape(searchInput)}' 검색 결과가 없습니다`);
+    } else {
+      c.innerHTML = this._emptyHtml('해당 지역에 병원 정보가 없습니다');
+    }
     return;
   }
 
