@@ -684,6 +684,7 @@ function switchTab(tab) {
   document.getElementById('view-week').style.display=tab==='week'?'':'none';
   document.getElementById('view-month').style.display=tab==='month'?'':'none';
   if (tab==='month') renderMonth();
+  window.scrollTo({top:0, behavior:'instant'});
 }
 loadAll(); renderWeek(); initDragHandles();
 </script>
