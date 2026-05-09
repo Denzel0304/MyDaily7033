@@ -1272,7 +1272,7 @@ App._renderER = async function() {
   // 수동 모드일 경우: 시도로 필터
   const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire';
   const params = new URLSearchParams({
-    serviceKey: decodeURIComponent(API_KEYS.emergency),
+    serviceKey: API_KEYS.emergency,
     pageNo: '1',
     numOfRows: '200'
   });
@@ -1358,7 +1358,7 @@ App._openErDetail = async function(item) {
   // 추가 메시지 조회 (응급실 메시지)
   let msgHtml = '';
   try {
-    const url = `https://apis.data.go.kr/B552657/ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire?serviceKey=${encodeURIComponent(decodeURIComponent(API_KEYS.emergency))}&HPID=${item.hpid}&pageNo=1&numOfRows=1`;
+    const url = `https://apis.data.go.kr/B552657/ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire?serviceKey=${encodeURIComponent(API_KEYS.emergency)}&HPID=${item.hpid}&pageNo=1&numOfRows=1`;
     const data = await this.apiCall(url);
     const msg = this.extractItems(data)[0];
     if (msg && msg.symBlkMsg) {
@@ -1442,7 +1442,7 @@ App._renderSevere = async function() {
   // 데이터 조회
   const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire';
   const params = new URLSearchParams({
-    serviceKey: decodeURIComponent(API_KEYS.emergency),
+    serviceKey: API_KEYS.emergency,
     pageNo: '1',
     numOfRows: '200'
   });
@@ -1542,7 +1542,7 @@ App._renderTrauma = async function() {
 
   const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getStrmListInfoInqire';
   const params = new URLSearchParams({
-    serviceKey: decodeURIComponent(API_KEYS.emergency),
+    serviceKey: API_KEYS.emergency,
     pageNo: '1',
     numOfRows: '50'
   });
@@ -1637,7 +1637,7 @@ App.renderPharmacy = async function() {
   const searchInput = document.querySelector('#pharmacySearch input').value.trim();
   const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire';
   const params = new URLSearchParams({
-    serviceKey: decodeURIComponent(API_KEYS.pharmacy),
+    serviceKey: API_KEYS.pharmacy,
     pageNo: '1',
     numOfRows: '300'
   });
@@ -1807,7 +1807,7 @@ App.renderHospital = async function() {
   const searchInput = document.querySelector('#hospitalSearch input').value.trim();
   const baseUrl = 'https://apis.data.go.kr/B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire';
   const params = new URLSearchParams({
-    serviceKey: decodeURIComponent(API_KEYS.hospital),
+    serviceKey: API_KEYS.hospital,
     pageNo: '1',
     numOfRows: '300'
   });
@@ -2016,7 +2016,7 @@ App._searchDrugByName = async function(query) {
   }
   c.innerHTML = `<div class="state-msg"><div class="spinner"></div>검색 중...</div>`;
 
-  const url = `https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList?serviceKey=${encodeURIComponent(decodeURIComponent(API_KEYS.drugInfo))}&pageNo=1&numOfRows=50&itemName=${encodeURIComponent(query)}&type=json`;
+  const url = `https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList?serviceKey=${encodeURIComponent(API_KEYS.drugInfo)}&pageNo=1&numOfRows=50&itemName=${encodeURIComponent(query)}&type=json`;
   let items = [];
   try {
     const data = await this.apiCall(url);
@@ -2099,7 +2099,7 @@ App._searchPills = async function() {
   c.innerHTML = `<div class="state-msg"><div class="spinner"></div>검색 중...</div>`;
 
   const params = new URLSearchParams({
-    serviceKey: decodeURIComponent(API_KEYS.drugPill),
+    serviceKey: API_KEYS.drugPill,
     pageNo: '1',
     numOfRows: '50',
     type: 'json'
