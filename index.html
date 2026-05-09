@@ -188,6 +188,8 @@
     .card-recipe   .card-icon-wrap { background: #fef3c7; }
     .card-dollar   .card-icon-wrap { background: #d4f0e8; }
     .card-health   .card-icon-wrap { background: #fce7f3; }
+    .card-hospital .card-icon-wrap { background: #dbeafe; }
+    .card-hospital::before         { background: linear-gradient(90deg, #3b82f6, #93c5fd); }
 
     .card-label {
       font-family: 'Noto Sans KR', sans-serif;
@@ -216,6 +218,7 @@
     .menu-card:nth-child(9)  { animation: fadeUp 0.45s 0.58s ease both; }
     .menu-card:nth-child(10) { animation: fadeUp 0.45s 0.64s ease both; }
     .menu-card:nth-child(11) { animation: fadeUp 0.45s 0.70s ease both; }
+    .menu-card:nth-child(12) { animation: fadeUp 0.45s 0.76s ease both; }
   </style>
 </head>
 <body>
@@ -290,6 +293,11 @@
       <a href="health.html" class="menu-card card-health">
         <div class="card-icon-wrap">💗</div>
         <div class="card-label">건강 지킴이</div>
+      </a>
+
+      <a href="hospital.html" class="menu-card card-hospital">
+        <div class="card-icon-wrap">🏥</div>
+        <div class="card-label">의료 정보</div>
       </a>
 
     </div>
