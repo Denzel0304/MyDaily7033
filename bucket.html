@@ -110,35 +110,9 @@
   .confirm-actions { display: flex; gap: 10px; }
   .btn-del { flex: 1; padding: 12px; background: linear-gradient(135deg, #FF6B6B, #FF8E53); border: none; border-radius: var(--radius-sm); font-size: 15px; cursor: pointer; color: #fff; font-weight: 700; }
 
-  /* ── Settings Panel ── */
-  .settings-panel { flex: 1; overflow-y: auto; padding: 20px 16px; }
-  .settings-section { margin-bottom: 24px; }
-  .settings-section-title { font-size: 11px; font-weight: 700; color: var(--sky-deep); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; padding-left: 4px; }
-  .settings-row { background: var(--white); border-radius: var(--radius-sm); margin-bottom: 8px; }
-  .settings-btn { width: 100%; padding: 15px 16px; border: none; background: none; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px; color: var(--text); font-family: 'Noto Sans KR', sans-serif; font-weight: 500; border-radius: var(--radius-sm); }
-  .settings-btn:active { background: var(--sky-pale); }
-  .settings-btn .s-icon { font-size: 20px; width: 32px; height: 32px; background: var(--sky-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .settings-btn .s-label { flex: 1; text-align: left; }
-  .settings-btn .s-arrow { color: var(--text-soft); font-size: 13px; }
-
-  .settings-info { font-size: 12px; color: var(--text-soft); text-align: center; margin-top: 20px; line-height: 1.8; }
-
-  /* ── Drawer (Slide Menu) ── */
-  .drawer-overlay { position: fixed; inset: 0; background: rgba(20,60,90,0.4); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
-  .drawer-overlay.open { opacity: 1; pointer-events: all; }
-  .drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 78%; max-width: 300px; background: var(--white); z-index: 201; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; }
-  .drawer.open { transform: translateX(0); }
-  .drawer-header { background: linear-gradient(135deg, var(--sky-deep), var(--sky)); padding: 50px 24px 24px; }
-  .drawer-title { font-family: 'Gaegu', cursive; font-size: 30px; font-weight: 700; color: #fff; }
-  .drawer-subtitle { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 4px; }
-  .drawer-body { flex: 1; padding: 20px 0; overflow-y: auto; }
-  .drawer-item { display: flex; align-items: center; gap: 14px; padding: 15px 24px; cursor: pointer; transition: background 0.15s; }
-  .drawer-item:active { background: var(--sky-pale); }
-  .drawer-item .d-icon { font-size: 22px; width: 38px; height: 38px; background: var(--sky-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .drawer-item .d-text { font-size: 15px; font-weight: 600; color: var(--text); }
-  .drawer-item .d-desc { font-size: 12px; color: var(--text-soft); margin-top: 1px; }
-  .drawer-divider { height: 1px; background: var(--sky-light); margin: 8px 24px; }
-  .drawer-footer { padding: 20px 24px; font-size: 11px; color: var(--text-soft); text-align: center; line-height: 1.8; }
+  /* ── Gear Button ── */
+  .gear-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 22px; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+  .gear-btn:active { background: rgba(255,255,255,0.35); }
 
   /* ── Dragging ── */
   .item-card.dragging { opacity: 0.4; background: var(--sky-light) !important; }
@@ -165,7 +139,7 @@
   <!-- HEADER -->
   <div class="header">
     <div class="header-title">🎯 Buckets</div>
-    <div style="width:32px"></div>
+    <button class="gear-btn" onclick="openGearMenu()" title="설정">⚙️</button>
   </div>
 
   <!-- TAB BAR -->
@@ -177,14 +151,6 @@
     <button class="tab-btn" data-tab="this-year" onclick="switchTab('this-year')">
       <span class="tab-icon">📅</span>
       <span class="tab-label">올해 할일</span>
-    </button>
-    <button class="tab-btn" data-tab="someday" onclick="switchTab('someday')">
-      <span class="tab-icon">🌈</span>
-      <span class="tab-label">언젠가</span>
-    </button>
-    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
-      <span class="tab-icon">⚙️</span>
-      <span class="tab-label">설정</span>
     </button>
   </div>
 
@@ -201,52 +167,6 @@
       <div class="stats-banner" id="stats-this-year">총 0개의 할일 중 0개 달성!!!</div>
       <div class="list-wrap" id="list-this-year"></div>
       <button class="fab" onclick="openAdd('this-year')">+</button>
-    </div>
-    <!-- SOMEDAY -->
-    <div class="panel" id="panel-someday">
-      <div class="stats-banner" id="stats-someday">총 0개의 할일 중 0개 달성!!!</div>
-      <div class="list-wrap" id="list-someday"></div>
-      <button class="fab" onclick="openAdd('someday')">+</button>
-    </div>
-    <!-- SETTINGS -->
-    <div class="panel" id="panel-settings">
-      <div class="settings-panel">
-        <div class="settings-section">
-          <div class="settings-section-title">데이터 관리</div>
-          <div class="settings-row">
-            <button class="settings-btn" onclick="openDrawer()">
-              <span class="s-icon">📂</span>
-              <span class="s-label">파일 메뉴 열기</span>
-              <span class="s-arrow">›</span>
-            </button>
-          </div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-section-title">앱 정보</div>
-          <div class="settings-row">
-            <div class="settings-btn" style="cursor:default">
-              <span class="s-icon">🎯</span>
-              <div>
-                <div class="s-label" style="font-weight:700">Buckets</div>
-                <div style="font-size:12px;color:var(--text-soft)">나만의 꿈 & 할일 관리 앱</div>
-              </div>
-            </div>
-          </div>
-          <div class="settings-row">
-            <div class="settings-btn" style="cursor:default">
-              <span class="s-icon">📦</span>
-              <div>
-                <div class="s-label">버전 1.0.0</div>
-                <div style="font-size:12px;color:var(--text-soft)">Made with ☁️ & ⭐</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="settings-info">
-          데이터는 기기에 안전하게 저장됩니다.<br>
-          백업을 위해 정기적으로 파일을 내보내 주세요!
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -275,32 +195,16 @@
   </div>
 </div>
 
-<!-- DRAWER -->
-<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
-<div class="drawer" id="drawer">
-  <div class="drawer-header">
-    <div class="drawer-title">🎯 Buckets</div>
-    <div class="drawer-subtitle">파일 관리</div>
-  </div>
-  <div class="drawer-body">
-    <div class="drawer-item" onclick="exportData()">
-      <div class="d-icon">📤</div>
-      <div>
-        <div class="d-text">파일 내보내기</div>
-        <div class="d-desc">현재 데이터를 JSON 파일로 저장</div>
-      </div>
+<!-- GEAR MENU MODAL -->
+<div class="modal-overlay" id="gear-modal" onclick="closeGearOnBg(event)">
+  <div class="confirm-box" style="padding:20px;">
+    <div class="confirm-icon">⚙️</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;">파일 관리</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn-confirm" onclick="exportData()">📤 파일 내보내기</button>
+      <button class="btn-confirm" style="background:linear-gradient(135deg,#5eead4,#0d9488)" onclick="triggerImport()">📥 파일 가져오기</button>
+      <button class="btn-cancel" onclick="closeGearMenu()">닫기</button>
     </div>
-    <div class="drawer-divider"></div>
-    <div class="drawer-item" onclick="triggerImport()">
-      <div class="d-icon">📥</div>
-      <div>
-        <div class="d-text">파일 가져오기</div>
-        <div class="d-desc">Buckets 파일을 불러와서 복원</div>
-      </div>
-    </div>
-  </div>
-  <div class="drawer-footer">
-    Buckets 앱에서 내보낸 파일만<br>가져올 수 있습니다 🔒
   </div>
 </div>
 
@@ -324,7 +228,7 @@ const APP_SIG = 'BUCKETS_APP_V1';
 const STORE_KEY = 'buckets_data';
 
 // ── State ──
-let data = { bucket: [], 'this-year': [], someday: [] };
+let data = { bucket: [], 'this-year': [] };
 
 // ── Storage ──
 function save() {
@@ -335,6 +239,8 @@ function load() {
   if (raw) {
     try { data = JSON.parse(raw); } catch(e) {}
   }
+  // ensure tabs
+  ['bucket','this-year'].forEach(t => { if (!data[t]) data[t] = []; });
   renderAll();
 }
 
@@ -345,13 +251,53 @@ function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-  if (tab !== 'settings') renderList(tab);
+  renderList(tab);
 }
 
 // ── Render ──
 function renderAll() {
-  renderList('bucket'); renderList('this-year'); renderList('someday');
+  renderList('bucket'); renderList('this-year');
 }
+
+// ── History-based modal management ──
+// Each open modal pushes a state; popstate closes it.
+const modalStack = [];
+
+function pushModal(closeFn) {
+  history.pushState({ modal: true }, '');
+  modalStack.push(closeFn);
+}
+
+function popModal() {
+  if (modalStack.length > 0) {
+    const fn = modalStack.pop();
+    fn();
+  }
+}
+
+window.addEventListener('popstate', (e) => {
+  if (modalStack.length > 0) {
+    const fn = modalStack.pop();
+    fn();
+  }
+});
+
+// ── Gear Menu ──
+function openGearMenu() {
+  document.getElementById('gear-modal').classList.add('open');
+  pushModal(_closeGearMenu);
+}
+function _closeGearMenu() {
+  document.getElementById('gear-modal').classList.remove('open');
+}
+function closeGearMenu() {
+  if (modalStack.length > 0 && document.getElementById('gear-modal').classList.contains('open')) {
+    history.back();
+  } else {
+    _closeGearMenu();
+  }
+}
+function closeGearOnBg(e) { if (e.target.id === 'gear-modal') closeGearMenu(); }
 
 function renderList(tab) {
   const items = data[tab] || [];
@@ -368,7 +314,7 @@ function renderList(tab) {
   let html = '';
 
   if (pending.length === 0 && completed.length === 0) {
-    html = `<div class="empty-state"><div class="e-icon">${tab === 'bucket' ? '🌟' : tab === 'this-year' ? '📅' : '🌈'}</div><p>아직 항목이 없어요!<br>+ 버튼으로 추가해보세요 ✨</p></div>`;
+    html = `<div class="empty-state"><div class="e-icon">${tab === 'bucket' ? '🌟' : '📅'}</div><p>아직 항목이 없어요!<br>+ 버튼으로 추가해보세요 ✨</p></div>`;
   } else {
     pending.forEach(item => { html += renderCard(item, tab, false); });
     if (completed.length > 0) {
@@ -425,6 +371,7 @@ function openAdd(tab) {
   document.getElementById('modal-title').textContent = '새 항목 추가 ✨';
   document.getElementById('modal-input').value = '';
   document.getElementById('add-modal').classList.add('open');
+  pushModal(_closeAdd);
   setTimeout(() => document.getElementById('modal-input').focus(), 300);
 }
 function openEdit(tab, id) {
@@ -434,9 +381,19 @@ function openEdit(tab, id) {
   document.getElementById('modal-title').textContent = '항목 수정 ✏️';
   document.getElementById('modal-input').value = item.text;
   document.getElementById('add-modal').classList.add('open');
+  pushModal(_closeAdd);
   setTimeout(() => document.getElementById('modal-input').focus(), 300);
 }
-function closeAdd() { document.getElementById('add-modal').classList.remove('open'); }
+function _closeAdd() {
+  document.getElementById('add-modal').classList.remove('open');
+}
+function closeAdd() {
+  if (modalStack.length > 0 && document.getElementById('add-modal').classList.contains('open')) {
+    history.back();
+  } else {
+    _closeAdd();
+  }
+}
 function closeAddOnBg(e) { if (e.target.id === 'add-modal') closeAdd(); }
 
 function confirmAdd() {
@@ -449,14 +406,28 @@ function confirmAdd() {
     data[addTab].push({ id: Date.now().toString(), text: txt, done: false });
     showToast('추가했어요! 🎉');
   }
-  save(); renderList(addTab); closeAdd();
+  save(); renderList(addTab);
+  // pop the modal stack entry and close without history.back
+  if (modalStack.length > 0) modalStack.pop();
+  history.back();
+  _closeAdd();
 }
 document.getElementById('modal-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmAdd(); }
 });
 
-function openWarn() { document.getElementById('warn-modal').classList.add('open'); }
-function closeWarn() { document.getElementById('warn-modal').classList.remove('open'); }
+function openWarn() {
+  document.getElementById('warn-modal').classList.add('open');
+  pushModal(_closeWarn);
+}
+function _closeWarn() { document.getElementById('warn-modal').classList.remove('open'); }
+function closeWarn() {
+  if (modalStack.length > 0 && document.getElementById('warn-modal').classList.contains('open')) {
+    history.back();
+  } else {
+    _closeWarn();
+  }
+}
 function closeWarnOnBg(e) { if (e.target.id === 'warn-modal') closeWarn(); }
 
 // ── Delete ──
@@ -464,27 +435,29 @@ let delTab = null, delId = null;
 function openDeleteConfirm(tab, id) {
   delTab = tab; delId = id;
   document.getElementById('confirm-modal').classList.add('open');
+  pushModal(_closeConfirm);
 }
-function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+function _closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+function closeConfirm() {
+  if (modalStack.length > 0 && document.getElementById('confirm-modal').classList.contains('open')) {
+    history.back();
+  } else {
+    _closeConfirm();
+  }
+}
 function closeConfirmOnBg(e) { if (e.target.id === 'confirm-modal') closeConfirm(); }
 function confirmDelete() {
   data[delTab] = data[delTab].filter(i => i.id !== delId);
-  save(); renderList(delTab); closeConfirm(); showToast('삭제했어요 🗑️');
-}
-
-// ── Drawer ──
-function openDrawer() {
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawer-overlay').classList.add('open');
-}
-function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
+  save(); renderList(delTab);
+  if (modalStack.length > 0) modalStack.pop();
+  history.back();
+  _closeConfirm();
+  showToast('삭제했어요 🗑️');
 }
 
 // ── Export ──
 function exportData() {
-  closeDrawer();
+  closeGearMenu();
   const payload = { __sig: APP_SIG, __version: 1, __exported: new Date().toISOString(), data };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -497,7 +470,7 @@ function exportData() {
 }
 
 // ── Import ──
-function triggerImport() { closeDrawer(); document.getElementById('file-input').click(); }
+function triggerImport() { closeGearMenu(); document.getElementById('file-input').click(); }
 function importData(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -512,7 +485,7 @@ function importData(event) {
       if (!parsed.data) throw new Error('no data');
       data = parsed.data;
       // ensure all tabs exist
-      ['bucket','this-year','someday'].forEach(t => { if (!data[t]) data[t] = []; });
+      ['bucket','this-year'].forEach(t => { if (!data[t]) data[t] = []; });
       save(); renderAll();
       showToast('📥 가져오기 완료! ✅');
     } catch(err) {
