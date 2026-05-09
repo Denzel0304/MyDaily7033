@@ -2098,7 +2098,7 @@ App._searchDrugByName = async function(query) {
   const q   = encodeURIComponent(query);
 
   // 식품의약품안전처_의약품 제품 허가정보 (전문+일반 전체 DB)
-  const url = `https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07?serviceKey=${key}&pageNo=1&numOfRows=50&ITEM_NAME=${q}&type=json`;
+  const url = `https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnInq07?serviceKey=${key}&pageNo=1&numOfRows=50&item_name=${q}&type=json`;
 
   let items = [];
   try {
