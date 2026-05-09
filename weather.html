@@ -254,10 +254,13 @@
     opacity: 0.7;
   }
   .pack-item .text .sub .pm-grade {
-    color: #7E8B96;
-    font-weight: 500;
+    font-weight: 600;
     margin-left: 1px;
   }
+  .pack-item .text .sub .pm-grade.g1 { color: #2D7A4F; }
+  .pack-item .text .sub .pm-grade.g2 { color: #2566A8; }
+  .pack-item .text .sub .pm-grade.g3 { color: #A36400; }
+  .pack-item .text .sub .pm-grade.g4 { color: #B83A33; }
   .vent-text .desc em {
     font-style: normal;
     font-family: 'Outfit', sans-serif;
@@ -1449,12 +1452,11 @@ function decidePack(hourly, air) {
     const fmt = (v) => v == null ? '-' : v;
     const pm25Html = `<b class="pm-num">PM<sub>2.5</sub> <em>${fmt(air.pm25)}</em></b>`;
     const pm10Html = `<b class="pm-num">PM<sub>10</sub> <em>${fmt(air.pm10)}</em></b>`;
+    const gradeSpan = (g) => `<span class="pm-grade g${g || 1}">${gradeText(g)}</span>`;
     if (bad25 || bad10) {
       mask = true;
-      maskHtml = `${pm25Html} · ${pm10Html}`;
-    } else {
-      maskHtml = `${pm25Html} <span class="pm-grade">${gradeText(air.pm25Grade)}</span> · ${pm10Html} <span class="pm-grade">${gradeText(air.pm10Grade)}</span>`;
     }
+    maskHtml = `${pm25Html} ${gradeSpan(air.pm25Grade)} · ${pm10Html} ${gradeSpan(air.pm10Grade)}`;
     maskReason = maskHtml; // 호환
   } else {
     maskReason = '대기질 정보 없음';
