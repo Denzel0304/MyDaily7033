@@ -297,6 +297,66 @@
   .hour-cell .h-pop { font-size: 10.5px; color: #4A90E2; margin-top: 3px; font-weight: 600; min-height: 14px; }
   .hour-cell.now-cell .h-pop { color: #2A6BC4; }
 
+  /* ---------- 3일 예보 ---------- */
+  .day-list { display: flex; flex-direction: column; }
+  .day-row {
+    display: grid;
+    grid-template-columns: 64px 36px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(126, 139, 150, 0.08);
+  }
+  .day-row:last-child { border-bottom: none; }
+  .day-row.today .day-name { color: #B86F00; font-weight: 700; }
+  .day-row .day-label { display: flex; flex-direction: column; }
+  .day-row .day-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2C3E50;
+    line-height: 1.2;
+  }
+  .day-row .day-dow {
+    font-size: 11px;
+    color: #A0AEB8;
+    font-weight: 500;
+    margin-top: 1px;
+  }
+  .day-row .day-emoji {
+    font-size: 22px;
+    text-align: center;
+    line-height: 1;
+  }
+  .day-row .day-pop-wrap {
+    text-align: left;
+    font-size: 11.5px;
+  }
+  .day-row .day-pop {
+    color: #4A90E2;
+    font-weight: 600;
+    background: rgba(74, 144, 226, 0.08);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .day-row .day-temps {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .day-row .t-min { color: #6FA8DC; min-width: 28px; text-align: right; }
+  .day-row .t-max { color: #E07A5F; min-width: 28px; text-align: right; }
+  .day-row .t-sep {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #6FA8DC, #FFB75E, #E07A5F);
+    opacity: 0.5;
+  }
+
   /* ---------- 대기질 ---------- */
   .air-grid {
     display: grid;
@@ -1193,6 +1253,103 @@ function nextHours(hourly, n = 12) {
   return hourly.filter(h => (h.fcstDate + h.fcstTime) >= nowKey).slice(0, n);
 }
 
+// 일별 요약 (오늘/내일/모레/글피)
+function dailySummary(hourly) {
+  // fcstDate 기준으로 그룹핑
+  const byDate = {};
+  hourly.forEach(h => {
+    const d = h.fcstDate;
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(h);
+  });
+
+  const today = new Date();
+  const todayStr = today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate());
+
+  const dates = Object.keys(byDate).sort();
+  const result = [];
+
+  for (const d of dates) {
+    const items = byDate[d];
+
+    // 최고/최저 기온: TMX/TMN이 일별 한 번씩만 있음, 없으면 TMP에서 계산
+    let tmax = null, tmin = null;
+    items.forEach(h => {
+      if (h.TMX != null) {
+        const v = parseFloat(h.TMX);
+        if (!isNaN(v)) tmax = v;
+      }
+      if (h.TMN != null) {
+        const v = parseFloat(h.TMN);
+        if (!isNaN(v)) tmin = v;
+      }
+    });
+    // fallback: TMP 시간별 값에서 min/max
+    if (tmax == null || tmin == null) {
+      const tmps = items.map(h => parseFloat(h.TMP)).filter(v => !isNaN(v));
+      if (tmps.length) {
+        if (tmax == null) tmax = Math.max(...tmps);
+        if (tmin == null) tmin = Math.min(...tmps);
+      }
+    }
+
+    // 최대 강수확률
+    const pops = items.map(h => parseInt(h.POP || 0)).filter(v => !isNaN(v));
+    const maxPop = pops.length ? Math.max(...pops) : 0;
+
+    // 대표 하늘상태 (낮 시간 12~15시 우선, 없으면 가장 빈번한 값)
+    const dayItems = items.filter(h => {
+      const hh = parseInt(h.fcstTime.substring(0,2));
+      return hh >= 12 && hh <= 15;
+    });
+    const refItems = dayItems.length ? dayItems : items;
+    // PTY 우선 (강수형태 있으면 그게 대표)
+    let ptyMode = null, skyMode = null;
+    const ptyCount = {}, skyCount = {};
+    refItems.forEach(h => {
+      const p = parseInt(h.PTY || 0);
+      if (p > 0) ptyCount[p] = (ptyCount[p] || 0) + 1;
+      const s = parseInt(h.SKY || 1);
+      skyCount[s] = (skyCount[s] || 0) + 1;
+    });
+    const ptyKeys = Object.keys(ptyCount);
+    if (ptyKeys.length) {
+      ptyMode = ptyKeys.reduce((a, b) => ptyCount[a] >= ptyCount[b] ? a : b);
+    }
+    const skyKeys = Object.keys(skyCount);
+    if (skyKeys.length) {
+      skyMode = skyKeys.reduce((a, b) => skyCount[a] >= skyCount[b] ? a : b);
+    }
+
+    // 라벨
+    const dateObj = new Date(parseInt(d.substring(0,4)), parseInt(d.substring(4,6))-1, parseInt(d.substring(6,8)));
+    const diffDays = Math.round((dateObj - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / (24*60*60*1000));
+    let label;
+    if (diffDays === 0) label = '오늘';
+    else if (diffDays === 1) label = '내일';
+    else if (diffDays === 2) label = '모레';
+    else if (diffDays === 3) label = '글피';
+    else label = (dateObj.getMonth()+1) + '/' + dateObj.getDate();
+
+    const dayOfWeek = ['일','월','화','수','목','금','토'][dateObj.getDay()];
+
+    result.push({
+      date: d,
+      label,
+      dayOfWeek,
+      tmax: tmax != null ? Math.round(tmax) : null,
+      tmin: tmin != null ? Math.round(tmin) : null,
+      maxPop,
+      sky: skyMode,
+      pty: ptyMode,
+      isPast: d < todayStr
+    });
+  }
+
+  // 오늘 포함 4일 (오늘/내일/모레/글피)
+  return result.filter(r => !r.isPast).slice(0, 4);
+}
+
 // "챙길 것" 판단
 function decidePack(hourly, air) {
   const next12 = nextHours(hourly, 12);
@@ -1264,15 +1421,15 @@ function decideVent(hourly, air) {
     };
   }
   if (willRain) {
-    return { state: 'maybe', head: '곧 비 예보', desc: '비 오기 전에 잠깐만 환기' };
+    return { state: 'maybe', head: '곧 비 예보', desc: `${pm25Html} · ${pm10Html} · 비 오기 전 잠깐만` };
   }
   if (highPop) {
-    return { state: 'maybe', head: '비 가능성', desc: '짧게 환기' };
+    return { state: 'maybe', head: '비 가능성', desc: `${pm25Html} · ${pm10Html} · 짧게 환기` };
   }
   return {
     state: 'ok',
     head: '환기 좋아요',
-    desc: `${pm25Html} · 비 없음`
+    desc: `${pm25Html} · ${pm10Html} · 비 없음`
   };
 }
 
@@ -1316,6 +1473,37 @@ function render(loc, weather, air) {
         <div class="h-pop">${pop >= 30 ? '💧' + pop + '%' : ''}</div>
       </div>`;
   }).join('');
+
+  // 3일 예보 카드 (오늘 포함, 단기예보는 글피까지 가능)
+  const days = dailySummary(hourly);
+  let dailyHtml = '';
+  if (days.length >= 2) {
+    const dayRows = days.map(d => {
+      const emo = emojiFor(d.sky, d.pty);
+      const tmaxStr = d.tmax != null ? `${d.tmax}°` : '-';
+      const tminStr = d.tmin != null ? `${d.tmin}°` : '-';
+      const popHtml = d.maxPop >= 30 ? `<span class="day-pop">💧 ${d.maxPop}%</span>` : '';
+      return `
+        <div class="day-row ${d.label === '오늘' ? 'today' : ''}">
+          <div class="day-label">
+            <div class="day-name">${d.label}</div>
+            <div class="day-dow">${d.dayOfWeek}</div>
+          </div>
+          <div class="day-emoji">${emo}</div>
+          <div class="day-pop-wrap">${popHtml}</div>
+          <div class="day-temps">
+            <span class="t-min">${tminStr}</span>
+            <span class="t-sep"></span>
+            <span class="t-max">${tmaxStr}</span>
+          </div>
+        </div>`;
+    }).join('');
+    dailyHtml = `
+      <div class="card">
+        <div class="card-title">📅 ${days.length}일 예보</div>
+        <div class="day-list">${dayRows}</div>
+      </div>`;
+  }
 
   const updTime = `${pad(nowDate.getHours())}:${pad(nowDate.getMinutes())} 기준`;
   document.getElementById('updTime').textContent = updTime;
@@ -1380,6 +1568,9 @@ function render(loc, weather, air) {
       <div class="card-title">⏰ 시간별 예보</div>
       <div class="hourly-scroll">${hourCells}</div>
     </div>
+
+    <!-- 3일 예보 -->
+    ${dailyHtml}
 
     <!-- 대기질 -->
     <div class="card">
@@ -1558,13 +1749,33 @@ async function resolveByGps() {
    ============================================================ */
 function showModal() {
   document.getElementById('modal').classList.add('show');
+  // 모달 열 때 history에 상태 추가 → 뒤로가기 시 페이지 종료가 아니라 모달만 닫힘
+  if (!history.state || !history.state.modal) {
+    history.pushState({ modal: true }, '');
+  }
   // 모달 열릴 때 입력창 자동 포커스 (모바일에서 키보드는 약간 지연 후)
   setTimeout(() => {
     const inp = document.getElementById('citySearch');
     if (inp) inp.focus();
   }, 250);
 }
-function hideModal() { document.getElementById('modal').classList.remove('show'); }
+function hideModal() {
+  const el = document.getElementById('modal');
+  if (!el.classList.contains('show')) return;
+  el.classList.remove('show');
+  // 만약 history에 modal 상태가 있다면 빼냄 (사용자가 X/배경 클릭으로 닫은 경우)
+  if (history.state && history.state.modal) {
+    history.back();
+  }
+}
+
+// 뒤로가기 이벤트: 모달이 열려있으면 모달만 닫음
+window.addEventListener('popstate', () => {
+  const el = document.getElementById('modal');
+  if (el.classList.contains('show')) {
+    el.classList.remove('show');
+  }
+});
 
 function renderCityList(filter) {
   const cur = getSavedLoc();
