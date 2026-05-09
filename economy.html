@@ -60,14 +60,30 @@
       flex-direction: column;
     }
 
+    /* ── 고정 헤더 래퍼 ── */
+    .sticky-header {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 420px;
+      z-index: 50;
+      background: linear-gradient(160deg, #e8f6fd 0%, #ceeaf8 60%, #d9f0fc 100%);
+      backdrop-filter: blur(16px);
+      padding: 0 16px;
+      border-bottom: 1.5px solid rgba(45,185,106,0.18);
+      box-shadow: 0 4px 20px rgba(45,185,106,0.10);
+    }
+
     /* ── 헤더 ── */
     header {
-      padding-top: 30px;
+      padding-top: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
-      margin-bottom: 20px;
+      margin-bottom: 6px;
     }
 
     .header-title {
@@ -83,7 +99,7 @@
       text-align: center;
       font-size: 12px;
       color: var(--text-light);
-      margin-bottom: 18px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -106,7 +122,7 @@
       background: rgba(255,255,255,0.6);
       border-radius: 50px;
       padding: 4px;
-      margin-bottom: 22px;
+      margin-bottom: 10px;
       box-shadow: 0 2px 12px rgba(45,185,106,0.08);
       backdrop-filter: blur(8px);
     }
@@ -263,6 +279,10 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 5px;
       margin-bottom: 14px;
+    }
+    /* 헤더 안에 있을 때 */
+    .sticky-header .metric-tabs {
+      margin-bottom: 10px;
     }
     .metric-tab {
       border: none;
@@ -437,10 +457,9 @@
   <div class="bg-blob bg-blob-2"></div>
   <div class="bg-blob bg-blob-3"></div>
 
-  <div class="container">
-
+  <div class="sticky-header" id="sticky-header">
     <header>
-      <h1 class="header-title">경제 지표</h1>
+      <h1 class="header-title">📉 경제 지표</h1>
     </header>
 
     <div class="update-info">
@@ -453,6 +472,12 @@
       <button class="tab-btn" data-tab="week">이번 주</button>
       <button class="tab-btn" data-tab="month">이번 달</button>
     </div>
+
+    <!-- 이번 주/달 탭에서만 표시되는 종목 서브탭 슬롯 -->
+    <div id="metric-tabs-header" style="display:none;"></div>
+  </div>
+
+  <div class="container" id="main-container" style="padding-top: 148px;">
 
     <div class="cards" id="cards-area">
       <div class="status-box">
@@ -507,6 +532,12 @@
 
   // ── 오늘 탭 ──
   function renderToday() {
+    // 종목 서브탭 슬롯 숨기기 & 컨테이너 패딩 복원
+    const mth = document.getElementById('metric-tabs-header');
+    mth.style.display = 'none';
+    mth.innerHTML = '';
+    document.getElementById('main-container').style.paddingTop = '148px';
+
     const d = latestData;
 
     // pct가 null인 경우 historyData에서 어제 값으로 직접 계산
@@ -608,15 +639,21 @@
 
     area.innerHTML = `
       <div class="period-wrap">
-        <div class="metric-tabs" id="metric-tabs">
-          ${METRICS.map(m => `
-            <button class="metric-tab${m.key === periodActiveMetric ? ' active' : ''}"
-                    data-metric="${m.key}">
-              ${m.icon} ${m.label}
-            </button>`).join('')}
-        </div>
         <div id="period-content"></div>
       </div>`;
+
+    // 종목 서브탭을 헤더 슬롯으로 이동
+    const mth = document.getElementById('metric-tabs-header');
+    mth.innerHTML = `<div class="metric-tabs" id="metric-tabs">
+      ${METRICS.map(m => `
+        <button class="metric-tab${m.key === periodActiveMetric ? ' active' : ''}"
+                data-metric="${m.key}">
+          ${m.icon} ${m.label}
+        </button>`).join('')}
+    </div>`;
+    mth.style.display = 'block';
+    // 헤더가 더 높아졌으므로 컨테이너 패딩 조정
+    document.getElementById('main-container').style.paddingTop = '208px';
 
     // 서브탭 이벤트
     document.querySelectorAll('.metric-tab').forEach(btn => {
