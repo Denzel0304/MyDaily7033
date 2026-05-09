@@ -63,26 +63,70 @@
     justify-content: center;
     gap: 6px;
   }
-  .header-data-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-top: 7px;
+  /* ── GEAR MENU ── */
+  .header-top {
+    position: relative;
   }
-  .btn-data {
-    background: rgba(255,255,255,0.65);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 11px;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    font-weight: 500;
+  .btn-gear {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
     cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    color: var(--text-muted);
+    transition: background 0.15s, transform 0.3s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .btn-gear:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .btn-gear.open { transform: translateY(-50%) rotate(60deg); color: var(--sky-deep); }
+
+  .gear-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(196,94,24,0.22), 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    z-index: 150;
+    min-width: 148px;
+    display: none;
+    animation: menuPop 0.18s ease;
+  }
+  .gear-menu.open { display: block; }
+  @keyframes menuPop {
+    from { opacity: 0; transform: scale(0.92) translateY(-6px); transform-origin: top right; }
+    to   { opacity: 1; transform: scale(1)    translateY(0);     transform-origin: top right; }
+  }
+  .gear-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text);
     font-family: 'Noto Sans KR', sans-serif;
-    transition: all 0.15s;
+    cursor: pointer;
+    transition: background 0.12s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
     white-space: nowrap;
   }
-  .btn-data:hover { background: var(--sky-light); color: var(--sky-deep); border-color: var(--sky-dark); }
+  .gear-menu-item:hover { background: var(--sky-light); color: var(--sky-deep); }
+  .gear-menu-item + .gear-menu-item { border-top: 1px solid var(--border); }
+  .gear-menu-icon { font-size: 1rem; }
 
   .search-bar {
     position: relative;
@@ -719,17 +763,18 @@
 
 <!-- HEADER -->
 <div class="app-header">
-  <div class="header-top">
+  <div class="header-top" style="position:relative;">
     <span class="app-title">🍳 나만의 레시피</span>
+    <button class="btn-gear" id="gearBtn" onclick="toggleGearMenu()" title="설정" aria-label="메뉴">⚙️</button>
+    <div class="gear-menu" id="gearMenu">
+      <button class="gear-menu-item" onclick="exportData(); closeGearMenu()"><span class="gear-menu-icon">📤</span>내보내기</button>
+      <button class="gear-menu-item" onclick="document.getElementById('importFile').click(); closeGearMenu()"><span class="gear-menu-icon">📥</span>가져오기</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="레시피 검색..." oninput="renderList()">
-  </div>
-  <div class="header-data-row">
-    <button class="btn-data" onclick="exportData()">📤 내보내기</button>
-    <button class="btn-data" onclick="document.getElementById('importFile').click()">📥 가져오기</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 </div>
 
@@ -807,7 +852,44 @@ let confirmCallback = null;
 // ── MODAL HISTORY MANAGEMENT ──
 const modalStack = []; // tracks open modals: array of element IDs
 
+// ── GEAR MENU ──
+let gearMenuOpen = false;
+
+function toggleGearMenu() {
+  if (gearMenuOpen) {
+    history.back();
+  } else {
+    openGearMenu();
+  }
+}
+
+function openGearMenu() {
+  if (gearMenuOpen) return;
+  gearMenuOpen = true;
+  document.getElementById('gearMenu').classList.add('open');
+  document.getElementById('gearBtn').classList.add('open');
+  history.pushState({ gear: true }, '');
+}
+
+function closeGearMenu() {
+  if (!gearMenuOpen) return;
+  gearMenuOpen = false;
+  document.getElementById('gearMenu').classList.remove('open');
+  document.getElementById('gearBtn').classList.remove('open');
+}
+
+// 외부 클릭 시 닫기
+document.addEventListener('click', function(e) {
+  if (gearMenuOpen && !document.getElementById('gearBtn').contains(e.target) && !document.getElementById('gearMenu').contains(e.target)) {
+    history.back();
+  }
+});
+
 window.addEventListener('popstate', function() {
+  if (gearMenuOpen) {
+    closeGearMenu();
+    return;
+  }
   if (modalStack.length > 0) {
     const id = modalStack.pop();
     document.getElementById(id).classList.remove('active');
