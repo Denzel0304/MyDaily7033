@@ -1114,6 +1114,7 @@ function switchTab(tabName) {
   const navBtn = document.getElementById(`bnav-${tabName}`); if (navBtn) navBtn.classList.add('active');
   const content = document.getElementById(`tab-${tabName}`); if (content) content.classList.add('active');
   if (tabName === 'history') { loadInbodyData(); renderInbodyList(); renderInbodyChart(); }
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function showToast(msg) {
