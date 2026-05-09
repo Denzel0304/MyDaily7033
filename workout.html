@@ -553,6 +553,25 @@
   <!-- ── TAB: 인바디 ── -->
   <div class="tab-content" id="tab-history">
 
+    <div class="inbody-chart-card open" id="inbodyChartCard">
+      <div class="section-title">📊 체성분 추이 (최근 12개월)</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#4a90d9"></div>체중</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e07070"></div>골격근</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f0a030"></div>체지방량</div>
+      </div>
+      <div class="inbody-chart-svg-wrap" id="inbodyChartWrap"></div>
+    </div>
+
+    <button class="graph-toggle-btn" id="graphToggleBtn" onclick="toggleInbodyGraph()">
+      <span>📈</span><span id="graphToggleLabel">그래프 닫기</span>
+    </button>
+
+    <div class="inbody-list-card">
+      <div class="section-title">🗓 최근 기록</div>
+      <div id="inbodyList"></div>
+    </div>
+
     <div class="inbody-input-card">
       <div class="section-title">📋 인바디 입력</div>
       <div class="inbody-form-row">
@@ -578,24 +597,6 @@
       <button class="inbody-save-btn" onclick="saveInbody()">저장하기</button>
     </div>
 
-    <button class="graph-toggle-btn" id="graphToggleBtn" onclick="toggleInbodyGraph()">
-      <span>📈</span><span id="graphToggleLabel">추이 그래프 보기</span>
-    </button>
-
-    <div class="inbody-chart-card" id="inbodyChartCard">
-      <div class="section-title">📊 체성분 추이 (최근 12개월)</div>
-      <div class="chart-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#4a90d9"></div>체중</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#e07070"></div>골격근</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f0a030"></div>체지방량</div>
-      </div>
-      <div class="inbody-chart-svg-wrap" id="inbodyChartWrap"></div>
-    </div>
-
-    <div class="inbody-list-card">
-      <div class="section-title">🗓 최근 기록</div>
-      <div id="inbodyList"></div>
-    </div>
   </div>
 
   <!-- ── TAB: 설정 ── -->
@@ -717,7 +718,7 @@ function todayDow() { return new Date().getDay(); }
 let todayExercises   = [];
 let activeSettingDay = DAYS_EN[todayDow()];
 let inbodyRecords    = [];
-let graphOpen        = false;
+let graphOpen        = true;
 
 document.addEventListener('DOMContentLoaded', () => {
   const now = new Date();
@@ -730,6 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSettingList();
   loadInbodyData();
   renderInbodyList();
+  renderInbodyChart();
 });
 
 let midnightTimer = null;
@@ -1111,7 +1113,7 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   const navBtn = document.getElementById(`bnav-${tabName}`); if (navBtn) navBtn.classList.add('active');
   const content = document.getElementById(`tab-${tabName}`); if (content) content.classList.add('active');
-  if (tabName === 'history') { loadInbodyData(); renderInbodyList(); if (graphOpen) renderInbodyChart(); }
+  if (tabName === 'history') { loadInbodyData(); renderInbodyList(); renderInbodyChart(); }
 }
 
 function showToast(msg) {
