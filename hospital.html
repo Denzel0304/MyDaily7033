@@ -649,7 +649,7 @@ input { font-family: inherit; }
   <!-- 콘텐츠 -->
   <main class="app-content" id="appContent">
     <!-- 응급 탭 -->
-    <section class="tab-panel active" id="tab-emergency">
+    <section class="tab-panel" id="tab-emergency">
       <div class="segmented" id="emerSeg">
         <button class="active" data-sub="er">응급실</button>
         <button data-sub="severe">중증질환</button>
@@ -675,7 +675,7 @@ input { font-family: inherit; }
     </section>
 
     <!-- 병의원 탭 -->
-    <section class="tab-panel" id="tab-hospital">
+    <section class="tab-panel active" id="tab-hospital">
       <div class="searchbar" id="hospitalSearch">
         <span class="icon">🔍</span>
         <input type="text" placeholder="병원명 또는 진료과 (예: 내과, 소아과)" />
@@ -696,10 +696,10 @@ input { font-family: inherit; }
 
   <!-- 탭바 -->
   <nav class="app-tabbar">
-    <button class="active" data-tab="emergency"><span class="ico">🚑</span>응급</button>
+    <button class="active" data-tab="hospital"><span class="ico">🏥</span>병의원</button>
     <button data-tab="pharmacy"><span class="ico">💊</span>약국</button>
-    <button data-tab="hospital"><span class="ico">🏥</span>병의원</button>
     <button data-tab="drug"><span class="ico">💉</span>약정보</button>
+    <button data-tab="emergency"><span class="ico">🚑</span>응급</button>
   </nav>
 </div>
 
@@ -756,7 +756,7 @@ const API_KEYS = {
 const App = {
   // 상태
   state: {
-    activeTab: 'emergency',
+    activeTab: 'hospital',
     activeEmerSub: 'er',
     activeDrugSub: 'name',
     pharmacyFilter: 'open',
@@ -774,7 +774,7 @@ const App = {
     this.initHistory();
     this.initRegionList();
     this.loadSavedLocation();
-    this.renderEmergency();
+    this.renderHospital();
     this.checkApiKeys();
   },
 
