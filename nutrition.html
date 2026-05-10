@@ -587,6 +587,7 @@
 
   function switchNutrient(mode) {
     currentMode = mode;
+    window.scrollTo({ top: 0, behavior: 'instant' });
     const isCarb = mode === 'carb';
     document.getElementById('tabProtein').className = 'nutrient-tab' + (!isCarb ? ' active' : '');
     document.getElementById('tabCarb').className = 'nutrient-tab' + (isCarb ? ' carb-active' : '');
