@@ -474,6 +474,7 @@
         <option value="egg">🥚 계란</option>
         <option value="pork">🐷 돼지고기</option>
         <option value="tofu">🫘 두부</option>
+        <option value="cheese">🧀 치즈</option>
         <option value="fish">🐟 생선</option>
         <option value="milk">🥛 우유</option>
         <option value="chicken">🍗 닭고기</option>
@@ -632,6 +633,7 @@
     egg:        null,
     pork:       21.0,
     tofu:       8.0,
+    cheese:     null,
     fish:       20.0,
     milk:       3.4,
     chicken:    23.0,
@@ -642,18 +644,18 @@
   const FOOD_NAMES = {
     shake:'단백질 보충제', misugaru_p:'미숫가루', rice:'잡곡밥',
     bread_p:'식빵', extra_p:'기타',
-    egg:'계란', pork:'돼지고기', tofu:'두부', fish:'생선', milk:'우유',
+    egg:'계란', pork:'돼지고기', tofu:'두부', cheese:'치즈', fish:'생선', milk:'우유',
     chicken:'닭고기', beef:'소고기', tuna:'참치캔', sashimi:'회'
   };
   const FOOD_ICONS = {
     shake:'💪', misugaru_p:'🌾', rice:'🍚',
     bread_p:'🍞', extra_p:'➕',
-    egg:'🥚', pork:'🐷', tofu:'🫘', fish:'🐟', milk:'🥛',
+    egg:'🥚', pork:'🐷', tofu:'🫘', cheese:'🧀', fish:'🐟', milk:'🥛',
     chicken:'🍗', beef:'🥩', tuna:'🐟', sashimi:'🍣'
   };
   const PROTEIN_UNIT = {
     shake:'g', misugaru_p:'g', rice:'g', bread_p:'장', extra_p:'g',
-    egg:'개', pork:'g', tofu:'g', fish:'g', milk:'g',
+    egg:'개', pork:'g', tofu:'g', cheese:'장', fish:'g', milk:'g',
     chicken:'g', beef:'g', tuna:'g', sashimi:'g'
   };
   const EGG_PROTEIN_EACH = 6;
@@ -713,6 +715,7 @@
     if (key === 'shake')   return parseFloat((SHAKE_PROTEIN_G * val / SHAKE_POWDER_G).toFixed(1));
     if (key === 'egg')     return val * EGG_PROTEIN_EACH;
     if (key === 'bread_p') return parseFloat((BREAD_PROTEIN_PER_SLICE * val).toFixed(1));
+    if (key === 'cheese')  return parseFloat((4 * val).toFixed(1));
     if (key === 'extra_p') return parseFloat(val.toFixed(1));
     return parseFloat((PROTEIN_PER_100G[key] * val / 100).toFixed(1));
   }
@@ -742,6 +745,7 @@
       const key = document.getElementById('foodSelect').value;
       if (key === 'egg') { input.placeholder = '개'; input.max = 30; }
       else if (key === 'bread_p') { input.placeholder = '장'; input.max = 30; }
+      else if (key === 'cheese') { input.placeholder = '장'; input.max = 30; }
       else { input.placeholder = 'g'; input.max = 2000; }
     }
   }
@@ -898,6 +902,7 @@
     if (!val || val <= 0) {
       if (key === 'egg') { showToast('개수를 입력해주세요'); return; }
       if (key === 'bread_p') { showToast('장수를 입력해주세요'); return; }
+      if (key === 'cheese') { showToast('장수를 입력해주세요'); return; }
       showToast('그램수를 입력해주세요'); return;
     }
     const protein = calcProtein(key, val);
