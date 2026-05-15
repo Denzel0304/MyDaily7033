@@ -316,6 +316,7 @@ input { font-family: inherit; }
 }
 .badge.open { background: #e6f7ee; color: var(--success); }
 .badge.closed { background: #fdecec; color: var(--primary); }
+.badge.weekend { background: #eef3fd; color: #2563eb; }
 .time-str { color: var(--text-2); font-size: 12px; }
 .badge.warn { background: #fff5e0; color: #b3700d; }
 .card-actions {
@@ -1354,10 +1355,23 @@ const App = {
       return items.filter(it => it._24h || (it._closeMin !== null && it._closeMin >= 21*60));
     }
     if (filter === 'weekend') {
-      return items.filter(it => it._24h || it._saturdayOpen || it._sundayOpen);
+      // 서버 QT=6/7로 1차 필터됨. 클라이언트는 dutyTime 데이터 검증.
+      // 모든 dutyTime 필드가 응답에 아예 없는 경우만 "정보없음"으로 통과시킴
+      return items.filter(it => {
+        if (it._24h) return true;
+        if (it._saturdayOpen || it._sundayOpen) return true;
+        // 응답에 dutyTime 키 자체가 하나도 없으면 → 데이터 자체가 없는 것으로 보고 통과
+        const hasAnyTimeKey = Object.keys(it).some(k => /^dutyTime[1-8][sc]$/.test(k));
+        return !hasAnyTimeKey;
+      });
     }
     if (filter === 'sunday') {
-      return items.filter(it => it._24h || it._sundayOpen);
+      return items.filter(it => {
+        if (it._24h) return true;
+        if (it._sundayOpen) return true;
+        const hasAnyTimeKey = Object.keys(it).some(k => /^dutyTime[1-8][sc]$/.test(k));
+        return !hasAnyTimeKey;
+      });
     }
     return items;
   },
@@ -2170,10 +2184,39 @@ App.renderHospital = async function() {
     params.set('QN', searchInput);
   }
 
+  // QT(진료요일): 주말/일요일 필터일 때 서버단에서 한 번 거른다
+  // - sunday → QT=7 단일 호출
+  // - weekend → QT=6 + QT=7 두 번 호출 후 합집합 (중복 제거)
+  // - open/night/all → QT 미사용 (시각 기반이라 클라이언트 처리)
+  const timeFilter = this.state.hospitalTime;
+  const qtCalls = [];
+  if (timeFilter === 'sunday') {
+    qtCalls.push('7');
+  } else if (timeFilter === 'weekend') {
+    qtCalls.push('6', '7');
+  }
+
   let items = [];
   try {
-    const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
-    items = this.extractItems(data);
+    if (qtCalls.length === 0) {
+      // QT 미사용: 평소대로 1번 호출
+      const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
+      items = this.extractItems(data);
+    } else {
+      // QT 사용: 요일별로 호출해서 합집합
+      const seen = new Map(); // hpid 또는 dutyName+dutyAddr 기준 중복 제거
+      for (const qt of qtCalls) {
+        const p2 = new URLSearchParams(params);
+        p2.set('QT', qt);
+        const data = await this.apiCall(`${baseUrl}?${p2.toString()}`);
+        const arr = this.extractItems(data);
+        for (const it of arr) {
+          const key = it.hpid || `${it.dutyName}|${it.dutyAddr}`;
+          if (!seen.has(key)) seen.set(key, it);
+        }
+      }
+      items = Array.from(seen.values());
+    }
   } catch(e) {
     c.innerHTML = this._errorHtml(e.message);
     return;
@@ -2227,6 +2270,19 @@ App.renderHospital = async function() {
     else if (it._open === true) badge = '<span class="badge open">진료중</span>';
     else if (it._open === false) badge = '<span class="badge closed">진료종료</span>';
     // _open === null 이면 배지 없음 (정보없음)
+
+    // 요일 뱃지 (토/일 진료 여부)
+    let weekendBadges = '';
+    if (!it._24h) {
+      if (it._saturdayOpen && it._sundayOpen) {
+        weekendBadges = '<span class="badge weekend">토·일진료</span>';
+      } else if (it._saturdayOpen) {
+        weekendBadges = '<span class="badge weekend">토진료</span>';
+      } else if (it._sundayOpen) {
+        weekendBadges = '<span class="badge weekend">일진료</span>';
+      }
+    }
+
     const timeStr = it._todayTimeStr || '';
     return `<div class="card">
       <div class="card-row">
@@ -2239,6 +2295,7 @@ App.renderHospital = async function() {
       </div>
       <div class="card-meta">
         ${badge}
+        ${weekendBadges}
         ${timeStr ? `<span class="time-str">${this._escape(timeStr)}</span>` : ''}
       </div>
       <div class="card-actions">
