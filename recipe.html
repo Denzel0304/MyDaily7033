@@ -910,13 +910,24 @@ window.addEventListener('popstate', function() {
       confirmCallback(false);
       confirmCallback = null;
     }
+    // 모든 모달이 닫히면 메인 화면 스크롤 잠금 해제
+    if (modalStack.length === 0) {
+      document.body.style.overflow = '';
+    }
   }
 });
 
 function openModal(id) {
   modalStack.push(id);
   history.pushState({ modal: id, depth: modalStack.length }, '');
-  document.getElementById(id).classList.add('active');
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  // 모달 내부의 스크롤 영역을 항상 최상단으로 초기화
+  el.querySelectorAll('.sheet-body, .view-body').forEach(s => { s.scrollTop = 0; });
+  // 첫 모달이 열릴 때 메인 화면 스크롤 잠금
+  if (modalStack.length === 1) {
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 function closeModal(id) {
@@ -1444,9 +1455,6 @@ function openView(id) {
     <div class="view-stars">${starsHtml}</div>
   `;
   body.innerHTML = sectionsHtml || '<p style="color:var(--text-muted);font-size:0.88rem">내용이 없어요.</p>';
-
-  // 스크롤 위치를 항상 맨 위로 초기화 (이전 보기의 스크롤 잔상 방지)
-  body.scrollTop = 0;
 
   openModal('viewModal');
 }
