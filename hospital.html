@@ -218,6 +218,19 @@ input { font-family: inherit; }
 .dept-filter {
   padding: 0 16px 8px;
 }
+.dept-filter-row {
+  display: flex;
+  gap: 8px;
+}
+.dept-filter-row select {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .dept-filter-row {
+    flex-direction: column;
+  }
+}
 .dept-filter select {
   width: 100%;
   padding: 10px 12px;
@@ -689,7 +702,7 @@ input { font-family: inherit; }
         <input type="text" placeholder="병원명 검색" />
         <button class="clear">×</button>
       </div>
-      <div class="dept-filter">
+      <div class="dept-filter dept-filter-row">
         <select id="hospitalDept">
           <option value="">전체 진료과목</option>
           <option value="D001">내과</option>
@@ -722,13 +735,13 @@ input { font-family: inherit; }
           <option value="D028">한의과</option>
           <option value="D029">기타</option>
         </select>
-      </div>
-      <div class="chip-row" id="hospitalTimeChips">
-        <button class="chip active" data-time="all">전체</button>
-        <button class="chip" data-time="open">지금 운영중</button>
-        <button class="chip" data-time="night">야간진료(21시~)</button>
-        <button class="chip" data-time="weekend">주말진료</button>
-        <button class="chip" data-time="sunday">일요일 진료</button>
+        <select id="hospitalTime">
+          <option value="all">운영시간 전체</option>
+          <option value="open">지금 운영중</option>
+          <option value="night">야간진료(21시~)</option>
+          <option value="weekend">주말진료</option>
+          <option value="sunday">일요일 진료</option>
+        </select>
       </div>
       <div id="hospitalContent"></div>
     </section>
@@ -901,15 +914,14 @@ const App = {
         this.renderHospital();
       });
     }
-    // 병의원 운영시간 칩
-    document.querySelectorAll('#hospitalTimeChips .chip').forEach(c => {
-      c.addEventListener('click', () => {
-        document.querySelectorAll('#hospitalTimeChips .chip').forEach(x => x.classList.remove('active'));
-        c.classList.add('active');
-        this.state.hospitalTime = c.dataset.time;
+    // 병의원 운영시간 드롭다운
+    const timeSelect = document.getElementById('hospitalTime');
+    if (timeSelect) {
+      timeSelect.addEventListener('change', () => {
+        this.state.hospitalTime = timeSelect.value;
         this.renderHospital();
       });
-    });
+    }
   },
 
   // ============ 검색바 ============
