@@ -129,6 +129,15 @@
 
   .search-bar {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 6px;
+  }
+  .search-bar .search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
   }
   .search-bar input {
     width: 100%;
@@ -218,27 +227,26 @@
 
   /* card-preview removed – click directly opens view */
 
-  /* ── FAB ── */
+  /* ── FAB (검색바 우측 인라인 배치) ── */
   .fab {
-    position: fixed;
-    bottom: 24px;
-    right: 20px;
-    width: 58px;
-    height: 58px;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--sky-dark), var(--sky-deep));
     color: white;
-    font-size: 1.6rem;
+    font-size: 1.2rem;
     border: none;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(196,94,24,0.4);
+    box-shadow: 0 3px 10px rgba(196,94,24,0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.15s, box-shadow 0.15s;
-    z-index: 200;
+    line-height: 1;
+    padding: 0;
   }
-  .fab:hover { transform: scale(1.08); box-shadow: 0 8px 28px rgba(196,94,24,0.5); }
+  .fab:hover { transform: scale(1.08); box-shadow: 0 5px 16px rgba(196,94,24,0.45); }
 
   /* ── MODAL OVERLAY ── */
   .modal-overlay {
@@ -784,23 +792,22 @@
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
   <div class="search-bar">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="레시피 검색..." oninput="renderList()">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="레시피 검색..." oninput="renderList()">
+    </div>
+    <button class="fab" onclick="openEdit(null)" title="레시피 추가">＋</button>
   </div>
 </div>
 
 <!-- MAIN -->
 <div class="main-container">
-  <div class="sort-info">⭐ 별점 높은 순 정렬</div>
   <div class="recipe-list" id="recipeList"></div>
   <div class="empty-state" id="emptyState" style="display:none">
     <div class="emoji">🍽️</div>
     <p>아직 레시피가 없어요.<br>아래 + 버튼을 눌러 추가해보세요!</p>
   </div>
 </div>
-
-<!-- FAB -->
-<button class="fab" onclick="openEdit(null)" title="레시피 추가">＋</button>
 
 <!-- ═══════════ EDIT MODAL ═══════════ -->
 <div class="modal-overlay" id="editModal">
