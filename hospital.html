@@ -690,7 +690,7 @@ input { font-family: inherit; }
         <select id="pharmacyTime">
           <option value="open">지금 운영중</option>
           <option value="24h">24시간</option>
-          <option value="night22">야간(22시 이후)</option>
+          <option value="night22">야간</option>
           <option value="weekend">주말 운영</option>
           <option value="sunday">일요일 운영</option>
           <option value="all">전체</option>
@@ -1978,7 +1978,7 @@ App.renderPharmacy = async function() {
     serviceKey: API_KEYS.pharmacy,
     pageNo: '1',
     // 시간 필터 활성화 시 모집단 확대 (특히 weekend는 2회 호출 후 합집합이라 더 필요)
-    numOfRows: (filter && filter !== 'all' && filter !== 'open') ? '1000' : '300'
+    numOfRows: '1000'
   });
 
   // Q0(시도): 수동 위치면 그대로, GPS면 좌표로 추정해서 채움
@@ -2052,7 +2052,7 @@ App.renderPharmacy = async function() {
 
   if (items.length === 0) {
     const timeLabels = {
-      open:'지금 운영중인', '24h':'24시간', night22:'야간(22시 이후) 운영',
+      open:'지금 운영중인', '24h':'24시간', night22:'야간 운영',
       weekend:'주말 운영', sunday:'일요일 운영'
     };
     const timeLabel = timeLabels[filter] || '';
@@ -2175,7 +2175,7 @@ App.renderHospital = async function() {
     serviceKey: API_KEYS.hospital,
     pageNo: '1',
     // 진료과목/시간 필터 활성화 시 모집단 확대
-    numOfRows: (this.state.hospitalDept || (this.state.hospitalTime && this.state.hospitalTime !== 'all')) ? '1000' : '300'
+    numOfRows: '1000'
   });
   // Q0(시도): 수동 위치면 그대로, GPS면 좌표로 추정해서 채움
   let sidoForApi = null;
