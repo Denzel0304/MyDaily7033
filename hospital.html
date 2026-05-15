@@ -681,16 +681,18 @@ input { font-family: inherit; }
 
     <!-- 약국 탭 -->
     <section class="tab-panel" id="tab-pharmacy">
-      <div class="chip-row" id="pharmacyChips">
-        <button class="chip active" data-filter="open">지금 운영중</button>
-        <button class="chip" data-filter="24h">24시간</button>
-        <button class="chip" data-filter="night">야간(~22시)</button>
-        <button class="chip" data-filter="all">전체</button>
-      </div>
       <div class="searchbar" id="pharmacySearch">
         <span class="icon">🔍</span>
         <input type="text" placeholder="약국명 검색" />
         <button class="clear">×</button>
+      </div>
+      <div class="dept-filter">
+        <select id="pharmacyTime">
+          <option value="open">지금 운영중</option>
+          <option value="24h">24시간</option>
+          <option value="night">야간(~22시)</option>
+          <option value="all">전체</option>
+        </select>
       </div>
       <div id="pharmacyContent"></div>
     </section>
@@ -898,14 +900,14 @@ const App = {
 
   // ============ 칩 필터 ============
   initChips() {
-    document.querySelectorAll('#pharmacyChips .chip').forEach(c => {
-      c.addEventListener('click', () => {
-        document.querySelectorAll('#pharmacyChips .chip').forEach(x => x.classList.remove('active'));
-        c.classList.add('active');
-        this.state.pharmacyFilter = c.dataset.filter;
+    // 약국 운영시간 드롭다운
+    const pharmacyTimeSelect = document.getElementById('pharmacyTime');
+    if (pharmacyTimeSelect) {
+      pharmacyTimeSelect.addEventListener('change', () => {
+        this.state.pharmacyFilter = pharmacyTimeSelect.value;
         this.renderPharmacy();
       });
-    });
+    }
     // 병의원 진료과목 드롭다운
     const deptSelect = document.getElementById('hospitalDept');
     if (deptSelect) {
