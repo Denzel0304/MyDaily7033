@@ -316,6 +316,7 @@ input { font-family: inherit; }
 }
 .badge.open { background: #e6f7ee; color: var(--success); }
 .badge.closed { background: #fdecec; color: var(--primary); }
+.time-str { color: var(--text-2); font-size: 12px; }
 .badge.warn { background: #fff5e0; color: #b3700d; }
 .card-actions {
   margin-top: 10px;
@@ -721,6 +722,13 @@ input { font-family: inherit; }
           <option value="D029">기타</option>
         </select>
       </div>
+      <div class="chip-row" id="hospitalTimeChips">
+        <button class="chip active" data-time="all">전체</button>
+        <button class="chip" data-time="open">지금 운영중</button>
+        <button class="chip" data-time="night">야간진료(21시~)</button>
+        <button class="chip" data-time="weekend">주말진료</button>
+        <button class="chip" data-time="sunday">일요일 진료</button>
+      </div>
       <div id="hospitalContent"></div>
     </section>
 
@@ -788,6 +796,7 @@ const App = {
     activeEmerSub: 'er',
     pharmacyFilter: 'open',
     hospitalDept: '',      // 병의원 진료과목 코드 (D001~D029, 빈값=전체)
+    hospitalTime: 'all',   // 병의원 운영시간 필터 (all/open/night/weekend/sunday)
     location: null,        // {lat, lon, label, sido, sigungu}
     modalStack: [],        // 열린 모달 스택
     cache: {}              // API 캐시
@@ -891,6 +900,15 @@ const App = {
         this.renderHospital();
       });
     }
+    // 병의원 운영시간 칩
+    document.querySelectorAll('#hospitalTimeChips .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#hospitalTimeChips .chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        this.state.hospitalTime = c.dataset.time;
+        this.renderHospital();
+      });
+    });
   },
 
   // ============ 검색바 ============
@@ -1238,6 +1256,110 @@ const App = {
     }
     // 이름에 진료과목 키워드 자체가 없음 → 통과
     return true;
+  },
+
+  // ============ 운영시간 유틸 ============
+  // "0900" → 540 (분)
+  timeStrToMinutes(str) {
+    if (!str) return null;
+    const s = String(str).replace(/[^0-9]/g, '');
+    if (!s) return null;
+    if (s.length <= 2) {
+      const h = parseInt(s);
+      return isNaN(h) ? null : h * 60;
+    }
+    const m = parseInt(s.substring(s.length - 2));
+    const h = parseInt(s.substring(0, s.length - 2));
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 60 + m;
+  },
+  // "0900" → "09:00"
+  formatTimeStr(str) {
+    if (!str) return '';
+    const s = String(str).replace(/[^0-9]/g, '');
+    if (!s) return '';
+    if (s.length <= 2) return `${s.padStart(2,'0')}:00`;
+    const m = s.substring(s.length - 2);
+    const h = s.substring(0, s.length - 2).padStart(2, '0');
+    return `${h}:${m}`;
+  },
+  // 병원 객체에 운영시간 메타 정보 채우기
+  computeHospitalTimeMeta(it) {
+    const now = new Date();
+    const day = now.getDay();
+    const dayIdx = day === 0 ? 7 : day;
+
+    const startMin = this.timeStrToMinutes(it[`dutyTime${dayIdx}s`]);
+    const closeMin = this.timeStrToMinutes(it[`dutyTime${dayIdx}c`]);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    // 24시간 판정
+    let is24h = false;
+    const dutyInf = (it.dutyInf || '') + '';
+    if (/24\s*시간|24\s*시|연중\s*무휴/.test(dutyInf)) is24h = true;
+    if (!is24h) {
+      let allFull = true;
+      for (let d = 1; d <= 7; d++) {
+        const sM = this.timeStrToMinutes(it[`dutyTime${d}s`]);
+        const cM = this.timeStrToMinutes(it[`dutyTime${d}c`]);
+        if (sM === null || cM === null) { allFull = false; break; }
+        const isFull = (sM === 0 && (cM === 1440 || cM === 0)) || (sM === cM && sM !== null);
+        if (!isFull) { allFull = false; break; }
+      }
+      if (allFull) is24h = true;
+    }
+    if (!is24h && startMin === 0 && (closeMin === 1440 || closeMin === 0)) is24h = true;
+    it._24h = is24h;
+
+    // 영업중 판정
+    if (is24h) {
+      it._open = true;
+    } else if (startMin === null || closeMin === null) {
+      it._open = null;
+    } else if (closeMin > startMin) {
+      it._open = nowMin >= startMin && nowMin < closeMin;
+    } else if (closeMin < startMin) {
+      it._open = nowMin >= startMin || nowMin < closeMin;
+    } else {
+      it._open = false;
+    }
+    it._startMin = startMin;
+    it._closeMin = closeMin;
+
+    // 오늘 운영시간 문자열
+    if (is24h) {
+      it._todayTimeStr = '24시간';
+    } else if (startMin === null && closeMin === null) {
+      it._todayTimeStr = '운영시간 정보없음';
+    } else {
+      const s = this.formatTimeStr(it[`dutyTime${dayIdx}s`]);
+      const c = this.formatTimeStr(it[`dutyTime${dayIdx}c`]);
+      if (!s && !c) it._todayTimeStr = '오늘 휴진';
+      else it._todayTimeStr = `오늘 ${s||'?'}~${c||'?'}`;
+    }
+
+    // 요일별 운영 여부
+    it._saturdayOpen = this.timeStrToMinutes(it.dutyTime6s) !== null;
+    it._sundayOpen = this.timeStrToMinutes(it.dutyTime7s) !== null;
+
+    return it;
+  },
+  // 운영시간 필터
+  applyHospitalTimeFilter(items, filter) {
+    if (!filter || filter === 'all') return items;
+    if (filter === 'open') {
+      return items.filter(it => it._24h || it._open === true);
+    }
+    if (filter === 'night') {
+      return items.filter(it => it._24h || (it._closeMin !== null && it._closeMin >= 21*60));
+    }
+    if (filter === 'weekend') {
+      return items.filter(it => it._24h || it._saturdayOpen || it._sundayOpen);
+    }
+    if (filter === 'sunday') {
+      return items.filter(it => it._24h || it._sundayOpen);
+    }
+    return items;
   },
 
   formatDistance(km) {
@@ -2022,8 +2144,8 @@ App.renderHospital = async function() {
   const params = new URLSearchParams({
     serviceKey: API_KEYS.hospital,
     pageNo: '1',
-    // 진료과목 선택 시엔 이름 필터로 많이 걸러지므로 모집단을 크게
-    numOfRows: this.state.hospitalDept ? '1000' : '300'
+    // 진료과목/시간 필터 활성화 시 모집단 확대
+    numOfRows: (this.state.hospitalDept || (this.state.hospitalTime && this.state.hospitalTime !== 'all')) ? '1000' : '300'
   });
   // Q0(시도): 수동 위치면 그대로, GPS면 좌표로 추정해서 채움
   let sidoForApi = null;
@@ -2063,6 +2185,12 @@ App.renderHospital = async function() {
     items = items.filter(it => this.matchesDept(it.dutyName, this.state.hospitalDept));
   }
 
+  // 운영시간 메타 계산 (모든 아이템에 _open, _24h, _todayTimeStr 등 채움)
+  items.forEach(it => this.computeHospitalTimeMeta(it));
+
+  // 운영시간 필터 적용
+  items = this.applyHospitalTimeFilter(items, this.state.hospitalTime);
+
   if (loc.lat && loc.lon) {
     items.forEach(it => {
       it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
@@ -2075,8 +2203,14 @@ App.renderHospital = async function() {
     const deptName = this.state.hospitalDept
       ? document.querySelector(`#hospitalDept option[value="${this.state.hospitalDept}"]`)?.textContent || ''
       : '';
+    const timeLabels = { open:'지금 운영중인', night:'야간진료', weekend:'주말진료', sunday:'일요일 진료' };
+    const timeLabel = timeLabels[this.state.hospitalTime] || '';
     if (searchInput) {
       c.innerHTML = this._emptyHtml(`'${this._escape(searchInput)}' 검색 결과가 없습니다`);
+    } else if (timeLabel && deptName) {
+      c.innerHTML = this._emptyHtml(`해당 지역에 ${timeLabel} ${deptName} 정보가 없습니다`);
+    } else if (timeLabel) {
+      c.innerHTML = this._emptyHtml(`해당 지역에 ${timeLabel} 병원이 없습니다`);
     } else if (deptName) {
       c.innerHTML = this._emptyHtml(`해당 지역에 ${deptName} 정보가 없습니다`);
     } else {
@@ -2087,6 +2221,13 @@ App.renderHospital = async function() {
 
   c.innerHTML = '<div class="list-wrap">' + items.map(it => {
     const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
+    // 운영 상태 배지
+    let badge = '';
+    if (it._24h) badge = '<span class="badge open">24시간</span>';
+    else if (it._open === true) badge = '<span class="badge open">진료중</span>';
+    else if (it._open === false) badge = '<span class="badge closed">진료종료</span>';
+    // _open === null 이면 배지 없음 (정보없음)
+    const timeStr = it._todayTimeStr || '';
     return `<div class="card">
       <div class="card-row">
         <div class="card-name">${this._escape(it.dutyName || '')}</div>
@@ -2095,6 +2236,10 @@ App.renderHospital = async function() {
       <div class="card-meta">
         ${it.dutyDivNam ? `<span>${this._escape(it.dutyDivNam)}</span>` : ''}
         <span>${this._escape(it.dutyAddr || '')}</span>
+      </div>
+      <div class="card-meta">
+        ${badge}
+        ${timeStr ? `<span class="time-str">${this._escape(timeStr)}</span>` : ''}
       </div>
       <div class="card-actions">
         ${it.dutyTel1 ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${it.dutyTel1}')">📞 전화</button>` : ''}
