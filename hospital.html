@@ -214,6 +214,26 @@ input { font-family: inherit; }
   border-color: var(--text);
 }
 
+/* DEPT FILTER (병의원 진료과목 드롭다운) */
+.dept-filter {
+  padding: 0 16px 8px;
+}
+.dept-filter select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3e%3cpath fill='%23666' d='M6 8 0 0h12z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
 /* SEARCH BAR */
 .searchbar {
   margin: 12px 16px;
@@ -664,8 +684,42 @@ input { font-family: inherit; }
     <section class="tab-panel active" id="tab-hospital">
       <div class="searchbar" id="hospitalSearch">
         <span class="icon">🔍</span>
-        <input type="text" placeholder="병원명 또는 진료과 (예: 내과, 소아과)" />
+        <input type="text" placeholder="병원명 검색" />
         <button class="clear">×</button>
+      </div>
+      <div class="dept-filter">
+        <select id="hospitalDept">
+          <option value="">전체 진료과목</option>
+          <option value="D001">내과</option>
+          <option value="D002">신경과</option>
+          <option value="D003">정신건강의학과</option>
+          <option value="D004">외과</option>
+          <option value="D005">정형외과</option>
+          <option value="D006">신경외과</option>
+          <option value="D007">심장혈관흉부외과</option>
+          <option value="D008">성형외과</option>
+          <option value="D009">마취통증의학과</option>
+          <option value="D010">산부인과</option>
+          <option value="D011">소아청소년과</option>
+          <option value="D012">안과</option>
+          <option value="D013">이비인후과</option>
+          <option value="D014">피부과</option>
+          <option value="D015">비뇨의학과</option>
+          <option value="D016">영상의학과</option>
+          <option value="D017">방사선종양학과</option>
+          <option value="D018">병리과</option>
+          <option value="D019">진단검사의학과</option>
+          <option value="D020">결핵과</option>
+          <option value="D021">재활의학과</option>
+          <option value="D022">핵의학과</option>
+          <option value="D023">가정의학과</option>
+          <option value="D024">응급의학과</option>
+          <option value="D025">직업환경의학과</option>
+          <option value="D026">예방의학과</option>
+          <option value="D027">치과</option>
+          <option value="D028">한의과</option>
+          <option value="D029">기타</option>
+        </select>
       </div>
       <div id="hospitalContent"></div>
     </section>
@@ -733,6 +787,7 @@ const App = {
     activeTab: 'hospital',
     activeEmerSub: 'er',
     pharmacyFilter: 'open',
+    hospitalDept: '',      // 병의원 진료과목 코드 (D001~D029, 빈값=전체)
     location: null,        // {lat, lon, label, sido, sigungu}
     modalStack: [],        // 열린 모달 스택
     cache: {}              // API 캐시
@@ -828,6 +883,14 @@ const App = {
         this.renderPharmacy();
       });
     });
+    // 병의원 진료과목 드롭다운
+    const deptSelect = document.getElementById('hospitalDept');
+    if (deptSelect) {
+      deptSelect.addEventListener('change', () => {
+        this.state.hospitalDept = deptSelect.value;
+        this.renderHospital();
+      });
+    }
   },
 
   // ============ 검색바 ============
@@ -1065,6 +1128,37 @@ const App = {
     const dLon = (lon2-lon1) * Math.PI/180;
     const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  },
+
+  // 시도 대표 좌표 (역지오코딩용)
+  _SIDO_CENTERS: [
+    { name: '서울특별시', lat: 37.5665, lon: 126.9780 },
+    { name: '부산광역시', lat: 35.1796, lon: 129.0756 },
+    { name: '대구광역시', lat: 35.8714, lon: 128.6014 },
+    { name: '인천광역시', lat: 37.4563, lon: 126.7052 },
+    { name: '광주광역시', lat: 35.1595, lon: 126.8526 },
+    { name: '대전광역시', lat: 36.3504, lon: 127.3845 },
+    { name: '울산광역시', lat: 35.5384, lon: 129.3114 },
+    { name: '세종특별자치시', lat: 36.4800, lon: 127.2890 },
+    { name: '경기도', lat: 37.4138, lon: 127.5183 },
+    { name: '강원특별자치도', lat: 37.8228, lon: 128.1555 },
+    { name: '충청북도', lat: 36.6357, lon: 127.4914 },
+    { name: '충청남도', lat: 36.5184, lon: 126.8000 },
+    { name: '전북특별자치도', lat: 35.7167, lon: 127.1442 },
+    { name: '전라남도', lat: 34.8161, lon: 126.4629 },
+    { name: '경상북도', lat: 36.4919, lon: 128.8889 },
+    { name: '경상남도', lat: 35.4606, lon: 128.2132 },
+    { name: '제주특별자치도', lat: 33.4996, lon: 126.5312 }
+  ],
+  // GPS 좌표에서 가장 가까운 시도명 반환
+  guessSido(lat, lon) {
+    if (!lat || !lon) return null;
+    let best = null, bestDist = Infinity;
+    for (const s of this._SIDO_CENTERS) {
+      const d = this.distance(lat, lon, s.lat, s.lon);
+      if (d < bestDist) { bestDist = d; best = s.name; }
+    }
+    return best;
   },
 
   formatDistance(km) {
@@ -1851,9 +1945,25 @@ App.renderHospital = async function() {
     pageNo: '1',
     numOfRows: '300'
   });
+  // Q0(시도): 수동 위치면 그대로, GPS면 좌표로 추정해서 채움
+  let sidoForApi = null;
   if (loc.mode === 'manual' && loc.sido) {
-    params.set('Q0', loc.sido);
+    sidoForApi = loc.sido;
+  } else if (loc.lat && loc.lon) {
+    sidoForApi = this.guessSido(loc.lat, loc.lon);
   }
+  if (sidoForApi) {
+    params.set('Q0', sidoForApi);
+  }
+  // Q1(시군구): 수동 위치에 시군구가 있으면 적용
+  if (loc.mode === 'manual' && loc.sigungu) {
+    params.set('Q1', loc.sigungu);
+  }
+  // QD(진료과목): 드롭다운에서 선택된 코드
+  if (this.state.hospitalDept) {
+    params.set('QD', this.state.hospitalDept);
+  }
+  // QN(기관명): 검색어
   if (searchInput) {
     params.set('QN', searchInput);
   }
@@ -1876,8 +1986,13 @@ App.renderHospital = async function() {
   items = items.slice(0, 100);
 
   if (items.length === 0) {
+    const deptName = this.state.hospitalDept
+      ? document.querySelector(`#hospitalDept option[value="${this.state.hospitalDept}"]`)?.textContent || ''
+      : '';
     if (searchInput) {
       c.innerHTML = this._emptyHtml(`'${this._escape(searchInput)}' 검색 결과가 없습니다`);
+    } else if (deptName) {
+      c.innerHTML = this._emptyHtml(`해당 지역에 ${deptName} 정보가 없습니다`);
     } else {
       c.innerHTML = this._emptyHtml('해당 지역에 병원 정보가 없습니다');
     }
