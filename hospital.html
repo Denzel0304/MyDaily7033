@@ -690,7 +690,9 @@ input { font-family: inherit; }
         <select id="pharmacyTime">
           <option value="open">지금 운영중</option>
           <option value="24h">24시간</option>
-          <option value="night">야간(~22시)</option>
+          <option value="night22">야간(22시 이후)</option>
+          <option value="weekend">주말 운영</option>
+          <option value="sunday">일요일 운영</option>
           <option value="all">전체</option>
         </select>
       </div>
@@ -1365,8 +1367,16 @@ const App = {
     if (filter === 'open') {
       return items.filter(it => it._24h || it._open === true);
     }
+    if (filter === '24h') {
+      // 약국 전용: 24시간 운영만
+      return items.filter(it => it._24h);
+    }
     if (filter === 'night') {
       return items.filter(it => it._24h || (it._closeMin !== null && it._closeMin >= 21*60));
+    }
+    if (filter === 'night22') {
+      // 약국 전용: 22시 이후까지 운영
+      return items.filter(it => it._24h || (it._closeMin !== null && it._closeMin >= 22*60));
     }
     if (filter === 'weekend') {
       // 서버 QT=6/7로 1차 필터됨. 클라이언트는 dutyTime 데이터 검증.
@@ -1962,140 +1972,132 @@ App.renderPharmacy = async function() {
 
   const loc = this.state.location;
   const searchInput = document.querySelector('#pharmacySearch input').value.trim();
+  const filter = this.state.pharmacyFilter;
   const baseUrl = 'https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire';
   const params = new URLSearchParams({
     serviceKey: API_KEYS.pharmacy,
     pageNo: '1',
-    numOfRows: '300'
+    // 시간 필터 활성화 시 모집단 확대 (특히 weekend는 2회 호출 후 합집합이라 더 필요)
+    numOfRows: (filter && filter !== 'all' && filter !== 'open') ? '1000' : '300'
   });
+
+  // Q0(시도): 수동 위치면 그대로, GPS면 좌표로 추정해서 채움
+  let sidoForApi = null;
   if (loc.mode === 'manual' && loc.sido) {
-    params.set('Q0', loc.sido);
+    sidoForApi = loc.sido;
+  } else if (loc.lat && loc.lon) {
+    sidoForApi = this.guessSido(loc.lat, loc.lon);
   }
+  if (sidoForApi) {
+    params.set('Q0', sidoForApi);
+  }
+  // Q1(시군구): 수동 위치에 시군구가 있으면 적용
+  if (loc.mode === 'manual' && loc.sigungu) {
+    params.set('Q1', loc.sigungu);
+  }
+  // QN(기관명): 검색어
   if (searchInput) {
     params.set('QN', searchInput);
   }
 
+  // QT(진료요일): 주말/일요일 필터일 때 서버단에서 한 번 거른다
+  // - sunday → QT=7 단일 호출
+  // - weekend → QT=6 + QT=7 두 번 호출 후 합집합 (중복 제거)
+  // - open/24h/night/all → QT 미사용 (시각 기반이라 클라이언트 처리)
+  const qtCalls = [];
+  if (filter === 'sunday') {
+    qtCalls.push('7');
+  } else if (filter === 'weekend') {
+    qtCalls.push('6', '7');
+  }
+
   let items = [];
   try {
-    const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
-    items = this.extractItems(data);
+    if (qtCalls.length === 0) {
+      const data = await this.apiCall(`${baseUrl}?${params.toString()}`);
+      items = this.extractItems(data);
+    } else {
+      const seen = new Map();
+      for (const qt of qtCalls) {
+        const p2 = new URLSearchParams(params);
+        p2.set('QT', qt);
+        const data = await this.apiCall(`${baseUrl}?${p2.toString()}`);
+        const arr = this.extractItems(data);
+        for (const it of arr) {
+          const key = it.hpid || `${it.dutyName}|${it.dutyAddr}`;
+          if (!seen.has(key)) seen.set(key, it);
+        }
+      }
+      items = Array.from(seen.values());
+    }
   } catch(e) {
     c.innerHTML = this._errorHtml(e.message);
     return;
   }
 
-  // 거리 계산
+  // 운영시간 메타 계산 (공용 유틸 사용)
+  items.forEach(it => this.computeHospitalTimeMeta(it));
+
+  // 운영시간 필터 적용 (공용 유틸 사용)
+  items = this.applyHospitalTimeFilter(items, filter);
+
+  // 거리 계산 및 정렬
   if (loc.lat && loc.lon) {
     items.forEach(it => {
       it._dist = this.distance(loc.lat, loc.lon, parseFloat(it.wgs84Lat), parseFloat(it.wgs84Lon));
     });
     items.sort((a,b) => (a._dist||Infinity) - (b._dist||Infinity));
   }
+  items = items.slice(0, 100);
 
-  // 운영 상태 판정 (현재 시각 기준)
-  const now = new Date();
-  const day = now.getDay(); // 0=일, 1=월, ..., 6=토
-  // 공공데이터 정의: dutyTime1s/1c=월요일, ... 5s/5c=금요일, 6s/6c=토요일, 7s/7c=일요일, 8s/8c=공휴일
-  const dayIdx = day === 0 ? 7 : day; // 1~7
-  const todayStartKey = `dutyTime${dayIdx}s`;
-  const todayCloseKey = `dutyTime${dayIdx}c`;
-
-  // 시간 문자열 → 분 변환 (다양한 포맷 대응: "0900", "900", "2400", "2 4 00" 등)
-  const toMinutes = (str) => {
-    if (!str) return null;
-    const s = String(str).replace(/[^0-9]/g, '');
-    if (!s) return null;
-    if (s.length <= 2) {
-      // 시간만 있는 경우 (예: "9" → 9시 0분)
-      const h = parseInt(s);
-      return isNaN(h) ? null : h * 60;
-    }
-    // 뒷자리 2개를 분, 앞자리를 시간으로 처리
-    const m = parseInt(s.substring(s.length - 2));
-    const h = parseInt(s.substring(0, s.length - 2));
-    if (isNaN(h) || isNaN(m)) return null;
-    return h * 60 + m;
-  };
-
-  items.forEach(it => {
-    const startMin = toMinutes(it[todayStartKey]);
-    const closeMin = toMinutes(it[todayCloseKey]);
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-
-    // 24시간 판정 - 여러 신호를 종합
-    let is24h = false;
-    // 신호 1: dutyInf 필드에 "24시간" 또는 "24시" 표기
-    const dutyInf = (it.dutyInf || '') + '';
-    if (/24\s*시간|24\s*시|연중\s*무휴/.test(dutyInf)) {
-      is24h = true;
-    }
-    // 신호 2: 모든 요일이 0000~2400 (또는 시작=종료로 같은 시각)
-    if (!is24h) {
-      let allFull = true;
-      for (let d = 1; d <= 7; d++) {
-        const sM = toMinutes(it[`dutyTime${d}s`]);
-        const cM = toMinutes(it[`dutyTime${d}c`]);
-        if (sM === null || cM === null) { allFull = false; break; }
-        // 0~1440(=24시간) 또는 시작=종료(=24시간 의미)인 경우만 OK
-        const isFull = (sM === 0 && (cM === 1440 || cM === 0)) || (sM === cM && sM !== null);
-        if (!isFull) { allFull = false; break; }
-      }
-      if (allFull) is24h = true;
-    }
-    // 신호 3: 오늘 시간만으로도 0000~2400
-    if (!is24h && startMin === 0 && (closeMin === 1440 || closeMin === 0)) {
-      is24h = true;
-    }
-    it._24h = is24h;
-
-    // 현재 영업중 판정
-    if (is24h) {
-      it._open = true;
-    } else if (startMin === null || closeMin === null) {
-      it._open = null;
-    } else if (closeMin > startMin) {
-      it._open = nowMin >= startMin && nowMin < closeMin;
-    } else if (closeMin < startMin) {
-      // 자정 넘어가는 경우
-      it._open = nowMin >= startMin || nowMin < closeMin;
+  if (items.length === 0) {
+    const timeLabels = {
+      open:'지금 운영중인', '24h':'24시간', night22:'야간(22시 이후) 운영',
+      weekend:'주말 운영', sunday:'일요일 운영'
+    };
+    const timeLabel = timeLabels[filter] || '';
+    if (searchInput) {
+      c.innerHTML = this._emptyHtml(`'${this._escape(searchInput)}' 검색 결과가 없습니다`);
+    } else if (timeLabel) {
+      c.innerHTML = this._emptyHtml(`해당 지역에 ${timeLabel} 약국이 없습니다`);
     } else {
-      it._open = false;
+      c.innerHTML = this._emptyHtml('조건에 맞는 약국이 없습니다');
     }
-    it._closeMin = closeMin;
-    it._startMin = startMin;
-  });
-
-  // 필터 적용
-  const filter = this.state.pharmacyFilter;
-  let filtered = items;
-  if (filter === 'open') {
-    filtered = items.filter(it => it._open === true);
-  } else if (filter === '24h') {
-    filtered = items.filter(it => it._24h);
-  } else if (filter === 'night') {
-    // 야간 = 22시 이후까지 운영하거나 24시간
-    filtered = items.filter(it => it._24h || (it._closeMin !== null && it._closeMin >= 22*60));
-  }
-  filtered = filtered.slice(0, 100);
-
-  if (filtered.length === 0) {
-    c.innerHTML = this._emptyHtml('조건에 맞는 약국이 없습니다');
     return;
   }
 
-  c.innerHTML = '<div class="list-wrap">' + filtered.map(it => {
+  c.innerHTML = '<div class="list-wrap">' + items.map(it => {
     const dist = isFinite(it._dist) ? this.formatDistance(it._dist) : '';
-    const badges = [];
-    if (it._24h) badges.push('<span class="badge open">24시간</span>');
-    else if (it._open === true) badges.push('<span class="badge open">영업중</span>');
-    else if (it._open === false) badges.push('<span class="badge closed">영업종료</span>');
+    // 운영 상태 배지
+    let badge = '';
+    if (it._24h) badge = '<span class="badge open">24시간</span>';
+    else if (it._open === true) badge = '<span class="badge open">영업중</span>';
+    else if (it._open === false) badge = '<span class="badge closed">영업종료</span>';
+
+    // 요일 뱃지 (토/일 운영 여부)
+    let weekendBadges = '';
+    if (!it._24h) {
+      if (it._saturdayOpen && it._sundayOpen) {
+        weekendBadges = '<span class="badge weekend">토·일운영</span>';
+      } else if (it._saturdayOpen) {
+        weekendBadges = '<span class="badge weekend">토운영</span>';
+      } else if (it._sundayOpen) {
+        weekendBadges = '<span class="badge weekend">일운영</span>';
+      }
+    }
+
+    const timeStr = it._todayTimeStr || '';
     return `<div class="card">
       <div class="card-row">
         <div class="card-name">${this._escape(it.dutyName || '')}</div>
         ${dist ? `<div class="card-distance">${dist}</div>` : ''}
       </div>
       <div class="card-meta"><span>${this._escape(it.dutyAddr || '')}</span></div>
-      ${badges.length ? `<div class="card-badges">${badges.join('')}</div>` : ''}
+      <div class="card-meta">
+        ${badge}
+        ${weekendBadges}
+        ${timeStr ? `<span class="time-str">${this._escape(timeStr)}</span>` : ''}
+      </div>
       <div class="card-actions">
         ${it.dutyTel1 ? `<button class="card-action-btn call" onclick="event.stopPropagation();App.call('${it.dutyTel1}')">📞 전화</button>` : ''}
         <button class="card-action-btn map" onclick="event.stopPropagation();App.openMap('${this._escape(it.dutyName)}', '${it.wgs84Lat||''}', '${it.wgs84Lon||''}')">🗺️ 길찾기</button>
@@ -2106,7 +2108,7 @@ App.renderPharmacy = async function() {
   c.querySelectorAll('.card').forEach((el, i) => {
     el.addEventListener('click', (e) => {
       if (e.target.closest('.card-action-btn')) return;
-      this._openPharmacyDetail(filtered[i]);
+      this._openPharmacyDetail(items[i]);
     });
   });
 };
