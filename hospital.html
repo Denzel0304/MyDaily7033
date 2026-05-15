@@ -1198,17 +1198,46 @@ const App = {
   _DEPT_EXCLUDE: {
     'D004': ['정형외과','신경외과','흉부외과','성형외과','심장혈관흉부외과']
   },
-  // dutyName이 특정 진료과목 코드에 매칭되는지 검사
+  // dutyName이 특정 진료과목 코드에 매칭되는지 검사 (절충 로직)
+  // - 간판에 선택한 과목 키워드 있음 → 통과
+  // - 간판에 다른 과목 키워드 있음 → 제외
+  // - 간판에 아무 과목 키워드도 없음 (예: 'OO의원', 'OO병원') → 통과 (서버 QD 신뢰)
   matchesDept(dutyName, deptCode) {
     if (!deptCode) return true;
     if (!dutyName) return false;
-    const keywords = this._DEPT_KEYWORDS[deptCode];
-    if (!keywords) return true;
-    const excludes = this._DEPT_EXCLUDE[deptCode] || [];
-    for (const ex of excludes) {
+    const targetKeywords = this._DEPT_KEYWORDS[deptCode];
+    if (!targetKeywords) return true;
+    const targetExcludes = this._DEPT_EXCLUDE[deptCode] || [];
+
+    // 1) 선택한 과목과 충돌하는 다른 과목 키워드가 있는지 (제외 패턴)
+    //    예: 외과(D004) 선택 시 '정형외과/성형외과' 등이 이름에 있으면 제외
+    for (const ex of targetExcludes) {
       if (dutyName.includes(ex)) return false;
     }
-    return keywords.some(k => dutyName.includes(k));
+
+    // 2) 선택한 과목 키워드가 이름에 직접 포함되면 통과
+    if (targetKeywords.some(k => dutyName.includes(k))) return true;
+
+    // 3) 이름에 "다른 과목" 키워드가 들어있는지 검사
+    //    있으면 그 병원은 그 과목 전문이므로 제외
+    //    없으면 (예: 'OO의원') 서버 QD 결과를 신뢰하여 통과
+    for (const [code, keywords] of Object.entries(this._DEPT_KEYWORDS)) {
+      if (code === deptCode) continue;
+      // 'D004:외과'처럼 부분문자열로 충돌하는 키워드는 스킵
+      // (예: '정형외과'는 '외과'를 포함하지만 이미 1번에서 처리됨)
+      for (const k of keywords) {
+        if (dutyName.includes(k)) {
+          // 단, '외과' 같은 짧은 단어가 '정형외과' 등에 포함되는 케이스 방지
+          // → keywords 중 dutyName에 들어간 게 D004('외과')처럼 너무 광범위한 경우 무시
+          const isSubstring = Object.values(this._DEPT_KEYWORDS)
+            .flat()
+            .some(other => other !== k && other.includes(k) && dutyName.includes(other));
+          if (!isSubstring) return false;
+        }
+      }
+    }
+    // 이름에 진료과목 키워드 자체가 없음 → 통과
+    return true;
   },
 
   formatDistance(km) {
