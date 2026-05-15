@@ -1161,6 +1161,56 @@ const App = {
     return best;
   },
 
+  // 진료과목 코드별 dutyName 매칭 키워드
+  // (간판명에 이 키워드 중 하나라도 포함되면 통과)
+  _DEPT_KEYWORDS: {
+    'D001': ['내과'],
+    'D002': ['신경과'],
+    'D003': ['정신건강의학과', '정신과'],
+    'D004': ['외과'],   // 주의: '정형외과', '신경외과' 등도 매칭됨 → 아래 _matchesDept에서 처리
+    'D005': ['정형외과'],
+    'D006': ['신경외과'],
+    'D007': ['심장혈관흉부외과', '흉부외과'],
+    'D008': ['성형외과'],
+    'D009': ['마취통증의학과', '통증의학과', '마취과'],
+    'D010': ['산부인과', '산과', '부인과'],
+    'D011': ['소아청소년과', '소아과'],
+    'D012': ['안과'],
+    'D013': ['이비인후과'],
+    'D014': ['피부과'],
+    'D015': ['비뇨의학과', '비뇨기과'],
+    'D016': ['영상의학과', '진단방사선과'],
+    'D017': ['방사선종양학과'],
+    'D018': ['병리과'],
+    'D019': ['진단검사의학과', '임상병리과'],
+    'D020': ['결핵과'],
+    'D021': ['재활의학과'],
+    'D022': ['핵의학과'],
+    'D023': ['가정의학과'],
+    'D024': ['응급의학과'],
+    'D025': ['직업환경의학과', '산업의학과'],
+    'D026': ['예방의학과'],
+    'D027': ['치과'],
+    'D028': ['한의', '한방'],
+    'D029': ['기타']
+  },
+  // 일반외과(D004)는 다른 '○○외과'와 헷갈리므로 제외 패턴 운영
+  _DEPT_EXCLUDE: {
+    'D004': ['정형외과','신경외과','흉부외과','성형외과','심장혈관흉부외과']
+  },
+  // dutyName이 특정 진료과목 코드에 매칭되는지 검사
+  matchesDept(dutyName, deptCode) {
+    if (!deptCode) return true;
+    if (!dutyName) return false;
+    const keywords = this._DEPT_KEYWORDS[deptCode];
+    if (!keywords) return true;
+    const excludes = this._DEPT_EXCLUDE[deptCode] || [];
+    for (const ex of excludes) {
+      if (dutyName.includes(ex)) return false;
+    }
+    return keywords.some(k => dutyName.includes(k));
+  },
+
   formatDistance(km) {
     if (!isFinite(km)) return '';
     if (km < 1) return `${Math.round(km*1000)}m`;
@@ -1943,7 +1993,8 @@ App.renderHospital = async function() {
   const params = new URLSearchParams({
     serviceKey: API_KEYS.hospital,
     pageNo: '1',
-    numOfRows: '300'
+    // 진료과목 선택 시엔 이름 필터로 많이 걸러지므로 모집단을 크게
+    numOfRows: this.state.hospitalDept ? '1000' : '300'
   });
   // Q0(시도): 수동 위치면 그대로, GPS면 좌표로 추정해서 채움
   let sidoForApi = null;
@@ -1975,6 +2026,12 @@ App.renderHospital = async function() {
   } catch(e) {
     c.innerHTML = this._errorHtml(e.message);
     return;
+  }
+
+  // 진료과목 클라이언트 필터 (간판명 기준)
+  // API의 QD가 부정확할 수 있어 이름으로 한 번 더 거른다
+  if (this.state.hospitalDept) {
+    items = items.filter(it => this.matchesDept(it.dutyName, this.state.hospitalDept));
   }
 
   if (loc.lat && loc.lon) {
