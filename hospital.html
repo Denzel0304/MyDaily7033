@@ -73,22 +73,22 @@ input { font-family: inherit; }
   z-index: 10;
   position: relative;
 }
-.app-header .header-ico {
-  font-size: 22px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  margin-right: 8px;
-}
 .app-header .title {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, calc(-50% + var(--safe-top) / 2));
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
   pointer-events: none;
+}
+.app-header .title .header-ico {
+  font-size: 20px;
+  line-height: 1;
 }
 .app-header .location-btn {
   margin-left: auto;
@@ -616,8 +616,10 @@ input { font-family: inherit; }
 <div id="app">
   <!-- 헤더 -->
   <header class="app-header">
-    <span class="header-ico" aria-hidden="true">🏥</span>
-    <div class="title">의료 정보</div>
+    <div class="title">
+      <span class="header-ico" aria-hidden="true">🏥</span>
+      <span>의료 정보</span>
+    </div>
     <button class="location-btn" id="locationBtn" onclick="App.openLocationSheet()">
       <span class="dot"></span>
       <span id="locationLabel">위치 설정</span>
