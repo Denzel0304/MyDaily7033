@@ -799,6 +799,167 @@
   .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
   .empty-state p { font-size: 0.9rem; line-height: 1.7; }
 
+  /* ── BP (혈압) TAB ── */
+  .bp-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .bp-input-card,
+  .bp-chart-card,
+  .bp-list-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .bp-chart-card { display: none; }
+  .bp-chart-card.open { display: block; }
+  .bp-form-row {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .bp-field { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .bp-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+  .bp-input {
+    padding: 10px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+    background: rgba(255,255,255,0.7);
+    height: 44px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  .bp-input:focus { border-color: var(--sky-deep); }
+  .bp-save-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--sky-deep) 0%, var(--sky-dark) 100%);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    margin-top: 4px;
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 4px 16px rgba(58,139,191,0.35);
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .bp-save-btn:hover { opacity: 0.92; }
+  .bp-save-btn:active { transform: scale(0.98); }
+
+  .bp-graph-toggle-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .bp-graph-toggle-btn:hover { background: var(--sky-light); }
+
+  .bp-chart-legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .bp-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+  .bp-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .bp-chart-svg-wrap { width: 100%; overflow: hidden; }
+
+  .bp-record {
+    display: flex;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(184,216,236,0.5);
+    gap: 8px;
+  }
+  .bp-record:last-child { border-bottom: none; }
+  .bp-record-date {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sky-deep);
+    white-space: nowrap;
+    min-width: 60px;
+  }
+  .bp-record-vals {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+  }
+  .bp-val-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 44px;
+  }
+  .bp-val-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .bp-val-num {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .bp-del-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(184,216,236,0.4);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .bp-del-btn:hover {
+    background: var(--accent-light);
+    color: var(--danger);
+  }
+
   /* ── BOTTOM TAB BAR ── */
   .tab-bar {
     position: fixed;
@@ -1524,6 +1685,55 @@
   </div>
 </div>
 
+<!-- MAIN: 혈압 탭 -->
+<div class="main-container" id="bpView" style="display:none">
+
+  <div class="bp-chart-card open" id="bpChartCard">
+    <div class="bp-section-title">📊 혈압 추이 (최근 12개월)</div>
+    <div class="bp-chart-legend">
+      <div class="bp-legend-item"><div class="bp-legend-dot" style="background:#3a8bbf"></div>수축기</div>
+      <div class="bp-legend-item"><div class="bp-legend-dot" style="background:#e8732a"></div>이완기</div>
+      <div class="bp-legend-item"><div class="bp-legend-dot" style="background:#4caf7d"></div>맥박</div>
+    </div>
+    <div class="bp-chart-svg-wrap" id="bpChartWrap"></div>
+  </div>
+
+  <button class="bp-graph-toggle-btn" id="bpGraphToggleBtn" onclick="toggleBpGraph()">
+    <span>📈</span><span id="bpGraphToggleLabel">그래프 닫기</span>
+  </button>
+
+  <div class="bp-list-card">
+    <div class="bp-section-title">🗓 최근 기록</div>
+    <div id="bpList"></div>
+  </div>
+
+  <div class="bp-input-card">
+    <div class="bp-section-title">📋 혈압 입력</div>
+    <div class="bp-form-row">
+      <div class="bp-field">
+        <div class="bp-label">날짜</div>
+        <input class="bp-input" type="date" id="bpDate" />
+      </div>
+      <div class="bp-field">
+        <div class="bp-label">맥박 (bpm)</div>
+        <input class="bp-input" type="number" id="bpPulse" placeholder="0" step="1" inputmode="numeric" />
+      </div>
+    </div>
+    <div class="bp-form-row">
+      <div class="bp-field">
+        <div class="bp-label">수축기 (mmHg)</div>
+        <input class="bp-input" type="number" id="bpSystolic" placeholder="0" step="1" inputmode="numeric" />
+      </div>
+      <div class="bp-field">
+        <div class="bp-label">이완기 (mmHg)</div>
+        <input class="bp-input" type="number" id="bpDiastolic" placeholder="0" step="1" inputmode="numeric" />
+      </div>
+    </div>
+    <button class="bp-save-btn" onclick="saveBp()">저장하기</button>
+  </div>
+
+</div>
+
 <!-- FAB -->
 <button class="fab" id="fabBtn" onclick="onFabClick()" title="추가">＋</button>
 
@@ -1536,6 +1746,10 @@
   <button class="tab-btn" id="tabTake" onclick="switchTab('take')">
     <span class="tab-icon">⏰</span>
     <span>복약</span>
+  </button>
+  <button class="tab-btn" id="tabBp" onclick="switchTab('bp')">
+    <span class="tab-icon">🩺</span>
+    <span>혈압</span>
   </button>
 </nav>
 
@@ -1690,15 +1904,25 @@ function switchTab(tab) {
   currentTab = tab;
   document.getElementById('tabDose').classList.toggle('active', tab === 'dose');
   document.getElementById('tabTake').classList.toggle('active', tab === 'take');
+  document.getElementById('tabBp').classList.toggle('active', tab === 'bp');
   document.getElementById('doseView').style.display = tab === 'dose' ? 'block' : 'none';
   document.getElementById('takeView').style.display = tab === 'take' ? 'block' : 'none';
+  document.getElementById('bpView').style.display = tab === 'bp' ? 'block' : 'none';
+  // 혈압 탭에서는 입력 카드가 항상 보이므로 FAB 숨김
+  document.getElementById('fabBtn').style.display = tab === 'bp' ? 'none' : 'flex';
   if (tab === 'dose') {
     renderList();
-  } else {
+  } else if (tab === 'take') {
     // 복약 탭 진입 시: 모든 날짜 그룹을 접고, 스크롤 최상단
     takeDayCollapsed = {};
     takeBundles.forEach(b => { takeDayCollapsed[b.day] = true; });
     renderTakes();
+  } else if (tab === 'bp') {
+    // 혈압 탭 진입 시: 날짜 input 기본값 채우고 렌더
+    const bpDateEl = document.getElementById('bpDate');
+    if (!bpDateEl.value) bpDateEl.value = todayStr();
+    renderBpList();
+    if (bpGraphOpen) renderBpChart();
   }
   // 스크롤 최상단 (탭 전환 시 항상)
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'auto' });
@@ -1748,7 +1972,7 @@ document.addEventListener('click', (e) => {
 //  EXPORT / IMPORT
 // ══════════════════════════════════════════════
 function exportData() {
-  const data = { __signature__: FILE_SIGNATURE, doses, takeBundles };
+  const data = { __signature__: FILE_SIGNATURE, doses, takeBundles, bpRecords };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1768,21 +1992,32 @@ function importData(e) {
       }
       const existingDoseIds = new Set(doses.map(d => d.id));
       const existingTakeIds = new Set(takeBundles.map(b => b.id));
+      const existingBpDates = new Set(bpRecords.map(r => r.date));
 
       const addedDoses = (data.doses || []).filter(d => !existingDoseIds.has(d.id));
       const addedTakes = (data.takeBundles || []).filter(b => !existingTakeIds.has(b.id));
+      const addedBps   = (data.bpRecords || []).filter(r => !existingBpDates.has(r.date));
       const skippedDoses = (data.doses || []).length - addedDoses.length;
       const skippedTakes = (data.takeBundles || []).length - addedTakes.length;
+      const skippedBps   = (data.bpRecords || []).length - addedBps.length;
 
       doses = [...doses, ...addedDoses];
       takeBundles = [...takeBundles, ...addedTakes];
+      // 혈압: 날짜 기준 병합 후 정렬, 최대 12건 유지
+      let mergedBp = [...bpRecords, ...addedBps];
+      mergedBp.sort((a, b) => b.date.localeCompare(a.date));
+      if (mergedBp.length > 12) mergedBp = mergedBp.slice(0, 12);
+      bpRecords = mergedBp;
+      saveBpLS(bpRecords);
       saveToStorage();
-      if (currentTab === 'dose') renderList(); else renderTakes();
+      if (currentTab === 'dose') renderList();
+      else if (currentTab === 'take') renderTakes();
+      else if (currentTab === 'bp') { renderBpList(); if (bpGraphOpen) renderBpChart(); }
 
-      const skipMsg = (skippedDoses + skippedTakes) > 0
-        ? `\n중복 스킵: 투약 ${skippedDoses}건, 복약 ${skippedTakes}건`
+      const skipMsg = (skippedDoses + skippedTakes + skippedBps) > 0
+        ? `\n중복 스킵: 투약 ${skippedDoses}건, 복약 ${skippedTakes}건, 혈압 ${skippedBps}건`
         : '';
-      showAlert('가져오기 완료', `추가됨: 투약 ${addedDoses.length}건, 복약 ${addedTakes.length}건${skipMsg}`, 'success');
+      showAlert('가져오기 완료', `추가됨: 투약 ${addedDoses.length}건, 복약 ${addedTakes.length}건, 혈압 ${addedBps.length}건${skipMsg}`, 'success');
     } catch {
       showAlert('형식 오류', '파일을 읽을 수 없어요. 손상된 파일이거나 형식이 맞지 않아요.');
     }
@@ -3126,9 +3361,179 @@ document.getElementById('alertModal').addEventListener('click', function(e) {
   if (e.target === this) closeAlert();
 });
 
+// ══════════════════════════════════════════════
+//  BP (혈압) DATA & LOGIC
+// ══════════════════════════════════════════════
+const LS_BP = 'health_bp_v1';
+let bpRecords = [];
+let bpGraphOpen = true;
+
+function loadBpLS() {
+  try {
+    const raw = localStorage.getItem(LS_BP);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+function saveBpLS(arr) {
+  localStorage.setItem(LS_BP, JSON.stringify(arr));
+}
+function loadBpData() {
+  let arr = loadBpLS();
+  arr.sort((a, b) => b.date.localeCompare(a.date));
+  if (arr.length > 12) { arr = arr.slice(0, 12); saveBpLS(arr); }
+  bpRecords = arr;
+}
+
+function saveBp() {
+  const date      = document.getElementById('bpDate').value;
+  const systolic  = parseInt(document.getElementById('bpSystolic').value, 10);
+  const diastolic = parseInt(document.getElementById('bpDiastolic').value, 10);
+  const pulse     = parseInt(document.getElementById('bpPulse').value, 10);
+  if (!date)            { showAlert('입력 오류', '날짜를 입력하세요.');     return; }
+  if (isNaN(systolic))  { showAlert('입력 오류', '수축기 혈압을 입력하세요.'); return; }
+  if (isNaN(diastolic)) { showAlert('입력 오류', '이완기 혈압을 입력하세요.'); return; }
+  if (isNaN(pulse))     { showAlert('입력 오류', '맥박을 입력하세요.');       return; }
+  let arr = loadBpLS();
+  arr = arr.filter(r => r.date !== date);
+  arr.push({ date, systolic, diastolic, pulse, savedAt: new Date().toISOString() });
+  arr.sort((a, b) => b.date.localeCompare(a.date));
+  if (arr.length > 12) arr = arr.slice(0, 12);
+  saveBpLS(arr);
+  bpRecords = arr;
+  document.getElementById('bpSystolic').value  = '';
+  document.getElementById('bpDiastolic').value = '';
+  document.getElementById('bpPulse').value     = '';
+  document.getElementById('bpDate').value      = todayStr();
+  renderBpList();
+  if (bpGraphOpen) renderBpChart();
+  showAlert('저장 완료', '혈압 기록이 저장되었어요.', 'success');
+}
+
+function deleteBp(idx) {
+  const target = bpRecords[idx];
+  if (!target) return;
+  document.getElementById('confirmTitle').textContent = '혈압 기록 삭제';
+  document.getElementById('confirmMsg').textContent = `${fmtDate(target.date)} 기록을 삭제할까요?\n삭제 후 복구할 수 없어요.`;
+  openModal('confirmModal');
+  confirmCallback = (yes) => {
+    if (yes) {
+      let arr = loadBpLS();
+      arr = arr.filter(r => r.date !== target.date);
+      saveBpLS(arr);
+      loadBpData();
+      renderBpList();
+      if (bpGraphOpen) renderBpChart();
+    }
+  };
+}
+
+function renderBpList() {
+  const container = document.getElementById('bpList');
+  if (bpRecords.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:20px">아직 기록이 없어요</div>';
+    return;
+  }
+  container.innerHTML = bpRecords.map((rec, idx) => {
+    const d = new Date(rec.date + 'T00:00:00');
+    const label = `${d.getMonth()+1}/${d.getDate()}`;
+    return `<div class="bp-record">
+      <div class="bp-record-date">${label}</div>
+      <div class="bp-record-vals">
+        <div class="bp-val-group"><div class="bp-val-label">수축기</div><div class="bp-val-num" style="color:#3a8bbf">${rec.systolic ?? '-'}</div></div>
+        <div class="bp-val-group"><div class="bp-val-label">이완기</div><div class="bp-val-num" style="color:#e8732a">${rec.diastolic ?? '-'}</div></div>
+        <div class="bp-val-group"><div class="bp-val-label">맥박</div><div class="bp-val-num" style="color:#4caf7d">${rec.pulse ?? '-'}</div></div>
+      </div>
+      <button class="bp-del-btn" onclick="deleteBp(${idx})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleBpGraph() {
+  bpGraphOpen = !bpGraphOpen;
+  const card  = document.getElementById('bpChartCard');
+  const label = document.getElementById('bpGraphToggleLabel');
+  card.classList.toggle('open', bpGraphOpen);
+  label.textContent = bpGraphOpen ? '그래프 닫기' : '추이 그래프 보기';
+  if (bpGraphOpen) renderBpChart();
+}
+
+function renderBpChart() {
+  const wrap = document.getElementById('bpChartWrap');
+  const W = wrap.clientWidth || 320;
+  const ROW_H   = 56;
+  const PAD_X   = { left: 46, right: 14 };
+  const ROW_PAD = { top: 10, bottom: 10 };
+  const DATE_H  = 22;
+  const TOTAL_H = ROW_H * 3 + DATE_H;
+  const chartW  = W - PAD_X.left - PAD_X.right;
+  const rowInnerH = ROW_H - ROW_PAD.top - ROW_PAD.bottom;
+
+  const data = [...bpRecords].reverse();
+  if (data.length < 1) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px;font-size:0.85rem">기록이 없어요</div>';
+    return;
+  }
+
+  const metrics = [
+    { key: 'systolic',  label: '수축기', color: '#3a8bbf' },
+    { key: 'diastolic', label: '이완기', color: '#e8732a' },
+    { key: 'pulse',     label: '맥박',   color: '#4caf7d' },
+  ];
+
+  const xPos = (i) => PAD_X.left + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
+
+  let svg = '';
+
+  metrics.forEach((m, ri) => {
+    const rowY  = ri * ROW_H;
+    const innerTop = rowY + ROW_PAD.top;
+
+    if (ri > 0) svg += `<line x1="0" y1="${rowY}" x2="${W}" y2="${rowY}" stroke="rgba(184,216,236,0.5)" stroke-width="1"/>`;
+
+    svg += `<text x="${(PAD_X.left - 4) / 2}" y="${rowY + ROW_H / 2 + 4}" text-anchor="middle" font-size="10" font-weight="bold" fill="${m.color}">${m.label}</text>`;
+
+    const vals = data.map(r => r[m.key]).filter(v => v != null);
+    if (vals.length === 0) return;
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const spread = mx - mn;
+    // 혈압/맥박은 정수 단위이므로 최소 패딩을 좀 더 크게
+    const pad = spread < 5 ? 8 : Math.max(spread * 0.6, 3);
+    const rMin = mn - pad, rMax = mx + pad;
+    const yPos = (v) => innerTop + rowInnerH - ((v - rMin) / (rMax - rMin)) * rowInnerH;
+
+    const pts = data.map((r, i) => r[m.key] != null ? { x: xPos(i), y: yPos(r[m.key]), v: r[m.key] } : null);
+    const valid = pts.filter(Boolean);
+
+    if (valid.length >= 2) {
+      let d = `M ${valid[0].x} ${valid[0].y}`;
+      for (let i = 1; i < valid.length; i++) d += ` L ${valid[i].x} ${valid[i].y}`;
+      svg += `<path d="${d}" stroke="${m.color}" stroke-width="2.2" fill="none" stroke-linejoin="round"/>`;
+    }
+
+    pts.filter(Boolean).forEach((p, i, arr) => {
+      svg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${m.color}" stroke="white" stroke-width="1.2"/>`;
+      const showLabel = arr.length <= 6 || i === 0 || i === arr.length - 1;
+      if (showLabel) {
+        const anchor = i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle';
+        const labelY = (p.y - innerTop < 14) ? p.y + 13 : p.y - 5;
+        svg += `<text x="${p.x}" y="${labelY}" text-anchor="${anchor}" font-size="9" font-weight="bold" fill="${m.color}">${p.v}</text>`;
+      }
+    });
+  });
+
+  data.forEach((r, i) => {
+    const d = new Date(r.date + 'T00:00:00');
+    svg += `<text x="${xPos(i)}" y="${ROW_H * 3 + DATE_H - 4}" text-anchor="middle" font-size="9" fill="var(--text-muted)">${d.getMonth()+1}/${d.getDate()}</text>`;
+  });
+
+  wrap.innerHTML = `<svg width="${W}" height="${TOTAL_H}" viewBox="0 0 ${W} ${TOTAL_H}" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`;
+}
+
 // ── INIT ──
 // 복약 탭의 모든 날짜 그룹은 초기에 접힌 상태로 시작
 takeBundles.forEach(b => { takeDayCollapsed[b.day] = true; });
+loadBpData();
 renderList();
 renderTakes();
 </script>
