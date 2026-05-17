@@ -1305,7 +1305,7 @@ function addSection(type) {
     id: newId(),
     type,
     title: '',
-    rows: type === 'sauce' ? [{ id: newId(), name: '간장', amount: '', unit: '큰술' }] : undefined,
+    rows: type === 'sauce' ? [{ id: newId(), name: '', amount: '', unit: '큰술' }] : undefined,
     content: type === 'memo' ? '' : undefined,
   });
   renderSections();
