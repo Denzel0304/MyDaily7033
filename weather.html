@@ -83,46 +83,7 @@
   .loc-btn .pin { font-size: 14px; }
   .loc-btn .arrow { font-size: 11px; opacity: 0.6; margin-left: 2px; }
 
-  /* 가운데 브랜드 */
-  .brand {
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    pointer-events: none;
-    user-select: none;
-    overflow: hidden;
-  }
-  .brand-emoji {
-    font-size: 18px;
-    line-height: 1;
-    display: inline-block;
-    animation: brandFloat 4s ease-in-out infinite;
-    filter: drop-shadow(0 1px 3px rgba(255, 200, 100, 0.4));
-  }
-  @keyframes brandFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-2px) rotate(-3deg); }
-  }
-  .brand-text {
-    font-family: 'Gowun Dodum', 'Pretendard', sans-serif;
-    font-size: 15px;
-    font-weight: 400;
-    color: #2C3E50;
-    letter-spacing: 0.3px;
-    background: linear-gradient(135deg, #2C3E50 0%, #4A6B8C 50%, #6FA8DC 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  /* 아주 좁은 화면(320px 이하)에선 텍스트 숨기고 이모지만 */
-  @media (max-width: 320px) {
-    .brand-text { display: none; }
-  }
+
 
   .header-right {
     display: flex;
@@ -131,6 +92,23 @@
     font-size: 13px;
     color: #7E8B96;
     justify-self: end;
+  }
+  .header-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+  .header-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2C3E50;
+    line-height: 1.2;
+  }
+  #updTime {
+    font-size: 11px;
+    color: #A0AEB8;
+    line-height: 1.2;
   }
   .icon-btn {
     width: 36px; height: 36px;
@@ -658,7 +636,10 @@
       <span class="arrow">▼</span>
     </button>
     <div class="header-right">
-      <span id="updTime"></span>
+      <div class="header-info">
+        <span class="header-date" id="headerDate"></span>
+        <span id="updTime"></span>
+      </div>
       <button class="icon-btn" id="refreshBtn" title="새로고침">↻</button>
     </div>
   </div>
@@ -702,6 +683,16 @@
    - 기상청 단기예보 API
    - 에어코리아 측정소/대기질 API
    ============================================================ */
+
+// 헤더 날짜/요일 표시
+(function() {
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const dow = DAYS[now.getDay()];
+  document.getElementById('headerDate').textContent = `${m}월 ${d}일 ${dow}요일`;
+})();
 
 const SERVICE_KEY = '8814743c3a1365e9e06842d00b56515dbed6fbcb21935d35cd2f9daef39d0e25';
 const KMA_BASE = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
