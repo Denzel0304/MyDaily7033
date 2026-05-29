@@ -1,24 +1,24 @@
 {
-  "date": "2026-05-29",
+  "date": "2026-05-30",
   "vix": {
-    "value": 15.74,
-    "pct": -3.38
+    "value": 15.32,
+    "pct": -2.67
   },
   "nasdaq": {
-    "value": 26917.47,
-    "pct": 0.91
+    "value": 26972.62,
+    "pct": 0.2
   },
   "kospi": {
-    "value": 8185.29,
+    "value": 8476.15,
     "pct": null
   },
   "usdkrw": {
-    "value": 1493.47,
-    "pct": -0.8
+    "value": 1507.13,
+    "pct": 0.27
   },
   "top_stock": {
     "rank1": "엔비디아",
     "rank2": "구글",
-    "cap_diff_pct": 9.8
+    "cap_diff_pct": 11.0
   }
 }
