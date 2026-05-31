@@ -30,8 +30,8 @@
   #app { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; background: var(--sky-pale); position: relative; overflow: hidden; box-shadow: 0 0 40px rgba(13,148,136,0.3); }
 
   /* ── Header ── */
-  .header { background: linear-gradient(135deg, var(--sky-deep) 0%, var(--sky) 100%); padding: 18px 20px 14px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .header-title { font-family: 'Gaegu', cursive; font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .header { background: linear-gradient(135deg, var(--sky-deep) 0%, var(--sky) 100%); padding: 18px 20px 14px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; }
+  .header-title { font-family: 'Gaegu', cursive; font-size: 28px; font-weight: 700; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.12); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none; }
   .header-title span { font-size: 24px; }
 
   /* ── Tab Bar ── */
@@ -114,7 +114,7 @@
   .btn-del { flex: 1; padding: 12px; background: linear-gradient(135deg, #FF6B6B, #FF8E53); border: none; border-radius: var(--radius-sm); font-size: 15px; cursor: pointer; color: #fff; font-weight: 700; }
 
   /* ── Gear Button ── */
-  .gear-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 22px; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+  .gear-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 22px; width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; margin-left: auto; }
   .gear-btn:active { background: rgba(255,255,255,0.35); }
 
   /* ── Dragging ── */
@@ -141,15 +141,15 @@
 <div id="app">
   <!-- HEADER -->
   <div class="header">
-    <div class="header-title">🎯 Buckets</div>
+    <div class="header-title">🪣 버킷 리스트</div>
     <button class="gear-btn" onclick="openGearMenu()" title="설정">⚙️</button>
   </div>
 
   <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="bucket" onclick="switchTab('bucket')">
-      <span class="tab-icon">🎯</span>
-      <span class="tab-label">버킷리스트</span>
+      <span class="tab-icon">🪣</span>
+      <span class="tab-label">버킷 리스트</span>
     </button>
     <button class="tab-btn" data-tab="this-year" onclick="switchTab('this-year')">
       <span class="tab-icon">📅</span>
