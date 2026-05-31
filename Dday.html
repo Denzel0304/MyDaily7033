@@ -26,8 +26,13 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
   flex-shrink: 0; background: var(--header-bg);
   border-bottom: 1.5px solid rgba(44,74,90,0.13);
   padding: 0 10px 0 18px; box-shadow: 0 2px 8px rgba(44,74,90,0.07);
+  position: relative;
 }
 .header-left { display: flex; align-items: center; gap: 8px; }
+.header-center {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 8px; pointer-events: none;
+}
 .app-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
 .header-icon { font-size: 26px; line-height: 1; }
 .header-right { display: flex; align-items: center; gap: 6px; }
@@ -108,7 +113,8 @@ html, body { height: 100%; overflow: hidden; background: var(--sky); font-family
 <body>
 <div id="app">
   <div class="app-header">
-    <div class="header-left">
+    <div class="header-left"></div>
+    <div class="header-center">
       <span class="header-icon">⏳</span>
       <span class="app-title">디데이</span>
     </div>
