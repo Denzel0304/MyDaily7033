@@ -1140,6 +1140,11 @@ function openEdit(id) {
     renderEditBody('');
   }
   openModal('editModal');
+  // 새 레시피(+버튼)일 때 레시피 이름 칸에 포커스
+  if (!id) {
+    const t = document.getElementById('editTitle');
+    if (t) t.focus();
+  }
 }
 
 function closeEdit() {
@@ -1284,7 +1289,6 @@ function makeSauceRow(sec, sIdx, row, rIdx) {
         <option${row.unit==='g'?' selected':''}>g</option>
         <option${row.unit==='개'?' selected':''}>개</option>
         <option${row.unit==='컵'?' selected':''}>컵</option>
-        <option${row.unit==='적당히'?' selected':''}>적당히</option>
       </select>
     </div>
     <button class="sauce-del" onclick="removeSauceRow(${sIdx},${rIdx})" title="삭제">✕</button>
@@ -1397,7 +1401,7 @@ function cleanSections(sections) {
   (sections || []).forEach(sec => {
     if (sec.type === 'sauce') {
       // 이름이 비어 있는(공백뿐인) 재료 줄은 제거
-      const rows = (sec.rows || []).filter(r => (r.name || '').trim() !== '');
+      const rows = (sec.rows || []).filter(r => (r.name || '').trim() !== '' && String(r.amount ?? '').trim() !== '');
       // 유효한 재료가 하나라도 있을 때만 박스 유지
       if (rows.length > 0) cleaned.push({ ...sec, rows });
     } else {
