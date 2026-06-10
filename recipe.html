@@ -1277,6 +1277,7 @@ function makeSauceRow(sec, sIdx, row, rIdx) {
       <select class="sauce-unit" onchange="editSections[${sIdx}].rows[${rIdx}].unit=this.value">
         <option${row.unit==='큰술'?' selected':''}>큰술</option>
         <option${row.unit==='작은술'?' selected':''}>작은술</option>
+        <option${row.unit==='꼬집'?' selected':''}>꼬집</option>
         <option${row.unit==='ml'?' selected':''}>ml</option>
         <option${row.unit==='g'?' selected':''}>g</option>
         <option${row.unit==='개'?' selected':''}>개</option>
@@ -1388,6 +1389,23 @@ function handleMemoKey(e, ta, sec) {
 }
 
 // ── SAVE ──
+// 저장 직전, 입력 안 된 빈 항목을 걸러내는 헬퍼
+function cleanSections(sections) {
+  const cleaned = [];
+  (sections || []).forEach(sec => {
+    if (sec.type === 'sauce') {
+      // 이름이 비어 있는(공백뿐인) 재료 줄은 제거
+      const rows = (sec.rows || []).filter(r => (r.name || '').trim() !== '');
+      // 유효한 재료가 하나라도 있을 때만 박스 유지
+      if (rows.length > 0) cleaned.push({ ...sec, rows });
+    } else {
+      // 메모: 내용이 비어 있으면 박스 제거
+      if ((sec.content || '').trim() !== '') cleaned.push({ ...sec });
+    }
+  });
+  return cleaned;
+}
+
 function saveRecipe() {
   const title = document.getElementById('editTitle').value.trim();
   if (!title) {
@@ -1397,13 +1415,18 @@ function saveRecipe() {
     return;
   }
 
+  // 입력되지 않은 항목 정리:
+  //  - 양념장: 이름이 비어 있는 재료 줄은 버리고, 남은 재료가 0개면 박스째 버림
+  //  - 메모: 내용이 비어 있으면 박스째 버림
+  const sections = cleanSections(editSections);
+
   if (editingId) {
     const idx = recipes.findIndex(r => r.id === editingId);
     if (idx !== -1) {
-      recipes[idx] = { ...recipes[idx], title, stars: editStars, sections: editSections };
+      recipes[idx] = { ...recipes[idx], title, stars: editStars, sections };
     }
   } else {
-    recipes.push({ id: newId(), title, stars: editStars, sections: editSections });
+    recipes.push({ id: newId(), title, stars: editStars, sections });
   }
   saveToStorage();
   closeEdit();
