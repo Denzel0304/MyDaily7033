@@ -1422,6 +1422,14 @@ function saveRecipe() {
   //  - 메모: 내용이 비어 있으면 박스째 버림
   const sections = cleanSections(editSections);
 
+  // 유효한 내용이 하나도 없으면(빈 양념장/메모만 있으면) 저장 막기 — 제목 빈칸과 동일하게 빨간 깜빡임
+  if (sections.length === 0) {
+    const btns = document.querySelectorAll('#editBody .btn-add-section');
+    btns.forEach(b => b.style.borderColor = var_css('--danger'));
+    setTimeout(() => btns.forEach(b => b.style.borderColor = ''), 1500);
+    return;
+  }
+
   if (editingId) {
     const idx = recipes.findIndex(r => r.id === editingId);
     if (idx !== -1) {
