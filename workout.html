@@ -221,12 +221,12 @@
   .inbody-record:last-child { border-bottom: none; }
   .inbody-record-date {
     font-size: 12px; font-weight: 800; color: var(--pink-dark);
-    font-family: 'Nunito', sans-serif; white-space: nowrap; min-width: 60px;
+    font-family: 'Nunito', sans-serif; white-space: nowrap; min-width: 42px;
   }
   .inbody-record-vals {
-    flex: 1; display: flex; gap: 12px;
+    flex: 1; display: flex; gap: 8px;
   }
-  .inbody-val-group { display: flex; flex-direction: column; align-items: center; min-width: 44px; }
+  .inbody-val-group { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
   .inbody-val-label { font-size: 9px; color: var(--gray-400); font-weight: 700; }
   .inbody-val-num { font-size: 13px; font-weight: 800; color: var(--gray-800); font-family: 'Nunito', sans-serif; }
   .inbody-del-btn {
@@ -844,9 +844,10 @@ function renderInbodyList() {
     return `<div class="inbody-record">
       <div class="inbody-record-date">${label}</div>
       <div class="inbody-record-vals">
-        <div class="inbody-val-group"><div class="inbody-val-label">체중</div><div class="inbody-val-num" style="color:#4a90d9">${rec.weight ?? '-'}</div></div>
-        <div class="inbody-val-group"><div class="inbody-val-label">골격근</div><div class="inbody-val-num" style="color:#e07070">${rec.muscle ?? '-'}</div></div>
-        <div class="inbody-val-group"><div class="inbody-val-label">체지방</div><div class="inbody-val-num" style="color:#f0a030">${rec.fat ?? '-'}</div></div>
+        <div class="inbody-val-group"><div class="inbody-val-label">체중</div><div class="inbody-val-num" style="color:#4a90d9">${rec.weight != null ? rec.weight + 'kg' : '-'}</div></div>
+        <div class="inbody-val-group"><div class="inbody-val-label">골격근</div><div class="inbody-val-num" style="color:#e07070">${rec.muscle != null ? rec.muscle + 'kg' : '-'}</div></div>
+        <div class="inbody-val-group"><div class="inbody-val-label">체지방</div><div class="inbody-val-num" style="color:#f0a030">${rec.fat != null ? rec.fat + 'kg' : '-'}</div></div>
+        <div class="inbody-val-group"><div class="inbody-val-label">체지방률</div><div class="inbody-val-num" style="color:#f0a030">${(rec.fat != null && rec.weight) ? (rec.fat / rec.weight * 100).toFixed(1) + '%' : '-'}</div></div>
       </div>
       <button class="inbody-del-btn" onclick="showDeleteInbodyModal(${idx})">✕</button>
     </div>`;
@@ -929,7 +930,7 @@ function renderInbodyChart() {
         /* 첫 점→start(오른쪽으로), 마지막→end(왼쪽으로), 중간→middle */
         const anchor = i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle';
         const labelY = (p.y - innerTop < 14) ? p.y + 13 : p.y - 5;
-        svg += `<text x="${p.x}" y="${labelY}" text-anchor="${anchor}" font-size="9" font-weight="bold" fill="${m.color}">${p.v}</text>`;
+        svg += `<text x="${p.x}" y="${labelY}" text-anchor="${anchor}" font-size="9" font-weight="bold" fill="${m.color}">${p.v}kg</text>`;
       }
     });
   });
