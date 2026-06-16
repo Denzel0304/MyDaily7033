@@ -713,7 +713,7 @@
 
   function calcProtein(key, val) {
     if (key === 'shake')   return parseFloat((SHAKE_PROTEIN_G * val / SHAKE_POWDER_G).toFixed(1));
-    if (key === 'egg')     return val * EGG_PROTEIN_EACH;
+    if (key === 'egg')     return parseFloat((val * EGG_PROTEIN_EACH).toFixed(1));
     if (key === 'bread_p') return parseFloat((BREAD_PROTEIN_PER_SLICE * val).toFixed(1));
     if (key === 'cheese')  return parseFloat((4 * val).toFixed(1));
     if (key === 'extra_p') return parseFloat(val.toFixed(1));
