@@ -1,8 +1,8 @@
 {
-  "date": "2026-06-20",
+  "date": "2026-06-22",
   "vix": {
     "value": 16.78,
-    "pct": 2.32
+    "pct": null
   },
   "nasdaq": {
     "value": 26517.93,
@@ -10,11 +10,11 @@
   },
   "kospi": {
     "value": 9052.42,
-    "pct": null
+    "pct": -0.13
   },
   "usdkrw": {
     "value": 1529.89,
-    "pct": 0.29
+    "pct": -0.5
   },
   "top_stock": {
     "rank1": "엔비디아",
