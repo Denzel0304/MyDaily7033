@@ -1266,6 +1266,7 @@ function renderSectionBody(sec, sIdx) {
     ta.addEventListener('input', () => {
       renumberMemo(ta);      // 번호 삭제/수정 시 자동 재정렬
       sec.content = ta.value;
+      requestAnimationFrame(() => { ta.scrollTop = ta.scrollHeight; });
     });
     ta.addEventListener('keydown', e => handleMemoKey(e, ta, sec));
     body.appendChild(ta);
@@ -1379,6 +1380,7 @@ function handleMemoKey(e, ta, sec) {
       ta.selectionStart = ta.selectionEnd = pos + insert.length;
     }
     sec.content = ta.value;
+    requestAnimationFrame(() => { ta.scrollTop = ta.scrollHeight; });
   }
   // If line is just "N. " (number+dot+space, no content)
   else {
@@ -1390,6 +1392,7 @@ function handleMemoKey(e, ta, sec) {
       ta.value = lines.join('\n') + after;
       ta.selectionStart = ta.selectionEnd = lines.join('\n').length;
       sec.content = ta.value;
+      requestAnimationFrame(() => { ta.scrollTop = ta.scrollHeight; });
     }
   }
 }
