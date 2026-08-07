@@ -780,7 +780,9 @@ function switchMainTab(tab) {
 
 // popstate: 모달 처리
 window.addEventListener('popstate', function(e) {
-  if (document.getElementById('foodModal').classList.contains('show')) {
+  if (document.getElementById('confirmOverlay').classList.contains('show')) {
+    closeConfirm('__popstate__');
+  } else if (document.getElementById('foodModal').classList.contains('show')) {
     closeFoodModal(true);
   }
 });
@@ -845,7 +847,7 @@ function renderFoodSelect() {
   [...foodDB].sort((a,b) => a.name.localeCompare(b.name, 'ko')).forEach(f => {
     const o = document.createElement('option');
     o.value = f.id;
-    o.textContent = `${f.emoji||'🍽️'}  ${f.name} (1${f.unit})`;
+    o.textContent = `${f.emoji||'🍽️'}\u00A0\u00A0${f.name} (1${f.unit})`;
     sel.appendChild(o);
   });
   if (cur) sel.value = cur;
@@ -1214,13 +1216,18 @@ async function confirmDeleteFood(id) {
 function showConfirm() {
   return new Promise(resolve=>{
     confirmResolve=resolve;
+    history.pushState({ confirmModal: true }, '');
     document.getElementById('confirmOverlay').classList.add('show');
   });
 }
 function closeConfirm(result) {
+  if (!document.getElementById('confirmOverlay').classList.contains('show')) return;
   document.getElementById('confirmOverlay').classList.remove('show');
-  if (confirmResolve) { confirmResolve(result); confirmResolve=null; }
+  const isPopstate = result === '__popstate__';
+  if (confirmResolve) { confirmResolve(isPopstate ? false : result); confirmResolve=null; }
+  if (!isPopstate) history.back();
 }
+
 
 // ── 토스트 ──
 function showToast(msg) {
