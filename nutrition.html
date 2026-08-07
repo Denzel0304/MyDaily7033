@@ -845,7 +845,7 @@ function renderFoodSelect() {
   [...foodDB].sort((a,b) => a.name.localeCompare(b.name, 'ko')).forEach(f => {
     const o = document.createElement('option');
     o.value = f.id;
-    o.textContent = `${f.emoji||'🍽️'} ${f.name} (1${f.unit})`;
+    o.textContent = `${f.emoji||'🍽️'}  ${f.name} (1${f.unit})`;
     sel.appendChild(o);
   });
   if (cur) sel.value = cur;
@@ -1139,6 +1139,7 @@ function saveFoodToDB() {
   const carb    = parseFloat(document.getElementById('macroCarb').value)||0;
   const fat     = parseFloat(document.getElementById('macroFat').value)||0;
   if (!name) { showToast('음식 이름을 입력해주세요'); return; }
+  if (protein===0 && carb===0 && fat===0) { showToast('영양소를 하나 이상 입력해주세요'); return; }
   if (protein<0||carb<0||fat<0)   { showToast('영양소는 0 이상으로 입력해주세요'); return; }
 
   const kcalPer1 = calcKcal(protein,carb,fat);
