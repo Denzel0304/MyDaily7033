@@ -271,7 +271,7 @@
     .history-card {
       background:var(--card-bg); border-radius:var(--radius); box-shadow:var(--shadow);
       border:1.5px solid rgba(255,255,255,0.8); backdrop-filter:blur(12px);
-      padding:20px; margin-top:8px;
+      padding:20px; margin-top:24px;
       animation:fadeUp 0.4s 0.2s ease both;
     }
     .history-title { font-size:14px; font-weight:700; color:var(--text-dark); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
@@ -774,6 +774,7 @@ function switchMainTab(tab) {
     gaugeTabs.style.display = 'none';
     container.style.paddingTop = '144px';
   }
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // popstate: 모달 처리
@@ -806,6 +807,7 @@ function switchGauge(type) {
   document.getElementById('goalNutrientLabel').textContent = cfg.label;
   updateGaugeUI();
   renderHistory();
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
 
