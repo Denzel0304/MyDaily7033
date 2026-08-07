@@ -1165,7 +1165,8 @@ function renderDBList() {
     list.innerHTML='<div class="db-empty">등록된 음식이 없어요.<br>+ 새 음식 등록 버튼으로 추가해보세요 🥦</div>';
     return;
   }
-  list.innerHTML = foodDB.map(f=>{
+  const sorted = [...foodDB].sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+  list.innerHTML = sorted.map(f=>{
     return `<div class="db-food-item">
       <div class="db-food-top">
         <div class="db-food-name-wrap">
