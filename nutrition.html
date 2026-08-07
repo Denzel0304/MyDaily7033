@@ -1135,13 +1135,11 @@ function updateKcalPreview() {
 function saveFoodToDB() {
   const name    = document.getElementById('foodName').value.trim();
   const emoji   = document.getElementById('foodEmoji').value.trim();
-  const protein = parseFloat(document.getElementById('macroProtein').value);
-  const carb    = parseFloat(document.getElementById('macroCarb').value);
-  const fat     = parseFloat(document.getElementById('macroFat').value);
-  if (!name)                      { showToast('음식 이름을 입력해주세요'); return; }
-  if (isNaN(protein)||protein<0)  { showToast('단백질을 입력해주세요'); return; }
-  if (isNaN(carb)||carb<0)        { showToast('탄수화물을 입력해주세요'); return; }
-  if (isNaN(fat)||fat<0)          { showToast('지방을 입력해주세요'); return; }
+  const protein = parseFloat(document.getElementById('macroProtein').value)||0;
+  const carb    = parseFloat(document.getElementById('macroCarb').value)||0;
+  const fat     = parseFloat(document.getElementById('macroFat').value)||0;
+  if (!name) { showToast('음식 이름을 입력해주세요'); return; }
+  if (protein<0||carb<0||fat<0)   { showToast('영양소는 0 이상으로 입력해주세요'); return; }
 
   const kcalPer1 = calcKcal(protein,carb,fat);
   const foodObj = { name, emoji:emoji||'🍽️', unit:selectedUnit, protein, carb, fat, kcal:kcalPer1 };
