@@ -840,7 +840,7 @@ function renderFoodSelect() {
   const sel = document.getElementById('foodSelect');
   const cur = sel.value;
   sel.innerHTML = '<option value="">음식 선택</option><option value="__etc__">➕ 기타 (직접 입력)</option>';
-  foodDB.forEach(f => {
+  [...foodDB].sort((a,b) => a.name.localeCompare(b.name, 'ko')).forEach(f => {
     const o = document.createElement('option');
     o.value = f.id;
     o.textContent = `${f.emoji||'🍽️'} ${f.name} (1${f.unit})`;
