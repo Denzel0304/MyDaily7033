@@ -1263,18 +1263,33 @@ function renderSectionBody(sec, sIdx) {
     const ta = makeEl('textarea', 'memo-textarea');
     ta.value = sec.content || '';
     ta.placeholder = '예: 1. 재료를 준비합니다 (Enter로 자동 번호)';
-    ta._enterHandled = false; // Enter 처리 플래그
-    ta.addEventListener('input', () => {
-      if (ta._enterHandled) {
-        // Enter로 번호 삽입+재정렬이 이미 완료된 경우 renumberMemo 건너뜀
-        ta._enterHandled = false;
+    ta._skipRenumber = false;
+    // keydown: PC에서 Enter를 preventDefault로 직접 제어
+    ta.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault(); // 브라우저 기본 줄바꿈 막고 직접 삽입
+      handleMemoEnter(ta, sec);
+      ta._skipRenumber = true; // 뒤따라오는 input 이벤트에서 renumber 건너뜀
+      sec.content = ta.value;
+      requestAnimationFrame(() => { scrollToCursor(ta); });
+    });
+    // input: 모바일 Enter(insertLineBreak) 및 일반 타이핑 처리
+    ta.addEventListener('input', (e) => {
+      if (ta._skipRenumber) {
+        ta._skipRenumber = false;
+        return;
+      }
+      const isEnter = e.inputType === 'insertLineBreak' ||
+                      e.inputType === 'insertParagraph';
+      if (isEnter) {
+        // 모바일: 이미 \n이 삽입된 상태로 들어옴 → 번호 처리
+        handleMemoEnterMobile(ta, sec);
       } else {
-        renumberMemo(ta);    // 일반 타이핑: 번호 삭제/수정 시 자동 재정렬
+        renumberMemo(ta); // 일반 타이핑: 번호 재정렬
       }
       sec.content = ta.value;
       requestAnimationFrame(() => { scrollToCursor(ta); });
     });
-    ta.addEventListener('keydown', e => handleMemoKey(e, ta, sec));
     body.appendChild(ta);
   }
 }
@@ -1380,58 +1395,79 @@ function renumberMemo(ta) {
   const newPos = Math.max(0, Math.min(oldPos + offsetAdjust, newVal.length));
   ta.selectionStart = ta.selectionEnd = newPos;
 }
-function handleMemoKey(e, ta, sec) {
-  if (e.key !== 'Enter') return;
-
+// PC: keydown에서 preventDefault 후 호출 (줄바꿈 미삽입 상태)
+function handleMemoEnter(ta, sec) {
   const val = ta.value;
   const pos = ta.selectionStart;
   const before = val.substring(0, pos);
   const after = val.substring(pos);
-  const lastLine = before.split('\n').pop();
+  const currentLine = before.split('\n').pop();
 
-  // Check if current line is a numbered list item "N. something"
-  const numMatch = lastLine.match(/^(\d+)\.\s+(.*)/);
-
+  const numMatch = currentLine.match(/^(\d+)\.\s+(.*)/);
   if (numMatch) {
     const content = numMatch[2];
     const curNum = parseInt(numMatch[1]);
-
-    e.preventDefault();
-
     if (content.trim() === '') {
-      // Empty numbered line → remove the number
-      const lines = before.split('\n');
-      lines[lines.length - 1] = '';
-      const newVal = lines.join('\n') + after;
-      ta.value = newVal;
-      const newPos = lines.join('\n').length;
-      ta.selectionStart = ta.selectionEnd = newPos;
-    } else {
-      // 새 번호 줄 삽입 후 전체 재정렬 (아래 줄들도 순서 업데이트)
-      const insert = '\n' + (curNum + 1) + '. ';
-      ta.value = before + insert + after;
-      const newPos = pos + insert.length;
-      ta.selectionStart = ta.selectionEnd = newPos;
-      renumberMemo(ta); // 전체 번호 재정렬
-    }
-    ta._enterHandled = true; // input 이벤트에서 renumberMemo 중복 실행 방지
-    sec.content = ta.value;
-    requestAnimationFrame(() => { scrollToCursor(ta); });
-  }
-  // If line is just "N. " (number+dot+space, no content)
-  else {
-    const emptyNumMatch = lastLine.match(/^(\d+)\.\s*$/);
-    if (emptyNumMatch) {
-      e.preventDefault();
+      // 빈 번호 줄 → 번호 제거하고 빈 줄로
       const lines = before.split('\n');
       lines[lines.length - 1] = '';
       ta.value = lines.join('\n') + after;
       ta.selectionStart = ta.selectionEnd = lines.join('\n').length;
-      ta._enterHandled = true;
-      sec.content = ta.value;
-      requestAnimationFrame(() => { scrollToCursor(ta); });
+    } else {
+      // 다음 번호 줄 삽입
+      const insert = '\n' + (curNum + 1) + '. ';
+      ta.value = before + insert + after;
+      ta.selectionStart = ta.selectionEnd = pos + insert.length;
+      renumberMemo(ta); // 아래 줄 번호 재정렬
+    }
+  } else {
+    const emptyNumMatch = currentLine.match(/^(\d+)\.\s*$/);
+    if (emptyNumMatch) {
+      // "N. " 만 있는 줄 → 번호 제거
+      const lines = before.split('\n');
+      lines[lines.length - 1] = '';
+      ta.value = lines.join('\n') + after;
+      ta.selectionStart = ta.selectionEnd = lines.join('\n').length;
+    } else {
+      // 일반 줄 → 그냥 줄바꿈 삽입
+      ta.value = before + '\n' + after;
+      ta.selectionStart = ta.selectionEnd = pos + 1;
     }
   }
+}
+
+// 모바일: input 이벤트(insertLineBreak) 시 호출 (줄바꿈이 이미 삽입된 상태)
+function handleMemoEnterMobile(ta, sec) {
+  const pos = ta.selectionStart; // 이미 \n 다음 위치
+  const val = ta.value;
+
+  // 커서 바로 앞 줄(방금 Enter 친 줄, 즉 \n 앞 줄)
+  const beforeCursor = val.substring(0, pos);
+  const lines = beforeCursor.split('\n');
+  // 커서는 새 줄 맨 앞에 있으므로, 바로 이전 줄이 Enter 친 줄
+  const prevLine = lines[lines.length - 2] || '';
+  const afterCursor = val.substring(pos);
+
+  const numMatch = prevLine.match(/^(\d+)\.\s+(.*)/);
+  if (numMatch) {
+    const content = numMatch[2];
+    const curNum = parseInt(numMatch[1]);
+    if (content.trim() === '') {
+      // 빈 번호 줄에서 Enter → 이미 삽입된 \n 포함해서 번호 줄 제거
+      // prevLine을 빈 줄로, 새 줄(\n 이후)은 그대로
+      lines[lines.length - 2] = '';
+      ta.value = lines.join('\n') + afterCursor;
+      ta.selectionStart = ta.selectionEnd = lines.join('\n').length;
+    } else {
+      // 번호 줄에서 Enter → 새로 삽입된 빈 줄을 다음 번호 줄로 교체
+      const nextNumStr = (curNum + 1) + '. ';
+      // 현재 커서 위치(새 줄 맨 앞)에 번호 삽입
+      ta.value = beforeCursor + nextNumStr + afterCursor;
+      ta.selectionStart = ta.selectionEnd = pos + nextNumStr.length;
+      renumberMemo(ta); // 아래 줄 번호 재정렬
+    }
+  }
+  // 번호 없는 줄이면 그냥 두면 됨 (이미 \n 삽입됨)
 }
 
 // ── SAVE ──
