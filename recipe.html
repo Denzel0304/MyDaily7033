@@ -1263,8 +1263,14 @@ function renderSectionBody(sec, sIdx) {
     const ta = makeEl('textarea', 'memo-textarea');
     ta.value = sec.content || '';
     ta.placeholder = '예: 1. 재료를 준비합니다 (Enter로 자동 번호)';
+    ta._enterHandled = false; // Enter 처리 플래그
     ta.addEventListener('input', () => {
-      renumberMemo(ta);      // 번호 삭제/수정 시 자동 재정렬
+      if (ta._enterHandled) {
+        // Enter로 번호 삽입+재정렬이 이미 완료된 경우 renumberMemo 건너뜀
+        ta._enterHandled = false;
+      } else {
+        renumberMemo(ta);    // 일반 타이핑: 번호 삭제/수정 시 자동 재정렬
+      }
       sec.content = ta.value;
       requestAnimationFrame(() => { scrollToCursor(ta); });
     });
@@ -1342,8 +1348,8 @@ function scrollToCursor(ta) {
   const visibleBottom = ta.scrollTop + ta.clientHeight;
 
   if (cursorBottom > visibleBottom) {
-    // 커서가 아래로 벗어날 때: 커서 줄이 보이도록 아래로 스크롤
-    ta.scrollTop = cursorBottom - ta.clientHeight + lineHeight;
+    // 커서가 아래로 벗어날 때: 커서 줄이 보이도록 아래로 스크롤 (여유 한 줄 추가)
+    ta.scrollTop = cursorBottom - ta.clientHeight + lineHeight * 2;
   } else if (cursorTop < visibleTop) {
     // 커서가 위로 벗어날 때: 커서 줄이 보이도록 위로 스크롤
     ta.scrollTop = cursorTop - paddingTop;
@@ -1401,11 +1407,14 @@ function handleMemoKey(e, ta, sec) {
       const newPos = lines.join('\n').length;
       ta.selectionStart = ta.selectionEnd = newPos;
     } else {
-      // Add next number
+      // 새 번호 줄 삽입 후 전체 재정렬 (아래 줄들도 순서 업데이트)
       const insert = '\n' + (curNum + 1) + '. ';
       ta.value = before + insert + after;
-      ta.selectionStart = ta.selectionEnd = pos + insert.length;
+      const newPos = pos + insert.length;
+      ta.selectionStart = ta.selectionEnd = newPos;
+      renumberMemo(ta); // 전체 번호 재정렬
     }
+    ta._enterHandled = true; // input 이벤트에서 renumberMemo 중복 실행 방지
     sec.content = ta.value;
     requestAnimationFrame(() => { scrollToCursor(ta); });
   }
@@ -1418,6 +1427,7 @@ function handleMemoKey(e, ta, sec) {
       lines[lines.length - 1] = '';
       ta.value = lines.join('\n') + after;
       ta.selectionStart = ta.selectionEnd = lines.join('\n').length;
+      ta._enterHandled = true;
       sec.content = ta.value;
       requestAnimationFrame(() => { scrollToCursor(ta); });
     }
