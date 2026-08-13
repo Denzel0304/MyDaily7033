@@ -1662,7 +1662,7 @@
 </div>
 
 <!-- MAIN: 투약 탭 -->
-<div class="main-container" id="doseView">
+<div class="main-container" id="doseView" style="display:none">
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="병명 / 병원 / 약 검색..." oninput="renderList()">
@@ -1686,7 +1686,7 @@
 </div>
 
 <!-- MAIN: 혈압 탭 -->
-<div class="main-container" id="bpView" style="display:none">
+<div class="main-container" id="bpView">
 
   <div class="bp-chart-card open" id="bpChartCard">
     <div class="bp-section-title">📊 혈압 추이 (최근 12회)</div>
@@ -1735,15 +1735,15 @@
 </div>
 
 <!-- FAB -->
-<button class="fab" id="fabBtn" onclick="onFabClick()" title="추가">＋</button>
+<button class="fab" id="fabBtn" onclick="onFabClick()" title="추가" style="display:none">＋</button>
 
 <!-- BOTTOM TAB BAR -->
 <nav class="tab-bar">
-  <button class="tab-btn" id="tabBp" onclick="switchTab('bp')">
+  <button class="tab-btn active" id="tabBp" onclick="switchTab('bp')">
     <span class="tab-icon">🩺</span>
     <span>혈압</span>
   </button>
-  <button class="tab-btn active" id="tabDose" onclick="switchTab('dose')">
+  <button class="tab-btn" id="tabDose" onclick="switchTab('dose')">
     <span class="tab-icon">💊</span>
     <span>투약</span>
   </button>
@@ -1827,7 +1827,7 @@ let takeBundles = loadTakes();   // 복약: [{id, day(YYYY-MM-DD), time, meds:[{
 let editingId = null;
 let editMode = 'dose';           // 'dose' | 'take'
 let confirmCallback = null;
-let currentTab = 'dose';
+let currentTab = 'bp';
 
 // ── MODAL HISTORY MANAGEMENT (기존 로직 유지) ──
 const modalStack = [];
