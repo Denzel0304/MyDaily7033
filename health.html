@@ -3536,6 +3536,10 @@ takeBundles.forEach(b => { takeDayCollapsed[b.day] = true; });
 loadBpData();
 renderList();
 renderTakes();
+const _bpDateEl = document.getElementById('bpDate');
+if (_bpDateEl && !_bpDateEl.value) _bpDateEl.value = todayStr();
+renderBpList();
+if (bpGraphOpen) renderBpChart();
 </script>
 </body>
 </html>
