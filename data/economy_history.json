@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-08-14",
+    "vix": {
+      "value": 14.63,
+      "pct": 0.55
+    },
+    "nasdaq": {
+      "value": 26803.03,
+      "pct": 0.81
+    },
+    "kospi": {
+      "value": 6813.34,
+      "pct": null
+    },
+    "usdkrw": {
+      "value": 1418.17,
+      "pct": 0.42
+    },
+    "top_stock": {
+      "rank1": "엔비디아",
+      "rank2": "애플",
+      "cap_diff_pct": 22.5
+    }
+  },
+  {
     "date": "2026-08-13",
     "vix": {
       "value": 14.55,
