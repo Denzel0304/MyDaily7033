@@ -1689,7 +1689,7 @@
 <div class="main-container" id="bpView" style="display:none">
 
   <div class="bp-chart-card open" id="bpChartCard">
-    <div class="bp-section-title">📊 혈압 추이 (최근 12개월)</div>
+    <div class="bp-section-title">📊 혈압 추이 (최근 12회)</div>
     <div class="bp-chart-legend">
       <div class="bp-legend-item"><div class="bp-legend-dot" style="background:#3a8bbf"></div>수축기</div>
       <div class="bp-legend-item"><div class="bp-legend-dot" style="background:#e8732a"></div>이완기</div>
@@ -1739,6 +1739,10 @@
 
 <!-- BOTTOM TAB BAR -->
 <nav class="tab-bar">
+  <button class="tab-btn" id="tabBp" onclick="switchTab('bp')">
+    <span class="tab-icon">🩺</span>
+    <span>혈압</span>
+  </button>
   <button class="tab-btn active" id="tabDose" onclick="switchTab('dose')">
     <span class="tab-icon">💊</span>
     <span>투약</span>
@@ -1746,10 +1750,6 @@
   <button class="tab-btn" id="tabTake" onclick="switchTab('take')">
     <span class="tab-icon">⏰</span>
     <span>복약</span>
-  </button>
-  <button class="tab-btn" id="tabBp" onclick="switchTab('bp')">
-    <span class="tab-icon">🩺</span>
-    <span>혈압</span>
   </button>
 </nav>
 
