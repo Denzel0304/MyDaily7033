@@ -1263,6 +1263,8 @@ function renderSectionBody(sec, sIdx) {
     const ta = makeEl('textarea', 'memo-textarea');
     ta.value = sec.content || '';
     ta.placeholder = '예: 1. 재료를 준비합니다';
+    // fastmemo 자동 넘버링 이식 (renumberAll이 content 동기화보다 먼저 실행되도록 먼저 등록)
+    attachAutoNumbering(ta);
     // 커서 위치가 보이도록 스크롤만 처리
     ta.addEventListener('input', () => {
       sec.content = ta.value;
@@ -1352,9 +1354,204 @@ function scrollToCursor(ta) {
 }
 
 // ── MEMO AUTO-NUMBERING ──
+// fastmemo 원본 로직 그대로 이식. 메모 textarea가 여러 개 생성될 수 있으므로
+// 함수 스코프(클로저)로 감싸 textarea마다 mode를 독립적으로 관리한다.
+function attachAutoNumbering(ta) {
+  let mode = null; // null | 'bullet' | 'number'
 
+  // ZWS: Android IME가 번호 prefix 숫자를 조합 버퍼로 잡는 것을 방지
+  const ZWS = '\u200b';
 
+  // 커서가 있는 줄이 화면에 보이도록 textarea 스크롤을 맞춘다.
+  function scrollCursorIntoView(ta) {
+    // lineHeight 기반으로 커서 y 추정 후 scrollTop 보정
+    const style = window.getComputedStyle(ta);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const pos = ta.selectionStart;
+    const textBefore = ta.value.substring(0, pos);
+    const linesBefore = textBefore.split('\n').length;
+    const cursorY = paddingTop + (linesBefore - 1) * lineHeight;
+    const visibleBottom = ta.scrollTop + ta.clientHeight;
+    if (cursorY + lineHeight > visibleBottom) {
+      ta.scrollTop = cursorY + lineHeight - ta.clientHeight + lineHeight;
+    } else if (cursorY < ta.scrollTop) {
+      ta.scrollTop = cursorY - paddingTop;
+    }
+  }
 
+  function handleSpace(preventFn) {
+    const start = ta.selectionStart;
+    const before = ta.value.substring(0, start);
+    const lines = before.split('\n');
+    const curLine = lines[lines.length - 1];
+
+    const numMatch = curLine.match(/^(\d+)\.$/);
+    if (numMatch && mode !== 'number') {
+      preventFn();
+      const lineStart = before.lastIndexOf('\n') + 1;
+      ta.value = ta.value.substring(0, lineStart) + numMatch[1] + '. ' + ZWS + ta.value.substring(start);
+      const newCursor = lineStart + numMatch[1].length + 2 + 1;
+      ta.selectionStart = ta.selectionEnd = newCursor;
+      mode = 'number';
+      scrollCursorIntoView(ta);
+      return true;
+    }
+    if (curLine === '*' && mode !== 'bullet') {
+      preventFn();
+      const lineStart = before.lastIndexOf('\n') + 1;
+      ta.value = ta.value.substring(0, lineStart) + '• ' + ta.value.substring(start);
+      ta.selectionStart = ta.selectionEnd = lineStart + 2;
+      mode = 'bullet';
+      scrollCursorIntoView(ta);
+      return true;
+    }
+    return false;
+  }
+
+  function handleEnter(preventFn, isShift) {
+    if (!mode) return false;
+    // Shift+Enter → 번호 없이 일반 줄바꿈
+    if (isShift) {
+      preventFn();
+      const start = ta.selectionStart;
+      const before = ta.value.substring(0, start);
+      const after = ta.value.substring(ta.selectionEnd);
+      ta.value = before + '\n' + after;
+      ta.selectionStart = ta.selectionEnd = start + 1;
+      scrollCursorIntoView(ta);
+      return true;
+    }
+    preventFn();
+    const start = ta.selectionStart;
+    const before = ta.value.substring(0, start);
+    const after = ta.value.substring(ta.selectionEnd);
+    const lines = before.split('\n');
+    const curLine = lines[lines.length - 1];
+
+    if (mode === 'bullet') {
+      if (curLine === '• ') {
+        ta.value = before.slice(0, -2) + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = start - 2 + 1;
+        mode = null;
+        return true;
+      }
+      const insert = '\n• ';
+      ta.value = before + insert + after;
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+
+    } else if (mode === 'number') {
+      const match = curLine.match(/^(\d+)\.\s/);
+      // 빈 번호 줄에서 엔터 → 모드 해제 (ZWS 포함 실제 길이로 제거)
+      if (match && curLine.replace(/\u200b/g, '') === match[0]) {
+        const trim = before.slice(0, -curLine.length);
+        ta.value = trim + '\n' + after;
+        ta.selectionStart = ta.selectionEnd = trim.length + 1;
+        mode = null;
+        return true;
+      }
+      const nextNum = match ? parseInt(match[1]) + 1 : 1;
+      const insert = '\n' + nextNum + '. ' + ZWS;
+      // 커서 뒤 번호 줄 재정렬
+      const afterLines = after.split('\n');
+      let renumFrom = nextNum + 1;
+      let inSameBlock = true; // 같은 그룹 내에서만 재번호
+      const renumberedAfter = afterLines.map((line, idx) => {
+        if (idx === 0) return line;
+        const cleanLine = line.replace(/\u200b/g, '');
+        const lm = cleanLine.match(/^(\d+)(\.\s)/);
+        if (lm && inSameBlock) {
+          return renumFrom++ + lm[2] + line.slice(lm[0].length);
+        }
+        // 번호 줄이 아닌 줄(빈 줄, 일반 텍스트)을 만나면 그룹 끊김 → 이후는 건드리지 않음
+        if (!lm) inSameBlock = false;
+        return line;
+      }).join('\n');
+      ta.value = before + insert + renumberedAfter;
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+    }
+    scrollCursorIntoView(ta);
+    return true;
+  }
+
+  function renumberAll() {
+    const pos = ta.selectionStart;
+    const lines = ta.value.split('\n');
+    let inBlock = false, blockStart = 0, blockOffset = 0, changed = false;
+    const result = lines.map(line => {
+      const cleanLine = line.replace(/\u200b/g, '');
+      const m = cleanLine.match(/^(\d+)(\.\s)([\s\S]*)$/);
+      if (m) {
+        if (!inBlock) {
+          inBlock = true;
+          blockStart = parseInt(m[1], 10);
+          blockOffset = 0;
+        }
+        const expected = blockStart + blockOffset++;
+        const oldPrefix = m[1] + m[2];
+        const newPrefix = expected + m[2];
+        if (oldPrefix === newPrefix) return line;
+        const newLine = newPrefix + line.slice(oldPrefix.length);
+        changed = true;
+        return newLine;
+      } else {
+        inBlock = false;
+        return line;
+      }
+    });
+    if (!changed) return;
+    const oldLines = lines, newLines = result;
+    let oldOffset = 0, newOffset = 0;
+    for (let i = 0; i < oldLines.length; i++) {
+      const oldEnd = oldOffset + oldLines[i].length + (i < oldLines.length - 1 ? 1 : 0);
+      const newEnd = newOffset + newLines[i].length + (i < newLines.length - 1 ? 1 : 0);
+      if (pos <= oldEnd) {
+        const posInLine = pos - oldOffset;
+        const om = oldLines[i].match(/^(\d+\.\s)/);
+        const nm = newLines[i].match(/^(\d+\.\s)/);
+        const diff = nm && om ? nm[1].length - om[1].length : 0;
+        const newPos = newOffset + Math.max(nm ? nm[1].length : 0, posInLine + diff);
+        ta.value = newLines.join('\n');
+        ta.selectionStart = ta.selectionEnd = newPos;
+        return;
+      }
+      oldOffset = oldEnd;
+      newOffset = newEnd;
+    }
+    ta.value = newLines.join('\n');
+    ta.selectionStart = ta.selectionEnd = pos;
+  }
+
+  // PC: keydown
+  ta.addEventListener('keydown', function(e) {
+    let handled = false;
+    if (e.key === ' ') {
+      handled = handleSpace(() => e.preventDefault());
+    } else if (e.key === 'Enter') {
+      handled = handleEnter(() => e.preventDefault(), e.shiftKey);
+    }
+    if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+  });
+
+  // 모바일: beforeinput
+  ta.addEventListener('beforeinput', function(e) {
+    let handled = false;
+    if (e.inputType === 'insertText' && e.data === ' ') {
+      handled = handleSpace(() => e.preventDefault());
+    } else if (e.inputType === 'insertLineBreak' ||
+               (e.inputType === 'insertText' && e.data === '\n')) {
+      handled = handleEnter(() => e.preventDefault(), false);
+    }
+    if (handled) requestAnimationFrame(() => scrollCursorIntoView(ta));
+  });
+
+  // input: 삭제 후 재번호 + 모드 리셋
+  ta.addEventListener('input', function(e) {
+    if (ta.value === '') { mode = null; return; }
+    if (mode === 'number' && !e.isComposing) renumberAll();
+    scrollCursorIntoView(ta);
+  });
+}
 
 // ── SAVE ──
 // 저장 직전, 입력 안 된 빈 항목을 걸러내는 헬퍼
