@@ -497,7 +497,7 @@
   }
   .sauce-del:hover { color: var(--danger); }
 
-  /* ── SAUCE NAME CHIP STRIP ── */
+  /* ── SAUCE NAME QUICK-PICK DROPDOWN ── */
   .sauce-name-wrap {
     flex: 2;
     min-width: 0;
@@ -509,34 +509,31 @@
     flex: none;
     width: 100%;
   }
-  .sauce-chips {
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .sauce-chips::-webkit-scrollbar { display: none; }
-  .sauce-chip {
-    flex-shrink: 0;
-    padding: 3px 9px;
-    background: var(--sky-light);
+  .sauce-quickpick-wrap { position: relative; }
+  .sauce-quickpick {
+    width: 100%;
+    padding: 4px 20px 4px 8px;
     border: 1px solid var(--border);
-    border-radius: 20px;
-    font-size: 0.7rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
     font-family: 'Noto Sans KR', sans-serif;
-    color: var(--sky-deep);
+    color: var(--text-muted);
+    background: var(--sky-light);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
     cursor: pointer;
-    white-space: nowrap;
-    line-height: 1.5;
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
   }
-  .sauce-chip:active {
-    background: var(--sky-dark);
-    color: white;
-    border-color: var(--sky-dark);
+  .sauce-quickpick:focus { border-color: var(--sky-dark); }
+  .sauce-quickpick-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    pointer-events: none;
   }
 
   .btn-add-row {
@@ -1322,13 +1319,18 @@ function makeSauceRow(sec, sIdx, row, rIdx) {
   const rowEl = makeEl('div', 'sauce-row');
   rowEl.dataset.rIdx = rIdx;
 
-  const SAUCE_CHIPS = ['간장','고추장','고춧가루','굴소스','된장','들기름','마늘','맛소금','새우젓','설탕','식용유','식초','액젓','올리고당','참기름','청양고추','치즈','캐첩','통깨','페레론치노','후추'];
-  const chipsHtml = SAUCE_CHIPS.map(n => `<button type="button" class="sauce-chip">${escHtml(n)}</button>`).join('');
+  const SAUCE_QUICKPICK = ['간장','고추장','고춧가루','굴소스','된장','들기름','마늘','맛소금','새우젓','설탕','식용유','식초','액젓','올리고당','참기름','청양고추','치즈','캐첩','통깨','페레론치노','후추'];
+  const quickpickOptionsHtml = SAUCE_QUICKPICK.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
 
   rowEl.innerHTML = `
     <span class="sauce-drag" title="드래그로 순서 변경">☰</span>
     <div class="sauce-name-wrap">
-      <div class="sauce-chips">${chipsHtml}</div>
+      <div class="sauce-quickpick-wrap">
+        <select class="sauce-quickpick">
+          <option value="" selected>빠른 선택</option>
+          ${quickpickOptionsHtml}
+        </select>
+      </div>
       <input class="sauce-name" type="text" placeholder="직접 입력" value="${escHtml(row.name||'')}" oninput="editSections[${sIdx}].rows[${rIdx}].name=this.value">
     </div>
     <input class="sauce-amount" type="number" min="0" step="0.1" placeholder="0" value="${escHtml(String(row.amount||''))}" oninput="editSections[${sIdx}].rows[${rIdx}].amount=this.value">
@@ -1346,13 +1348,16 @@ function makeSauceRow(sec, sIdx, row, rIdx) {
     <button class="sauce-del" onclick="removeSauceRow(${sIdx},${rIdx})" title="삭제">✕</button>
   `;
 
-  // 칩 탭 → 기존 sauce-name input에 값 주입 후 기존 oninput 핸들러 발동
+  // 드랍다운은 "빠른 선택 도구"일 뿐 — 값을 고르면 기존 sauce-name input에 주입 후
+  // 기존 oninput 핸들러를 그대로 발동시킴. input은 항상 열려있어 직접 수정도 자유로움.
   const nameInput = rowEl.querySelector('.sauce-name');
-  rowEl.querySelectorAll('.sauce-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      nameInput.value = chip.textContent;
-      nameInput.dispatchEvent(new Event('input'));
-    });
+  const quickpick = rowEl.querySelector('.sauce-quickpick');
+  quickpick.addEventListener('change', () => {
+    if (!quickpick.value) return;
+    nameInput.value = quickpick.value;
+    nameInput.dispatchEvent(new Event('input'));
+    nameInput.focus();
+    quickpick.value = ''; // 드랍다운 자체는 상태를 갖지 않음 — 다시 "빠른 선택"으로 리셋
   });
 
   return rowEl;
