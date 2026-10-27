@@ -1,20 +1,20 @@
 {
-  "date": "2026-10-27",
+  "date": "2026-10-28",
   "vix": {
-    "value": 18.39,
-    "pct": -5.45
+    "value": 17.52,
+    "pct": -4.73
   },
   "nasdaq": {
-    "value": 26169.38,
-    "pct": 0.82
+    "value": 26477.81,
+    "pct": 1.18
   },
   "kospi": {
-    "value": 5469.47,
+    "value": 5638.34,
     "pct": null
   },
   "usdkrw": {
-    "value": 1326.16,
-    "pct": 0.01
+    "value": 1326.63,
+    "pct": 0.37
   },
   "top_stock": {
     "rank1": "엔비디아",
