@@ -1,20 +1,20 @@
 {
-  "date": "2026-11-07",
+  "date": "2026-11-09",
   "vix": {
     "value": 25.64,
     "pct": -9.01
   },
   "nasdaq": {
-    "value": 24579.42,
+    "value": 24579.43,
     "pct": 1.09
   },
   "kospi": {
     "value": 5059.69,
-    "pct": null
+    "pct": -6.02
   },
   "usdkrw": {
-    "value": 1363.65,
-    "pct": 1.76
+    "value": 1363.55,
+    "pct": 0.53
   },
   "top_stock": {
     "rank1": "애플",
