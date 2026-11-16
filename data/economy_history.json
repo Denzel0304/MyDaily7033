@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-11-17",
+    "vix": {
+      "value": 22.91,
+      "pct": 18.7
+    },
+    "nasdaq": {
+      "value": 24509.76,
+      "pct": -2.49
+    },
+    "kospi": {
+      "value": 5100.5,
+      "pct": null
+    },
+    "usdkrw": {
+      "value": 1336.22,
+      "pct": 0.18
+    },
+    "top_stock": {
+      "rank1": "애플",
+      "rank2": "마이크로소프트",
+      "cap_diff_pct": 33.3
+    }
+  },
+  {
     "date": "2026-11-16",
     "vix": {
       "value": 19.3,
