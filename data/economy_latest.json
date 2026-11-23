@@ -1,24 +1,24 @@
 {
-  "date": "2026-11-23",
+  "date": "2026-11-24",
   "vix": {
-    "value": 35.89,
-    "pct": 26.2
+    "value": 26.62,
+    "pct": -25.83
   },
   "nasdaq": {
-    "value": 22617.73,
-    "pct": -5.28
+    "value": 24089.56,
+    "pct": 6.51
   },
   "kospi": {
-    "value": 4869.96,
-    "pct": -5.21
+    "value": 4708.54,
+    "pct": null
   },
   "usdkrw": {
-    "value": 1345.71,
-    "pct": 0.82
+    "value": 1340.87,
+    "pct": 0.46
   },
   "top_stock": {
     "rank1": "애플",
-    "rank2": "마이크로소프트",
-    "cap_diff_pct": 38.4
+    "rank2": "엔비디아",
+    "cap_diff_pct": 27.3
   }
 }
